@@ -10,3 +10,11 @@
 - Колінько Владислава Володимирівна - кервіник документації.
 - Фломбойм Мирослава Олексіївна - супроводжувач CI.
 - Бакалина Анастасія Ярославівна - керівник трекера завдань.
+
+## Артефакти:
+- [Командний статут](/docs/requirements/TeamCharter.md)
+- [Опис проєкту](/docs/requirements/Project-description.md)
+- [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
+- [Користувацькі історії](/docs/requirements/user-stories.md)
+- [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
+- [Матриця простежуваності](/docs/requirements/rtm.md)
