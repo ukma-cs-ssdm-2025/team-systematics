@@ -13,7 +13,7 @@
 
 ## Артефакти:
 - [Командний статут](/docs/requirements/TeamCharter.md)
-- [Опис проєкту](/docs/requirements/Project-description.md)
+- [Опис проєкту](/docs/requirements/Project-Description.md)
 - [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
 - [Користувацькі історії](/docs/requirements/user-stories.md)
 - [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
