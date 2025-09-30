@@ -3,7 +3,7 @@ on:
   push:
     branches:
       - main
-      - alyxandraaa/add-uml-diagrams  
+      - allyxandraaa/add-uml-diagrams  
 jobs:
   generate_plantuml:
     runs-on: ubuntu-latest
