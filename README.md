@@ -18,3 +18,6 @@
 - [Користувацькі історії](/docs/requirements/user-stories.md)
 - [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
 - [Матриця простежуваності](/docs/requirements/rtm.md)
+
+## Архітектура:
+- [Архітектурні артефакти](/docs/architecture/)
