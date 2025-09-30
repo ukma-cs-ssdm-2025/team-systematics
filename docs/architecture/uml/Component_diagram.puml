@@ -1,0 +1,59 @@
+@startuml Systematics_Components
+title Платформа Systematics — Діаграма компонентів
+
+skinparam componentStyle uml2
+skinparam wrapWidth 240
+skinparam maxMessageSize 120
+skinparam shadowing false
+
+' 1) Інтерфейси
+interface "REST API" as I_REST
+interface "SQL"      as I_SQL
+interface "SMTP"     as I_SMTP
+
+' 2) Межі платформи
+rectangle "Платформа Systematics" as PLATFORM {
+
+  component "Вебсайт"              as WEB
+  component "Сервіс автентифікації"      as AUTH
+  component "Управління тестами"         as TEST
+  component "Каталог курсів"             as CATALOG
+  component "Сервіс оцінювання"          as GRADE
+  component "Сервіс сповіщень"           as NOTIFY
+  component "Сервіс перевірки на плагіат" as PLAG
+
+  ' 3) Інтерфейси всередині платформи
+  WEB     - I_REST
+  AUTH    - I_SQL
+  TEST    - I_SQL
+  CATALOG - I_SQL
+  GRADE   - I_SQL
+  PLAG    - I_SQL
+  NOTIFY  - I_SMTP
+
+  ' 4) Хто використовує який інтерфейс (сокети)
+  I_REST --> AUTH   
+
+  ' ── Основний потік взаємодій ──
+  WEB   --> AUTH    : Автентифікація користувача
+  WEB   --> TEST    : Початок/здача тесту
+  WEB   --> CATALOG : Відображення курсів
+  WEB   --> GRADE   : Перегляд результатів оцінювання
+  WEB   --> PLAG    : Запит на перевірку на плагіат
+
+  TEST  --> GRADE   : Надсилання відповідей на оцінювання
+  TEST  --> PLAG    : Перевірка роботи на плагіат
+  GRADE --> PLAG    : Оцінювання з урахуванням перевірки на плагіат
+  PLAG  --> NOTIFY  : Надсилання звіту про плагіат/сповіщення
+
+}
+
+' 5) Зовнішні сервіси
+cloud "Зовнішні сервіси" as EXT {
+  component "Поштовий сервер"      as MAIL
+}
+
+' 6) SMTP, що надається зовнішнім поштовим сервером
+MAIL - I_SMTP
+
+@enduml
