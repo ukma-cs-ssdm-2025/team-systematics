@@ -1,4 +1,6 @@
 @startuml Systematics_Sequence
+title Платформа Systematics — Діаграма послідовності
+
 skinparam shadowing false
 skinparam roundcorner 12
 skinparam wrapWidth 240
