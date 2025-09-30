@@ -1,0 +1,70 @@
+@startuml Systematics_Sequence
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam wrapWidth 240
+skinparam sequenceMessageAlign center
+
+actor Student as S
+participant "Веб-сайт" as Web
+participant "Сервер застосунку" as Backend
+participant "Модуль тестів" as Tests
+participant "Модуль оцінювання" as Grades
+participant "Модуль відгуків та плагіату" as Feedback
+database "SQL база даних" as DB
+
+== Авторизація ==
+S -> Web : Увійти (логін/пароль)
+Web -> Backend : Перевірка користувача
+Backend -> DB : Запит користувача
+DB --> Backend : Дані користувача
+Backend --> Web : Доступ дозволено
+
+== Початок тесту ==
+S -> Web : Вибір курсу та тесту
+Web -> Backend : Запит на створення спроби
+Backend -> Tests : Створити спробу
+Tests -> DB : Записати спробу
+DB --> Tests : Підтвердження
+Tests --> Web : Дані спроби
+Web --> S : Показати тест
+
+== Автоматичне збереження відповідей під час проходження ==
+loop Після кожної відповіді
+  S -> Web : Відповідь на запитання
+  Web -> Backend : Передати відповідь
+  Backend -> Tests : Зберегти відповідь
+  Tests -> DB : Записати відповідь
+  DB --> Tests : Підтвердження збереження
+  Tests --> Backend : Відповідь збережено
+  Backend --> Web : Підтвердження збереження
+end
+
+== Надсилання результатів ==
+S -> Web : Завершити і надіслати всі відповіді
+Web -> Backend : Надіслати відповіді
+Backend -> Tests : Позначити спробу як завершену
+Tests -> DB : Оновити статус спроби
+DB --> Tests : Підтвердження
+
+== Перевірка та оцінювання ==
+par Перевірка на плагіат
+  Backend -> DB : Отримати відповіді інших студентів
+  DB --> Backend : Корпус відповідей
+  Backend -> Feedback : Перевірити на плагіат
+  Feedback --> Backend : Звіт про плагіат
+  Backend -> DB : Зберегти звіт про плагіат
+  DB --> Backend : Підтвердження
+else Автоматичне оцінювання
+  Backend -> DB : Отримати правильні відповіді та критерії
+  DB --> Backend : Правильні відповіді та критерії
+  Backend -> Grades : Обчислити оцінку
+  Grades -> DB : Зберегти оцінку
+  DB --> Grades : Підтвердження
+end
+
+== Публікація результату ==
+Grades --> Backend : Оцінка сформована
+Backend --> Web : Результат (бал та звіт про відсоток плагіату)
+Web --> S : Показати результат
+
+@enduml
