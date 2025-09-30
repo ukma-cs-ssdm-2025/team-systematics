@@ -1,0 +1,53 @@
+@startuml Systematics_Deployment
+title Платформа Systematics — Діаграма розгортання
+
+skinparam wrapWidth 250
+skinparam shadowing false
+skinparam roundcorner 12
+skinparam nodeStyle rectangle
+skinparam componentStyle rectangle
+top to bottom direction
+
+' 1) Клієнтський рівень
+node "Пристрій користувача" as Client {
+  artifact "Браузер" as Browser
+}
+
+' 2) Інтернет
+node "Інтернет" as Internet
+
+' 3) Серверна інфраструктура
+node "Сервер Systematics" as Server {
+  
+  node "Веб-сервер" as WebServer {
+    artifact "Frontend" as Frontend
+  }
+
+  node "Сервер веб-сайт (Backend)" as Backend {
+    artifact "Авторизація"
+    artifact "Курси"
+    artifact "Тести"
+    artifact "Оцінювання"
+    artifact "Відгуки та перевірка на плагіат"
+    artifact "Сервіс сповіщень (SMTP клієнт)"
+  }
+}
+
+' 4) Сховище даних
+node "Сервер бази даних" as DBServer {
+  database "SQL база даних\n(PostgreSQL / MySQL)" as DB
+}
+
+' 5) Зовнішні сервіси
+cloud "Зовнішні сервіси" as External {
+  artifact "Поштовий сервер" as MailServer
+}
+
+' 6) Зв’язки
+Client --> Internet
+Internet --> WebServer
+WebServer --> Backend
+Backend --> DB
+Backend --> MailServer : Надсилання сповіщень (SMTP)
+
+@enduml
