@@ -2,8 +2,8 @@ name: generate plantuml
 on:
   push:
     branches:
-      - main
-      - allyxandraaa/add-uml-diagrams  
+      - allyxandraaa/add-uml-diagrams
+      - allyxandraaa/change-generate-puml-workflow
 jobs:
   generate_plantuml:
     runs-on: ubuntu-latest
