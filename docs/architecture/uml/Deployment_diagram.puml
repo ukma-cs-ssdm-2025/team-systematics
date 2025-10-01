@@ -20,7 +20,7 @@ node "Інтернет" as Internet
 node "Сервер Systematics" as Server {
   
   node "Веб-сервер" as WebServer {
-    artifact "Frontend" as Frontend
+    artifact "Frontend (Vue SPA)" as Frontend
   }
 
   node "Сервер веб-сайт (Backend)" as Backend {
@@ -35,7 +35,7 @@ node "Сервер Systematics" as Server {
 
 ' 4) Сховище даних
 node "Сервер бази даних" as DBServer {
-  database "SQL база даних\n(PostgreSQL / MySQL)" as DB
+  database "SQL база даних\n(PostgreSQL)" as DB
 }
 
 ' 5) Зовнішні сервіси
