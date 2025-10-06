@@ -25,8 +25,8 @@ class Exam(BaseModel):
     id: UUID
     title: str
     instructions: Optional[str] = None
-    start_at: datetime
-    end_at: datetime
+    start_at: PastDatetime
+    end_at: FutureDatetime
     max_attempts: int
     pass_threshold: int
     owner_id: UUID
