@@ -11,7 +11,6 @@ class Attempt(BaseModel):
     started_at: PastDatetime
     due_at: FutureDatetime
     submitted_at: Optional[PastDatetime] = None
-    
     score_percent: Optional[conint(ge=0, le=100)] = None
 
 class AttemptStartRequest(BaseModel):
