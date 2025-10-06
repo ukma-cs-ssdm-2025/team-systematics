@@ -27,8 +27,8 @@ class Exam(BaseModel):
     id: UUID
     title: str
     instructions: Optional[str] = None
-    start_at: Optional[datetime] = None
-    end_at: Optional[datetime] = None
+    start_at: datetime
+    end_at: datetime
     duration_minutes: int
     max_attempts: int
     pass_threshold: int
