@@ -2,14 +2,13 @@ from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, conint, constr
+from pydantic import BaseModel, Field, conint, constr, validator, PastDatetime, FutureDatetime
 
 class ExamCreate(BaseModel):
     title: constr(min_length=3, max_length=100) = Field(..., description="Exam title")
     instructions: Optional[constr(max_length=2000)] = Field(None, description="Markdown/HTML instructions")
-    start_at: Optional[datetime] = Field(None, description="Start datetime (UTC); null = available immediately")
-    end_at: Optional[datetime] = Field(None, description="End datetime (UTC); null = no hard deadline")
-    duration_minutes: conint(ge=5, le=600) = Field(..., description="Time limit per attempt in minutes")
+    start_at: PastDatetime = Field(..., description="Start datetime (UTC); must be in the past")
+    end_at: FutureDatetime = Field(..., description="End datetime (UTC); must be in the future")
     max_attempts: conint(ge=1, le=10) = Field(1, description="Max attempts per user")
     pass_threshold: conint(ge=0, le=100) = Field(60, description="Passing threshold in percent")
     owner_id: UUID = Field(..., description="Instructor user id")
@@ -17,9 +16,8 @@ class ExamCreate(BaseModel):
 class ExamUpdate(BaseModel):
     title: Optional[conint(strict=True) | constr(min_length=3, max_length=100)] = Field(None, description="Exam title")
     instructions: Optional[constr(max_length=2000)] = Field(None, description="Markdown/HTML instructions")
-    start_at: Optional[datetime] = Field(None, description="Start datetime (UTC)")
-    end_at: Optional[datetime] = Field(None, description="End datetime (UTC)")
-    duration_minutes: Optional[conint(ge=5, le=600)] = Field(None, description="Time limit per attempt in minutes")
+    start_at: Optional[PastDatetime] = Field(None, description="Start datetime (UTC); must be in the past")
+    end_at: Optional[FutureDatetime] = Field(None, description="End datetime (UTC); must be in the future")
     max_attempts: Optional[conint(ge=1, le=10)] = Field(None, description="Max attempts per user")
     pass_threshold: Optional[conint(ge=0, le=100)] = Field(None, description="Passing threshold in percent")
 
@@ -29,7 +27,6 @@ class Exam(BaseModel):
     instructions: Optional[str] = None
     start_at: datetime
     end_at: datetime
-    duration_minutes: int
     max_attempts: int
     pass_threshold: int
     owner_id: UUID
@@ -38,3 +35,9 @@ class Exam(BaseModel):
 class ExamsPage(BaseModel):
     items: List[Exam]
     total: int
+
+@validator("end_at")
+def end_at_must_be_after_start_at(cls, v, values, **kwargs):
+    if "start_at" in values and v <= values["start_at"]:
+        raise ValueError("end_at must be after start_at")
+    return v
