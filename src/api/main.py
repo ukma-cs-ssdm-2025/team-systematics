@@ -9,13 +9,24 @@ from .controllers.exams_controller import ExamsController
 from .controllers.attempts_controller import AttemptsController
 
 def create_app() -> FastAPI:
+    servers = [
+        {
+            "url": "https://https://systematics.onrender.com",
+            "description": "Production server"
+        },
+        {
+            "url": "http://127.0.0.1:3000",
+            "description": "Local development server"
+        }
+    ]
+
     app = FastAPI(
         title="Online Exams API",
         version="1.0.0",
         description="Code-first FastAPI spec for an online examination platform.",
         contact={"name": "Team", "email": "team@example.com"},
         license_info={"name": "MIT"},
-        servers=[{"url": "http://localhost:3000", "description": "Local dev"}],
+        servers=servers,
         docs_url="/api-docs",
         redoc_url="/api-redoc",
         openapi_url="/api/openapi.json"
