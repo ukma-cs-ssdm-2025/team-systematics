@@ -12,6 +12,7 @@ class ExamCreate(BaseModel):
     max_attempts: conint(ge=1, le=10) = Field(1, description="Max attempts per user")
     pass_threshold: conint(ge=0, le=100) = Field(60, description="Passing threshold in percent")
     owner_id: UUID = Field(..., description="Instructor user id")
+    duration_minutes: conint(ge=1) = 60  # нове поле
 
 class ExamUpdate(BaseModel):
     title: Optional[conint(strict=True) | constr(min_length=3, max_length=100)] = Field(None, description="Exam title")
@@ -31,6 +32,7 @@ class Exam(BaseModel):
     pass_threshold: int
     owner_id: UUID
     question_count: int = Field(0, description="Number of available questions")
+    duration_minutes: int
 
 class ExamsPage(BaseModel):
     items: List[Exam]

@@ -17,7 +17,7 @@ class AttemptsRepository:
         with self._lock:
             attempt_id = uuid4()
             now = datetime.utcnow()
-            due = now + timedelta(minutes=duration_minutes)
+            due = now + timedelta(minutes=duration_minutes, seconds=300)
             att = Attempt(
                 id=attempt_id,
                 exam_id=exam_id,
