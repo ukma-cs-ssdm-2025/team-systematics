@@ -41,4 +41,4 @@ class ExamsService:
         exam = self.exams_repo.get(exam_id)
         if not exam:
             raise NotFoundError()
-        return self.attempts_repo.create_attempt(exam_id=exam_id, user_id=payload.user_id, duration_minutes=exam.duration_minutes)
+        return self.attempts_repo.create_attempt(exam_id=exam_id, user_id=payload.user_id)

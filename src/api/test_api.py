@@ -25,7 +25,6 @@ def create_exam_payload(title="Test Exam", description="Some instructions"):
         "max_attempts": 3,
         "pass_threshold": 60,
         "owner_id": str(uuid4()),
-        "duration_minutes": 60
     }
 
 
@@ -61,7 +60,6 @@ def test_get_exam_by_id():
 
 def test_start_attempt():
     exam_payload = create_exam_payload(title="Exam for attempt")
-    exam_payload["duration_minutes"] = 120
     exam_res = client.post("/api/exams", json=exam_payload)
     exam_id = exam_res.json()["id"]
 
@@ -79,7 +77,6 @@ def test_start_attempt():
 
 def test_add_answer_and_submit():
     exam_payload = create_exam_payload(title="Exam with answer")
-    exam_payload["duration_minutes"] = 120
     exam_res = client.post("/api/exams", json=exam_payload)
     exam_id = exam_res.json()["id"]
 

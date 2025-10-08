@@ -13,11 +13,11 @@ class AttemptsRepository:
         self._answers: Dict[UUID, Dict[UUID, Answer]] = {}
         self._lock = RLock()
 
-    def create_attempt(self, exam_id: UUID, user_id: UUID, duration_minutes: int) -> Attempt:
+    def create_attempt(self, exam_id: UUID, user_id: UUID) -> Attempt:
         with self._lock:
             attempt_id = uuid4()
             now = datetime.utcnow()
-            due = now + timedelta(minutes=duration_minutes, seconds=300)
+            due = now + timedelta(seconds=300)
             att = Attempt(
                 id=attempt_id,
                 exam_id=exam_id,
