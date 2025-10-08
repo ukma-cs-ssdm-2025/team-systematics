@@ -24,13 +24,11 @@ class AttemptsController:
         ) -> Answer:
             return self.service.add_answer(attempt_id, payload)
 
-        @self.router.post("/{attempt_id}/submit", response_model=Attempt,
-                          summary="Submit attempt")
-        async def submit(
-            attempt_id: UUID = Path(
-                ...,
-                description="Attempt id",
-                example=EXAMPLE_ATTEMPT_ID
-            )
-        ) -> Attempt:
+        @self.router.post(
+            "/{attempt_id}/submit",
+            response_model=Attempt,
+            status_code=status.HTTP_201_CREATED,
+            summary="Submit attempt"
+        )
+        async def submit(attempt_id: UUID) -> Attempt:
             return self.service.submit(attempt_id)
