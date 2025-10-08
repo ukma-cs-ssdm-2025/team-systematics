@@ -11,7 +11,7 @@ from .controllers.attempts_controller import AttemptsController
 def create_app() -> FastAPI:
     servers = [
         {
-            "url": "https://https://systematics.onrender.com",
+            "url": "https://systematics.onrender.com",
             "description": "Production server"
         },
         {
