@@ -5,7 +5,7 @@
 - **API Style:** RESTful  
 - **Authentication:** JWT Bearer tokens (планується)  
 - **Response Format:** JSON  
-- **Versioning Strategy:** URL path versioning (`/v1`, `/v2`)  
+- **Versioning Strategy:** Query parameter 
 
 ## Resource Model 
 
@@ -13,28 +13,32 @@
 - **Endpoint:** `/exams`  
 - **Description:** Управління тестами та екзаменами  
 - **Attributes:**  
-  - `id` (string): Унікальний ідентифікатор  
+  - `id` (UUID): Унікальний ідентифікатор тесту  
   - `title` (string): Назва тесту  
-  - `description` (string, optional): Опис  
-  - `createdBy` (string): ID користувача (викладача), який створив тест  
-  - `duration` (number): Час проходження в секундах
+  - `instructions` (string, optional): Інструкції для проходження тесту  
+  - `start_at` (datetime): Дата і час початку доступності тесту  
+  - `end_at` (datetime): Дата і час завершення доступності тесту  
+  - `max_attempts` (int): Максимальна кількість спроб проходження тесту  
+  - `pass_threshold` (int): Мінімальний результат для успішного проходження  
+  - `owner_id` (UUID): Ідентифікатор користувача-викладача, який створив тест  
+  - `question_count` (int, default=0): Кількість доступних питань у тесті  
 - **Relationships:**  
   - Має багато **questions**  
-  - Має багато **attempts**     
+  - Має багато **attempts**      
 
-### Attempts Resource
-- **Endpoint:** `/attempts`  
-- **Description:** Спроби проходження тестів учнями  
+### Answers Resource
+- **Endpoint:** `/answers`  
+- **Description:** Відповіді учнів на питання під час проходження тестів  
 - **Attributes:**  
-  - `id` (string): Унікальний ідентифікатор  
-  - `examId` (string): Ідентифікатор екзамену  
-  - `userId` (string): Ідентифікатор учня  
-  - `score` (number, optional): Набрані бали  
-  - `startedAt` (datetime): Час початку  
-  - `finishedAt` (datetime, optional): Час завершення  
+  - `id` (UUID): Унікальний ідентифікатор відповіді  
+  - `attempt_id` (UUID): Ідентифікатор спроби 
+  - `question_id` (UUID): Ідентифікатор питання 
+  - `text` (string, optional): Текстова відповідь для питань типу **short-answer**  
+  - `selected_option_ids` (List[UUID], optional): Список обраних варіантів для **multiple-choice** питань  
+  - `saved_at` (Pastdatetime): Дата і час збереження відповіді 
 - **Relationships:**  
-  - Належить до **exam**  
-  - Належить до **user**  
+  - Належить до **attempt**  
+  - Належить до **question** 
 
 ## Design Decisions
 
