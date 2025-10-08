@@ -23,7 +23,6 @@
   - `owner_id` (UUID): Ідентифікатор користувача-викладача, який створив тест  
   - `question_count` (int, default=0): Кількість доступних питань у тесті  
 - **Relationships:**  
-  - Має багато **questions**  
   - Має багато **attempts**    
   
 ### Attempt Resource
@@ -39,8 +38,7 @@
   - `submitted_at` (PastDatetime, optional): Дата і час відправки спроби, якщо завершена  
   - `score_percent` (int, optional, 0–100): Результат у відсотках після оцінювання  
 - **Relationships:**  
-  - Належить до **exam**  
-  - Належить до **user**  
+  - Належить до **exam**    
   - Містить список **answers**    
 
 ### Answers Resource
@@ -55,7 +53,6 @@
   - `saved_at` (Pastdatetime): Дата і час збереження відповіді 
 - **Relationships:**  
   - Належить до **attempt**  
-  - Належить до **question** 
 
 ## Design Decisions
 
