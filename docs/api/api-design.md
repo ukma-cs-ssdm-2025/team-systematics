@@ -42,7 +42,7 @@
   - Містить список **answers**    
 
 ### Answers Resource
-- **Endpoint:** `/answers`  
+- **Endpoint:** `/attempts/{attempt_id}/answers`  
 - **Description:** Відповіді учнів на питання під час проходження тестів  
 - **Attributes:**  
   - `id` (UUID): Унікальний ідентифікатор відповіді  
