@@ -7,6 +7,7 @@ from .services.exams_service import ExamsService
 from .services.attempts_service import AttemptsService as AttemptsSvc
 from .controllers.exams_controller import ExamsController
 from .controllers.attempts_controller import AttemptsController
+from .errors.app_errors import install_exception_handlers   
 
 def create_app() -> FastAPI:
     app = FastAPI(
@@ -15,10 +16,10 @@ def create_app() -> FastAPI:
         description="Code-first FastAPI spec for an online examination platform.",
         contact={"name": "Team", "email": "team@example.com"},
         license_info={"name": "MIT"},
-        servers=[{"url": "http://localhost:3000", "description": "Local dev"}],
+        servers=[{"url": "http://127.0.0.1:3000", "description": "Local dev"}],
         docs_url="/api-docs",
-        redoc_url="/api-redoc",
-        openapi_url="/api/openapi.json"
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
 
     app.add_middleware(

@@ -1,0 +1,35 @@
+name: Generate API Docs
+
+on:
+  push:
+    branches:
+      - main
+      - allyxandraaa/configure-github-pages-workflows
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate OpenAPI docs
+        run: python -m src.api.export-openapi
+
+      - name: Commit and push generated docs
+        run: |
+          git config user.name "github-actions"
+          git config user.email "actions@github.com"
+          git add docs/api/openapi-generated.yaml
+          git commit -m "Auto-update OpenAPI docs" || echo "No changes"
+          git push
