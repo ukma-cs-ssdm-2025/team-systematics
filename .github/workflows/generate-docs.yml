@@ -2,7 +2,12 @@ name: Generate API Docs
 
 on:
   push:
-    branches: [ main ]
+    branches:
+      - main
+      - allyxandraaa/configure-github-pages-workflows
+
+permissions:
+  contents: write
 
 jobs:
   build:
@@ -16,10 +21,10 @@ jobs:
           python-version: '3.11'
 
       - name: Install dependencies
-        run: pip install fastapi pyyaml uvicorn
+        run: pip install -r requirements.txt
 
       - name: Generate OpenAPI docs
-        run: python src/api/export_openapi.py
+        run: python -m src.api.export-openapi
 
       - name: Commit and push generated docs
         run: |
