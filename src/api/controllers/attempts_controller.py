@@ -18,7 +18,7 @@ class AttemptsController:
         @self.router.post(
             "/{attempt_id}/submit",
             response_model=Attempt,
-            status_code=status.HTTP_201_CREATED,  # ✅ додай цей рядок
+            status_code=status.HTTP_201_CREATED,
             summary="Submit attempt"
         )
         async def submit(attempt_id: UUID) -> Attempt:
