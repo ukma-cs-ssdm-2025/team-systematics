@@ -24,7 +24,24 @@
   - `question_count` (int, default=0): Кількість доступних питань у тесті  
 - **Relationships:**  
   - Має багато **questions**  
-  - Має багато **attempts**      
+  - Має багато **attempts**    
+  
+### Attempt Resource
+- **Endpoint:** `/attempts`  
+- **Description:** Спроба проходження екзамену користувачем  
+- **Attributes:**  
+  - `id` (UUID): Унікальний ідентифікатор спроби  
+  - `exam_id` (UUID): Ідентифікатор екзамену  
+  - `user_id` (UUID): Ідентифікатор користувача  
+  - `status` (string): Поточний статус спроби: `in_progress` | `submitted` | `expired`  
+  - `started_at` (PastDatetime): Дата і час початку спроби  
+  - `due_at` (FutureDatetime): Дата і час завершення спроби  
+  - `submitted_at` (PastDatetime, optional): Дата і час відправки спроби, якщо завершена  
+  - `score_percent` (int, optional, 0–100): Результат у відсотках після оцінювання  
+- **Relationships:**  
+  - Належить до **exam**  
+  - Належить до **user**  
+  - Містить список **answers**    
 
 ### Answers Resource
 - **Endpoint:** `/answers`  
@@ -50,7 +67,7 @@
 - FastAPI автоматично описує моделі з Pydantic у документації
 
 ### Pagination Strategy
-- Використовуємо **offset-based pagination** для списків (`exams`, `users`, `attempts`)  
+- Використовуємо **offset-based pagination** для списків `exams`, `users`, `attempts`
 - **Default limit:** 10 
 - **Minimum limit:** 1
 - **Maximum limit:** 100  
