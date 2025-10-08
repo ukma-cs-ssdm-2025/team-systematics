@@ -34,7 +34,7 @@ def create_app() -> FastAPI:
     )
 
     origins = [
-        "https://ukma-cs-ssdm-2025.github.io/team-systematics",
+        "https://ukma-cs-ssdm-2025.github.io",
     ]
 
     app.add_middleware(
