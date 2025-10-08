@@ -28,7 +28,6 @@ class ExamsRepository:
                 instructions=payload.instructions,
                 start_at=payload.start_at,
                 end_at=payload.end_at,
-                duration_minutes=payload.duration_minutes,
                 max_attempts=payload.max_attempts,
                 pass_threshold=payload.pass_threshold,
                 owner_id=payload.owner_id,

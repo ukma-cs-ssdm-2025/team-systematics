@@ -1,7 +1,8 @@
 from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
-from pydantic import BaseModel, Field, conint, constr, PastDatetime, FutureDatetime
+from pydantic import BaseModel, Field, conint, constr, PastDatetime
+from datetime import datetime
 
 class Attempt(BaseModel):
     id: UUID
@@ -9,7 +10,7 @@ class Attempt(BaseModel):
     user_id: UUID
     status: str = Field("in_progress", description="in_progress|submitted|expired")
     started_at: PastDatetime
-    due_at: FutureDatetime
+    due_at: datetime
     submitted_at: Optional[PastDatetime] = None
     score_percent: Optional[conint(ge=0, le=100)] = None
 

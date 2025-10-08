@@ -7,6 +7,7 @@ from .services.exams_service import ExamsService
 from .services.attempts_service import AttemptsService as AttemptsSvc
 from .controllers.exams_controller import ExamsController
 from .controllers.attempts_controller import AttemptsController
+from .errors.app_errors import install_exception_handlers   
 
 def create_app() -> FastAPI:
     servers = [
@@ -28,8 +29,8 @@ def create_app() -> FastAPI:
         license_info={"name": "MIT"},
         servers=servers,
         docs_url="/api-docs",
-        redoc_url="/api-redoc",
-        openapi_url="/api/openapi.json"
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
 
     origins = [

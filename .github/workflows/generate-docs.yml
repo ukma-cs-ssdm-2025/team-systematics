@@ -1,0 +1,46 @@
+name: Generate and Auto-Merge API Docs
+
+on:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  build:  
+    if: github.actor != 'github-actions[bot]'
+    
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Generate OpenAPI docs
+        run: python -m src.api.export-openapi
+
+      - name: Create and Auto-Merge Pull Request
+        uses: peter-evans/create-pull-request@v6
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: "docs: Auto-update OpenAPI specification"
+          title: "[AUTO] Update OpenAPI Documentation"
+          body: "OpenAPI specification file was automatically updated. This PR will be auto-merged."
+          branch: openapi-auto-update
+          delete-branch: true
+          base: main
+          
+          labels: automerge, documentation
+          assignees: allyxandraaa
+          auto-merge: true
+          merge-method: squash
