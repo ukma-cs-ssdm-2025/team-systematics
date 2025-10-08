@@ -1,5 +1,5 @@
 import yaml
-from src.api.main import app
+from .main import app
 
 openapi_schema = app.openapi()
 
