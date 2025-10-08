@@ -7,23 +7,39 @@ from .services.exams_service import ExamsService
 from .services.attempts_service import AttemptsService as AttemptsSvc
 from .controllers.exams_controller import ExamsController
 from .controllers.attempts_controller import AttemptsController
+from .errors.app_errors import install_exception_handlers   
 
 def create_app() -> FastAPI:
+    servers = [
+        {
+            "url": "https://systematics.onrender.com",
+            "description": "Production server"
+        },
+        {
+            "url": "http://127.0.0.1:3000",
+            "description": "Local development server"
+        },
+    ]
+
     app = FastAPI(
         title="Online Exams API",
         version="1.0.0",
         description="Code-first FastAPI spec for an online examination platform.",
         contact={"name": "Team", "email": "team@example.com"},
         license_info={"name": "MIT"},
-        servers=[{"url": "http://localhost:3000", "description": "Local dev"}],
+        servers=servers,
         docs_url="/api-docs",
-        redoc_url="/api-redoc",
-        openapi_url="/api/openapi.json"
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
+
+    origins = [
+        "https://ukma-cs-ssdm-2025.github.io",
+    ]
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

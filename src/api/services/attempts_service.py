@@ -12,9 +12,11 @@ class AttemptsService:
     def add_answer(self, attempt_id: UUID, payload: AnswerUpsert) -> Answer:
         att = self.attempts_repo.get_attempt(attempt_id)
         if not att:
-            raise NotFoundError(message="Attempt not found")
+            raise NotFoundError()
+            
         if att.status != "in_progress":
-            raise ConflictError(message="Attempt is locked or submitted")
+            raise ConflictError()
+            
         return self.attempts_repo.upsert_answer(
             attempt_id=attempt_id,
             question_id=payload.question_id,
@@ -25,9 +27,10 @@ class AttemptsService:
     def submit(self, attempt_id: UUID) -> Attempt:
         att = self.attempts_repo.get_attempt(attempt_id)
         if not att:
-            raise NotFoundError(message="Attempt not found")
+            raise NotFoundError()
+            
         if att.status != "in_progress":
-            raise ConflictError(message="Already submitted")
+            raise ConflictError()
+            
         updated = self.attempts_repo.submit_attempt(attempt_id)
-        assert updated is not None
         return updated

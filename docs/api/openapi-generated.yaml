@@ -1,0 +1,690 @@
+components:
+  schemas:
+    Answer:
+      properties:
+        attempt_id:
+          format: uuid
+          title: Attempt Id
+          type: string
+        id:
+          format: uuid
+          title: Id
+          type: string
+        question_id:
+          format: uuid
+          title: Question Id
+          type: string
+        saved_at:
+          format: date-time
+          title: Saved At
+          type: string
+        selected_option_ids:
+          anyOf:
+          - items:
+              format: uuid
+              type: string
+            type: array
+          - type: 'null'
+          title: Selected Option Ids
+        text:
+          anyOf:
+          - type: string
+          - type: 'null'
+          title: Text
+      required:
+      - id
+      - attempt_id
+      - question_id
+      - saved_at
+      title: Answer
+      type: object
+    AnswerUpsert:
+      properties:
+        question_id:
+          description: Question id being answered
+          format: uuid
+          title: Question Id
+          type: string
+        selected_option_ids:
+          anyOf:
+          - items:
+              format: uuid
+              type: string
+            type: array
+          - type: 'null'
+          description: Selected option ids for MCQ
+          title: Selected Option Ids
+        text:
+          anyOf:
+          - maxLength: 5000
+            type: string
+          - type: 'null'
+          description: Free text answer
+          title: Text
+      required:
+      - question_id
+      title: AnswerUpsert
+      type: object
+    Attempt:
+      properties:
+        due_at:
+          format: date-time
+          title: Due At
+          type: string
+        exam_id:
+          format: uuid
+          title: Exam Id
+          type: string
+        id:
+          format: uuid
+          title: Id
+          type: string
+        score_percent:
+          anyOf:
+          - maximum: 100.0
+            minimum: 0.0
+            type: integer
+          - type: 'null'
+          title: Score Percent
+        started_at:
+          format: date-time
+          title: Started At
+          type: string
+        status:
+          default: in_progress
+          description: in_progress|submitted|expired
+          title: Status
+          type: string
+        submitted_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          title: Submitted At
+        user_id:
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - id
+      - exam_id
+      - user_id
+      - started_at
+      - due_at
+      title: Attempt
+      type: object
+    AttemptStartRequest:
+      properties:
+        user_id:
+          description: Student user id starting the attempt
+          format: uuid
+          title: User Id
+          type: string
+      required:
+      - user_id
+      title: AttemptStartRequest
+      type: object
+    Exam:
+      properties:
+        end_at:
+          example: '2027-10-08T10:00:00Z'
+          format: date-time
+          title: End At
+          type: string
+        id:
+          example: a1b2c3d4-e5f6-7890-1234-567890abcdef
+          format: uuid
+          title: Id
+          type: string
+        instructions:
+          anyOf:
+          - type: string
+          - type: 'null'
+          example: Іспит складається з 20 теоретичних питань.
+          title: Instructions
+        max_attempts:
+          example: 3
+          title: Max Attempts
+          type: integer
+        owner_id:
+          example: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
+          format: uuid
+          title: Owner Id
+          type: string
+        pass_threshold:
+          example: 75
+          title: Pass Threshold
+          type: integer
+        question_count:
+          default: 0
+          description: Number of available questions
+          example: 20
+          title: Question Count
+          type: integer
+        start_at:
+          example: '2024-10-08T10:00:00Z'
+          format: date-time
+          title: Start At
+          type: string
+        title:
+          example: Вступ до Docker
+          title: Title
+          type: string
+      required:
+      - id
+      - title
+      - start_at
+      - end_at
+      - max_attempts
+      - pass_threshold
+      - owner_id
+      title: Exam
+      type: object
+    ExamCreate:
+      properties:
+        end_at:
+          description: End datetime (UTC); must be in the future
+          example: '2027-10-08T10:00:00Z'
+          format: date-time
+          title: End At
+          type: string
+        instructions:
+          anyOf:
+          - maxLength: 2000
+            type: string
+          - type: 'null'
+          description: Markdown/HTML instructions
+          example: Іспит складається з 20 теоретичних питань.
+          title: Instructions
+        max_attempts:
+          default: 1
+          description: Max attempts per user
+          example: 3
+          maximum: 10.0
+          minimum: 1.0
+          title: Max Attempts
+          type: integer
+        owner_id:
+          description: Instructor user id
+          example: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
+          format: uuid
+          title: Owner Id
+          type: string
+        pass_threshold:
+          default: 60
+          description: Passing threshold in percent
+          example: 75
+          maximum: 100.0
+          minimum: 0.0
+          title: Pass Threshold
+          type: integer
+        start_at:
+          description: Start datetime (UTC); must be in the past
+          example: '2024-10-08T10:00:00Z'
+          format: date-time
+          title: Start At
+          type: string
+        title:
+          description: Exam title
+          example: Вступ до Docker
+          maxLength: 100
+          minLength: 3
+          title: Title
+          type: string
+      required:
+      - title
+      - start_at
+      - end_at
+      - owner_id
+      title: ExamCreate
+      type: object
+    ExamUpdate:
+      properties:
+        end_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          description: End datetime (UTC); must be in the future
+          example: '2028-02-20T18:00:00Z'
+          title: End At
+        instructions:
+          anyOf:
+          - maxLength: 2000
+            type: string
+          - type: 'null'
+          description: Markdown/HTML instructions
+          example: 'Оновлені інструкції: додано практичне завдання.'
+          title: Instructions
+        max_attempts:
+          anyOf:
+          - maximum: 10.0
+            minimum: 1.0
+            type: integer
+          - type: 'null'
+          description: Max attempts per user
+          example: 2
+          title: Max Attempts
+        pass_threshold:
+          anyOf:
+          - maximum: 100.0
+            minimum: 0.0
+            type: integer
+          - type: 'null'
+          description: Passing threshold in percent
+          example: 80
+          title: Pass Threshold
+        start_at:
+          anyOf:
+          - format: date-time
+            type: string
+          - type: 'null'
+          description: Start datetime (UTC); must be in the past
+          example: '2024-11-15T09:00:00Z'
+          title: Start At
+        title:
+          anyOf:
+          - maxLength: 100
+            minLength: 3
+            type: string
+          - type: 'null'
+          description: Exam title
+          example: 'Docker: Просунутий рівень'
+          title: Title
+      title: ExamUpdate
+      type: object
+    ExamsPage:
+      properties:
+        items:
+          example:
+          - end_at: '2027-10-08T10:00:00Z'
+            id: a1b2c3d4-e5f6-7890-1234-567890abcdef
+            instructions: Іспит складається з 20 теоретичних питань.
+            max_attempts: 3
+            owner_id: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
+            pass_threshold: 75
+            question_count: 20
+            start_at: '2024-10-08T10:00:00Z'
+            title: Вступ до Docker
+          items:
+            $ref: '#/components/schemas/Exam'
+          title: Items
+          type: array
+        total:
+          example: 1
+          title: Total
+          type: integer
+      required:
+      - items
+      - total
+      title: ExamsPage
+      type: object
+    HTTPValidationError:
+      properties:
+        detail:
+          items:
+            $ref: '#/components/schemas/ValidationError'
+          title: Detail
+          type: array
+      title: HTTPValidationError
+      type: object
+    ValidationError:
+      properties:
+        loc:
+          items:
+            anyOf:
+            - type: string
+            - type: integer
+          title: Location
+          type: array
+        msg:
+          title: Message
+          type: string
+        type:
+          title: Error Type
+          type: string
+      required:
+      - loc
+      - msg
+      - type
+      title: ValidationError
+      type: object
+info:
+  contact:
+    email: team@example.com
+    name: Team
+  description: Code-first FastAPI spec for an online examination platform.
+  license:
+    name: MIT
+  title: Online Exams API
+  version: 1.0.0
+openapi: 3.1.0
+paths:
+  /api/attempts/{attempt_id}/answers:
+    post:
+      operationId: add_answer_api_attempts__attempt_id__answers_post
+      parameters:
+      - description: Attempt id
+        example: 1a8b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+        in: path
+        name: attempt_id
+        required: true
+        schema:
+          description: Attempt id
+          format: uuid
+          title: Attempt Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AnswerUpsert'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Answer'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Save or update an answer within an attempt
+      tags:
+      - Attempts
+  /api/attempts/{attempt_id}/submit:
+    post:
+      operationId: submit_api_attempts__attempt_id__submit_post
+      parameters:
+      - in: path
+        name: attempt_id
+        required: true
+        schema:
+          format: uuid
+          title: Attempt Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attempt'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Submit attempt
+      tags:
+      - Attempts
+  /api/exams:
+    get:
+      operationId: list_exams_api_exams_get
+      parameters:
+      - in: query
+        name: limit
+        required: false
+        schema:
+          default: 10
+          maximum: 100
+          minimum: 1
+          title: Limit
+          type: integer
+      - in: query
+        name: offset
+        required: false
+        schema:
+          default: 0
+          minimum: 0
+          title: Offset
+          type: integer
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ExamsPage'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: List exams
+      tags:
+      - Exams
+    post:
+      operationId: create_exam_api_exams_post
+      parameters:
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamCreate'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Create exam
+      tags:
+      - Exams
+  /api/exams/{exam_id}:
+    delete:
+      operationId: delete_exam_api_exams__exam_id__delete
+      parameters:
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
+        name: exam_id
+        required: true
+        schema:
+          description: Exam id
+          format: uuid
+          title: Exam Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      responses:
+        '204':
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Delete exam
+      tags:
+      - Exams
+    get:
+      operationId: get_exam_api_exams__exam_id__get
+      parameters:
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
+        name: exam_id
+        required: true
+        schema:
+          description: Exam id
+          format: uuid
+          title: Exam Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Get exam by id
+      tags:
+      - Exams
+    patch:
+      operationId: update_exam_api_exams__exam_id__patch
+      parameters:
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
+        name: exam_id
+        required: true
+        schema:
+          description: Exam id
+          format: uuid
+          title: Exam Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ExamUpdate'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Exam'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Update exam (partial)
+      tags:
+      - Exams
+  /api/exams/{exam_id}/attempts:
+    post:
+      operationId: start_attempt_api_exams__exam_id__attempts_post
+      parameters:
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
+        name: exam_id
+        required: true
+        schema:
+          description: Exam id
+          format: uuid
+          title: Exam Id
+          type: string
+      - description: API version (e.g., 1.0)
+        in: query
+        name: api-version
+        required: false
+        schema:
+          default: '1.0'
+          description: API version (e.g., 1.0)
+          title: Api-Version
+          type: string
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AttemptStartRequest'
+        required: true
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Attempt'
+          description: Successful Response
+        '422':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HTTPValidationError'
+          description: Validation Error
+      summary: Start an attempt for exam
+      tags:
+      - Exams
+servers:
+- description: Production server
+  url: https://systematics.onrender.com
+- description: Local development server
+  url: http://127.0.0.1:3000
