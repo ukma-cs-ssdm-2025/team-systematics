@@ -20,7 +20,7 @@ class ExamsService:
     def get(self, exam_id: UUID) -> Exam:
         exam = self.exams_repo.get(exam_id)
         if not exam:
-            raise NotFoundError(message="Exam not found")
+            raise NotFoundError()
         return exam
 
     def create(self, payload: ExamCreate) -> Exam:
@@ -29,16 +29,16 @@ class ExamsService:
     def update(self, exam_id: UUID, patch: ExamUpdate) -> Exam:
         updated = self.exams_repo.update(exam_id, patch)
         if not updated:
-            raise NotFoundError(message="Exam not found for update")
+            raise NotFoundError()
         return updated
 
     def delete(self, exam_id: UUID) -> None:
         ok = self.exams_repo.delete(exam_id)
         if not ok:
-            raise NotFoundError(message="Exam not found for delete")
+            raise NotFoundError()
 
     def start_attempt(self, exam_id: UUID, payload: AttemptStartRequest) -> Attempt:
         exam = self.exams_repo.get(exam_id)
         if not exam:
-            raise NotFoundError(message="Exam not found")
+            raise NotFoundError()
         return self.attempts_repo.create_attempt(exam_id=exam_id, user_id=payload.user_id, duration_minutes=exam.duration_minutes)
