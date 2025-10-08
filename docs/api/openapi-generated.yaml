@@ -684,5 +684,7 @@ paths:
       tags:
       - Exams
 servers:
-- description: Local dev
+- description: Production server
+  url: https://systematics.onrender.com
+- description: Local development server
   url: http://127.0.0.1:3000
