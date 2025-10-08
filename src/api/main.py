@@ -16,9 +16,9 @@ def create_app() -> FastAPI:
         contact={"name": "Team", "email": "team@example.com"},
         license_info={"name": "MIT"},
         servers=[{"url": "http://localhost:3000", "description": "Local dev"}],
-        docs_url="/api-docs",
-        redoc_url="/api-redoc",
-        openapi_url="/api/openapi.json"
+        docs_url="/docs",
+        redoc_url="/redoc",
+        openapi_url="/openapi.json"
     )
 
     app.add_middleware(
