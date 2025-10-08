@@ -11,9 +11,6 @@ from api.main import app
 
 client = TestClient(app)
 
-
-# ---------------- EXAMS ----------------
-
 def create_exam_payload(title="Test Exam", description="Some instructions"):
     """Генерує payload для створення екзамену відповідно до ExamCreate"""
     now = datetime.utcnow()
@@ -56,8 +53,6 @@ def test_get_exam_by_id():
     assert data["id"] == exam_id
 
 
-# ---------------- ATTEMPTS ----------------
-
 def test_start_attempt():
     exam_payload = create_exam_payload(title="Exam for attempt")
     exam_res = client.post("/api/exams", json=exam_payload)
@@ -89,7 +84,6 @@ def test_add_answer_and_submit():
     print("DEBUG test_add_answer_and_submit -> Exam ID:", exam_id)
     print("DEBUG test_add_answer_and_submit -> Attempt ID:", attempt_id)
 
-    # Додаємо відповідь на питання
     answer_payload = {
         "question_id": str(uuid4()),
         "answer": "Test answer"
@@ -97,6 +91,5 @@ def test_add_answer_and_submit():
     ans_res = client.post(f"/api/attempts/{attempt_id}/answers", json=answer_payload)
     assert ans_res.status_code == 201
 
-    # Подаємо спробу
     submit_res = client.post(f"/api/attempts/{attempt_id}/submit")
     assert submit_res.status_code == 201

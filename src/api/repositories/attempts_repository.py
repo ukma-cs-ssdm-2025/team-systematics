@@ -9,7 +9,6 @@ from ..schemas.attempts import Attempt, Answer
 class AttemptsRepository:
     def __init__(self) -> None:
         self._attempts: Dict[UUID, Attempt] = {}
-        # answers[attempt_id][question_id] -> Answer
         self._answers: Dict[UUID, Dict[UUID, Answer]] = {}
         self._lock = RLock()
 
