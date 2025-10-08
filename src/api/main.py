@@ -17,7 +17,7 @@ def create_app() -> FastAPI:
         {
             "url": "http://127.0.0.1:3000",
             "description": "Local development server"
-        }
+        },
     ]
 
     app = FastAPI(
@@ -32,9 +32,13 @@ def create_app() -> FastAPI:
         openapi_url="/api/openapi.json"
     )
 
+    origins = [
+        "https://ukma-cs-ssdm-2025.github.io/team-systematics",
+    ]
+
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=["*"],
+        allow_origins=origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],
