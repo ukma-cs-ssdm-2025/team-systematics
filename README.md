@@ -10,7 +10,8 @@
 З кореневої директорії проекту:
 
 ```bash
-python3 -m venv venv       # — створити Python-середовище
+python3 -m venv venv      # для Mac/Linux
+python -m venv venv       # для Windows
 ```
 
 ### Активувати середовище Python
