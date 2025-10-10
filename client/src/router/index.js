@@ -4,27 +4,38 @@ import LoginView from '../views/LoginView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
-  
+
   routes: [
-        {
+    {
       path: '/',
       redirect: '/login'
     },
     {
       path: '/login',
       name: 'Login',
-      component: LoginView
+      component: LoginView,
+      meta: {
+        title: 'Увійти'
+      }
     },
     {
       // path: '/forbidden'
       // name: 'Forbidden',
-      // component: ForbiddenView
+      // component: ForbiddenView,
+      // meta:
+      // {
+      //   title: '403: Доступ заборонено'
+      // }
     },
     {
       // path: '/exams',
       // name: 'Exams',
       // component: ExamsComponent,
-      // meta: { requiresAuth: true } // доступ лише для авторизованих
+      // meta:
+      // {
+      //   requiresAuth: true,  // доступ лише для авторизованих
+      //   title: 'Мої іспити'
+      // }
     },
   ]
 })
@@ -38,5 +49,14 @@ router.beforeEach((to) => {
     return '/login'
   }
 })
+
+router.afterEach((to) => {
+    const defaultTitle = 'Онлайн-платформа іспитів | Systematics'
+    
+    // Встановлюємо title сторінки
+    document.title = to.meta.title 
+        ? `${to.meta.title} | Systematics`
+        : defaultTitle;
+});
 
 export default router
