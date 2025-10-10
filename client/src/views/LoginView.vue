@@ -121,11 +121,14 @@ h1 {
 <script setup>
 import { ref } from 'vue'
 import { useAuth } from '../store/token'
+import { loginUser} from '../api/auth'
+import { useRouter } from 'vue-router'
 
 const email = ref('')
 const password = ref('')
 const { login } = useAuth()
-
+const router = useRouter()
+    
 // Відправляє дані на бекенд і зберігає токен
 const handleLogin = async (e) => {
   e.preventDefault()
