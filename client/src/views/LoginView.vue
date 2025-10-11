@@ -120,7 +120,7 @@ h1 {
 
 <script setup>
 import { ref } from 'vue'
-import { useAuth } from '../store/token'
+import { useAuth } from '../store/loginInfo'
 import { loginUser} from '../api/auth'
 import { useRouter } from 'vue-router'
 

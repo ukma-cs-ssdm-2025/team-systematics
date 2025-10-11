@@ -6,9 +6,9 @@ html {
     color: var(--color-black);
 }
 
-/* .main-content {
+.container {
     margin: 40px 120px;
-} */
+}
 
 section {
     margin: 40px 0;
@@ -62,6 +62,14 @@ tbody tr:last-child {
 
 thead th, tbody td, li {
     padding: 12px 12px 12px 0px;
+}
+
+table th:nth-child(1) {
+    width: auto;
+}
+
+table th:nth-child(2), table th:nth-child(3), table th:nth-child(4), table th:nth-child(5) {
+    width: 15%;
 }
 
 li {
