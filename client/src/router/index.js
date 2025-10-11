@@ -1,6 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
-import { useAuth } from '../store/token'
+import { useAuth } from '../store/loginInfo'
 import LoginView from '../views/LoginView.vue'
+import MyExamsView from '../views/MyExamsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -28,14 +29,14 @@ const router = createRouter({
       // }
     },
     {
-      // path: '/exams',
-      // name: 'Exams',
-      // component: ExamsComponent,
-      // meta:
-      // {
-      //   requiresAuth: true,  // доступ лише для авторизованих
-      //   title: 'Мої іспити'
-      // }
+      path: '/exams',
+      name: 'MyExams',
+      component: MyExamsView,
+      meta:
+      {
+        requiresAuth: false,  // доступ лише для авторизованих
+        title: 'Мої іспити'
+      }
     },
   ]
 })
