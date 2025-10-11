@@ -4,10 +4,8 @@
             <img src="../assets/icons/graduate-hat.svg" alt="Шапка випускника" width="100" height="100">
             <h1>Вітаємо в Systematics!</h1>
         </div>
-        <!-- Login Card -->
         <div class="login-card">
             <form id="loginForm" autocomplete="on" @submit="handleLogin">
-                <!-- Email Field -->
                 <div class="form-group">
                     <label for="email" class="form-label">
                         Електронна пошта
@@ -16,7 +14,6 @@
                         placeholder="myemail@gmail.com" autocomplete="email" />
                 </div>
 
-                <!-- Password Field -->
                 <div class="form-group">
                     <label for="password" class="form-label">
                         Пароль
@@ -25,19 +22,16 @@
                         placeholder="password123" autocomplete="current-password" />
                 </div>
 
-                <!-- Forgot Password Link -->
                 <div class="forgot-password-link-container">
                     <a href="#" class="forgot-password-link" aria-label="Забули пароль? Натисніть тут для відновлення.">
                         Забули пароль?
                     </a>
                 </div>
 
-                <!-- Submit Button -->
                 <button type="submit" id="submitButton" class="submit-button">
                     Увійти
                 </button>
 
-                <!-- Registration Link -->
                 <div class="register-link-container">
                     <div class="register-text">Ще не маєте акаунту? <a href="#" class="register-link"
                             aria-label="Зареєструватися">Зареєструватися</a></div>
