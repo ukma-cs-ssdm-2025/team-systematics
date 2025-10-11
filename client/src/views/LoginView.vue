@@ -1,5 +1,5 @@
 <template>
-    <div class="container">
+    <main class="container">
         <div class="login-card-header">
             <img src="../assets/icons/graduate-hat.svg" alt="Шапка випускника" width="100" height="100">
             <h1>Вітаємо в Systematics!</h1>
@@ -38,7 +38,7 @@
                 </div>
             </form>
         </div>
-    </div>
+    </main>
 </template>
 
 <style scoped>
@@ -50,6 +50,7 @@
     min-height: 100vh;
     width: 100%;
     gap: 40px;
+    margin: 0;
 }
 
 h1 {
