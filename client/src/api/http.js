@@ -1,5 +1,5 @@
 import axios from 'axios'
-import { useAuth } from '../store/token'
+import { useAuth } from '../store/loginInfo'
 import { useRouter } from 'vue-router'
 
 const { logout } = useAuth()
