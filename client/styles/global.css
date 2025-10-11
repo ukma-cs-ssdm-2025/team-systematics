@@ -6,9 +6,9 @@ html {
     color: var(--color-black);
 }
 
-.main-content {
+/* .main-content {
     margin: 40px 120px;
-}
+} */
 
 section {
     margin: 40px 0;
@@ -67,4 +67,14 @@ thead th, tbody td, li {
 li {
     list-style-type: disc;
     list-style-position: inside;
+}
+
+a,
+a:link,
+a:visited,
+a:hover,
+a:active,
+a:focus {
+    text-decoration: none;
+    color: inherit; 
 }
