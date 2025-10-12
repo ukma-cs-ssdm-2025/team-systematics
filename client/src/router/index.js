@@ -2,6 +2,7 @@ import { createRouter, createWebHistory } from 'vue-router'
 import { useAuth } from '../store/loginInfo'
 import LoginView from '../views/LoginView.vue'
 import MyExamsView from '../views/MyExamsView.vue'
+import ExamAttemptView from '../views/ExamAttemptView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -38,6 +39,15 @@ const router = createRouter({
         title: 'Мої іспити'
       }
     },
+    {
+      path: '/exam/:attemptId',
+      name: 'ExamAttempt',
+      component: ExamAttemptView,
+      meta: {
+        requiresAuth: false,
+        title: 'Проходження іспиту'
+      }
+    }
   ]
 })
 
