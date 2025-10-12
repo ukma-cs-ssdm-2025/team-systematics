@@ -29,7 +29,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="exam in futureExams" :key="exam.id">
-                                <td class="left">{{ exam.title }}</td>
+                                <td class="exam-title left" @click="openStartExamPopup(exam)">{{ exam.title }}</td>
                                 <td class="left">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left">{{ formatDateTime(exam.end_at) }}</td>
                                 <td class="right">{{ exam.max_attempts }}</td>
@@ -44,7 +44,7 @@
                 <section class="exams-section">
                     <h2>Вже виконано</h2>
                     <table v-if="completedExams.length" class="exams-table">
-                         <thead>
+                        <thead>
                             <tr>
                                 <th class="left"><span class="pill">Назва іспиту</span></th>
                                 <th class="left"><span class="pill">Час початку</span></th>
@@ -55,7 +55,7 @@
                         </thead>
                         <tbody>
                             <tr v-for="exam in completedExams" :key="exam.id">
-                                <td class="left inactive">{{ exam.title }}</td>
+                                <td class="exam-title left inactive">{{ exam.title }}</td>
                                 <td class="left inactive">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left inactive">{{ formatDateTime(exam.end_at) }}</td>
                                 <td class="right inactive">{{ exam.max_attempts }}</td>
@@ -71,14 +71,19 @@
                     <div class="page-end-text">Наразі це все!</div>
                 </div>
             </div>
-
         </main>
+        <div class="start-test-popup" v-if="isPopupVisible">
+            <CPopup :visible="isPopupVisible" :header="popupHeader"
+                disclaimer="Як тільки екзамен розпочнеться, його не можна буде зупинити." fstButton="Розпочати"
+                sndButton="Скасувати" @fstAction="handleStartExam" @sndAction="closePopup" />
+        </div>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import Header from '../components/global/Header.vue'
+import CPopup from '../components/global/CPopup.vue'
 import { getExams } from '../api/exams.js'
 
 // Створюємо два окремих ref для кожного списку - майбутніх і виконаних іспитів
@@ -87,6 +92,28 @@ const completedExams = ref([])
 
 const loading = ref(true)
 const error = ref(null)
+
+// керуємо поп-апом з підтвердженням готовності почати іспит
+const isPopupVisible = ref(false)
+const selectedExam = ref(null)
+
+const popupHeader = computed(() => {
+    return selectedExam.value
+        ? `Розпочати іспит: ${selectedExam.value.title}?`
+        : ''
+})
+
+function openStartExamPopup(exam) {
+    selectedExam.value = exam
+    isPopupVisible.value = true
+}
+
+function closePopup() {
+    selectedExam.value = null
+    isPopupVisible.value = false
+}
+
+// async function handleStartExam {}
 
 onMounted(async () => {
     try {
@@ -115,6 +142,19 @@ function formatDateTime(dateString) {
 </script>
 
 <style scoped>
+.start-test-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-black-half-opacity);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
 .inactive {
     opacity: 0.5;
 }
@@ -128,5 +168,13 @@ function formatDateTime(dateString) {
 
 .page-end-text {
     font-style: italic;
+}
+
+.exam-title {
+    cursor: pointer;
+}
+
+.exam-title.inactive {
+    cursor: default;
 }
 </style>
