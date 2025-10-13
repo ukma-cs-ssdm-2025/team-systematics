@@ -12,6 +12,7 @@
     align-items: center;
     gap: 10px;
     border-radius: 40px;
+    border: none;
     background: var(--color-violet);
     color: var(--color-white);
     font-weight: bold;
