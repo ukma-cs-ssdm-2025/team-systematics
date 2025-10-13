@@ -1,5 +1,5 @@
 import { http } from '../api/http.js'
-import mockAttemptData from '../mock/examAttempts.json'
+import mockAttemptData from '../mocks/examAttempts.json'
 
 // Тимчасово використовуємо заглушку
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
