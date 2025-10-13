@@ -74,6 +74,9 @@ const currentQuestion = computed(() => questionsList.value[currentQuestionIndex.
 const totalQuestions = computed(() => questionsList.value.length)
 const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
 
+const localStorageKey = `exam_progress_${attemptId}`
+const startedAt = ref(null)
+
 // керуємо поп-апом з підтвердженням готовності завершити іспит
 // щоб уникнути випадкового натискання кнопки "назад" у браузері
 // або переходу на іншу сторінку сайту
@@ -118,6 +121,17 @@ onMounted(async () => {
         status.value = data.status
         durationMinutes.value = data.duration_minutes || 60 // За замовчуванням 60 хвилин
         document.title = `${data.exam_title} | Systematics`
+        startedAt.value = data.started_at
+
+        const savedIndex = localStorage.getItem(localStorageKey)
+        if (savedIndex) {
+            // Перетворюємо рядок з localStorage назад в число
+            const parsedIndex = parseInt(savedIndex, 10)
+            // Перевіряємо, чи індекс валідний (на випадок зміни кількості питань)
+            if (parsedIndex < questionsList.value.length) {
+                currentQuestionIndex.value = parsedIndex
+            }
+        }
 
     } catch (err) {
         console.error(err)
@@ -153,6 +167,7 @@ async function saveAndNext() {
             router.push('/exams')
         } else {
             currentQuestionIndex.value++
+            localStorage.setItem(localStorageKey, currentQuestionIndex.value)
             window.scrollTo(0, 0)
         }
 
@@ -183,6 +198,7 @@ async function finalizeAndLeave() {
             resolveNavigation(true)
             resolveNavigation = null
         } else {
+            localStorage.removeItem(localStorageKey)
             router.push('/exams')
         }
     } catch (err) {
