@@ -23,6 +23,7 @@
                                 <th class="left"><span class="pill">Назва іспиту</span></th>
                                 <th class="left"><span class="pill">Час початку</span></th>
                                 <th class="left"><span class="pill">Час закінчення</span></th>
+                                <th class="right"><span class="pill">Тривалість</span></th>
                                 <th class="right"><span class="pill">К-сть спроб</span></th>
                                 <th class="right"><span class="pill">Прохідний бал</span></th>
                             </tr>
@@ -32,6 +33,7 @@
                                 <td class="exam-title left" @click="openStartExamPopup(exam)">{{ exam.title }}</td>
                                 <td class="left">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left">{{ formatDateTime(exam.end_at) }}</td>
+                                <td class="right">{{ exam.duration_minutes }} хв</td>
                                 <td class="right">{{ exam.max_attempts }}</td>
                                 <td class="right">{{ exam.pass_threshold }}</td>
                             </tr>
@@ -49,6 +51,7 @@
                                 <th class="left"><span class="pill">Назва іспиту</span></th>
                                 <th class="left"><span class="pill">Час початку</span></th>
                                 <th class="left"><span class="pill">Час закінчення</span></th>
+                                <th class="right"><span class="pill">Тривалість</span></th>
                                 <th class="right"><span class="pill">К-сть спроб</span></th>
                                 <th class="right"><span class="pill">Прохідний бал</span></th>
                             </tr>
@@ -58,6 +61,7 @@
                                 <td class="exam-title left inactive">{{ exam.title }}</td>
                                 <td class="left inactive">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left inactive">{{ formatDateTime(exam.end_at) }}</td>
+                                <td class="right inactive">{{ exam.duration_minutes }} хв</td>
                                 <td class="right inactive">{{ exam.max_attempts }}</td>
                                 <td class="right inactive">{{ exam.pass_threshold }}</td>
                             </tr>
