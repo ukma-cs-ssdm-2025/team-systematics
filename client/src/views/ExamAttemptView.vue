@@ -15,23 +15,23 @@
         <div v-else-if="currentQuestion" class="exam-content">
             <div class="exam-header">
                 <h2>{{ examTitle }}</h2>
-                <div class="progress">
-                    <h3>Питання {{ currentQuestionIndex + 1 }} з {{ totalQuestions }}</h3>
-                </div>
-                <div class="question">
-                    <QuestionDisplay 
-                        :question="currentQuestion" 
-                        :savedAnswer="allSavedAnswers[currentQuestion.id] || null"
-                        @answer-changed="handleAnswerChange"
-                    />
-                </div>
-                <div class="navigation-buttons">
-                    <CButton 
-                        @click="saveAndNext"
-                        :disabled="isSaving" 
-                    >
-                        {{ isLastQuestion ? 'Завершити іспит' : 'Зберегти і продовжити' }}
-                    </CButton>
+                <div class="exam-question-content">
+                    <div class="progress">
+                        <h3>Питання {{ currentQuestionIndex + 1 }} з {{ totalQuestions }}</h3>
+                    </div>
+                    <div class="question">
+                        <QuestionDisplay :question="currentQuestion"
+                            :savedAnswer="allSavedAnswers[currentQuestion.id] || null"
+                            @answer-changed="handleAnswerChange" />
+                    </div>
+                    <div class="navigation-buttons">
+                        <CButton @click="saveAndNext" :disabled="isSaving">
+                            {{ isLastQuestion ? 'Завершити іспит' : 'Зберегти і продовжити' }}
+                        </CButton>
+                    </div>
+                    <div class="exam-timer">
+                        <Timer :durationMinutes="durationMinutes" @time-up="finalizeAndLeave" />
+                    </div>
                 </div>
             </div>
         </div>
@@ -51,6 +51,7 @@ import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
 import CPopup from '../components/global/CPopup.vue'
+import Timer from '../components/ExamAttemptView/Timer.vue'
 import { getExamAttemptDetails, saveAnswer, submitExamAttempt } from '../api/attempts.js'
 
 const route = useRoute()
@@ -67,6 +68,7 @@ const currentQuestionIndex = ref(0)
 const loading = ref(true)
 const error = ref(null)
 const isSaving = ref(false)
+const durationMinutes = ref(0)
 
 const currentQuestion = computed(() => questionsList.value[currentQuestionIndex.value])
 const totalQuestions = computed(() => questionsList.value.length)
@@ -114,7 +116,7 @@ onMounted(async () => {
         allSavedAnswers.value = data.saved_answers || {}
         dueAt.value = data.due_at
         status.value = data.status
-
+        durationMinutes.value = data.duration_minutes || 60 // За замовчуванням 60 хвилин
         document.title = `${data.exam_title} | Systematics`
 
     } catch (err) {
@@ -210,5 +212,15 @@ async function finalizeAndLeave() {
     justify-content: center;
     align-items: center;
     z-index: 1000;
+}
+
+.exam-question-content {
+    position: relative;
+}
+
+.exam-timer {
+    position: absolute;
+    top: 0;
+    right: 0;
 }
 </style>
