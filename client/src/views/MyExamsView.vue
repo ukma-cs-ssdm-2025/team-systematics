@@ -85,6 +85,10 @@ import { ref, onMounted, computed } from 'vue'
 import Header from '../components/global/Header.vue'
 import CPopup from '../components/global/CPopup.vue'
 import { getExams } from '../api/exams.js'
+import { startExamAttempt } from '../api/attempts.js'
+import { useRouter } from 'vue-router'
+
+const router = useRouter()
 
 // Створюємо два окремих ref для кожного списку - майбутніх і виконаних іспитів
 const futureExams = ref([])
@@ -113,7 +117,20 @@ function closePopup() {
     isPopupVisible.value = false
 }
 
-// async function handleStartExam {}
+// розпочинаємо спробу іспиту, натиснувши на кнопку в поп-апі
+async function handleStartExam() {
+    if (!selectedExam.value) return;
+
+    try {
+        const attemptData = await startExamAttempt(selectedExam.value.id)
+        const attemptId = attemptData.attempt_id
+        router.push(`/exam/${attemptId}`)
+    } catch (err) {
+        console.error("Помилка при спробі розпочати іспит:", err)
+    } finally {
+        closePopup()
+    }
+}
 
 onMounted(async () => {
     try {
