@@ -18,6 +18,13 @@
                 <div class="progress">
                     <h3>Питання {{ currentQuestionIndex + 1 }} з {{ totalQuestions }}</h3>
                 </div>
+                <div class="question">
+                    <QuestionDisplay 
+                        :question="currentQuestion" 
+                        :savedAnswer="allSavedAnswers[currentQuestion.id] || null"
+                        @answer-changed="handleAnswerChange"
+                    />
+                </div>
                 <div class="navigation-buttons">
                     <CButton 
                         @click="saveAndNext"
@@ -33,12 +40,14 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
-import { getExamAttemptDetails } from '../api/attempts.js'
+import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
+import { getExamAttemptDetails, saveAnswer } from '../api/attempts.js'
 
 const route = useRoute()
+const router = useRouter()
 
 // Отримуємо attemptId з URL
 const attemptId = route.params.attemptId
@@ -48,7 +57,6 @@ const allSavedAnswers = ref({})
 const dueAt = ref(null)
 const status = ref(null)
 const currentQuestionIndex = ref(0)
-const currentTempAnswer = ref(null)
 const loading = ref(true)
 const error = ref(null)
 const isSaving = ref(false)
@@ -82,5 +90,41 @@ onMounted(async () => {
     }
 })
 
-// async function saveAndNext() {}
+function handleAnswerChange(newAnswer) {
+    if (currentQuestion.value) {
+        allSavedAnswers.value[currentQuestion.value.id] = newAnswer
+    }
+}
+
+async function saveAndNext() {
+    const questionId = currentQuestion.value.id
+    const answerToSave = allSavedAnswers.value[questionId]
+
+    // Перевірка, чи є відповідь
+    if (answerToSave === null || answerToSave === undefined || (Array.isArray(answerToSave) && answerToSave.length === 0)) {
+        alert("Будь ласка, надайте відповідь перед продовженням.")
+        return
+    }
+
+    isSaving.value = true
+    try {
+        // Відправляємо відповідь на бекенд
+        await saveAnswer(attemptId, questionId, answerToSave)
+
+        if (isLastQuestion.value) {
+            alert("Іспит успішно завершено!")
+            router.push('/exams')
+        } else {
+            currentQuestionIndex.value++
+            window.scrollTo(0, 0)
+        }
+
+    } catch (err) {
+        console.error(err)
+        alert("Помилка збереження відповіді. Будь ласка, перевірте з'єднання та спробуйте ще раз.")
+    } finally {
+        isSaving.value = false
+    }
+}
+
 </script>
