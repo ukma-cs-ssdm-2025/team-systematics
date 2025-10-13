@@ -61,7 +61,8 @@
       "position": 3,
       "question_type": "short_answer",
       "title": "Знайдіть ранг матриці [[1, 2, 3], [2, 4, 6]]. Введіть відповідь у вигляді числа.",
-      "points": 15
+      "points": 15,
+      "input_type": "number"
     },
     {
       "id": "b7d5f4e3-8a9b-4c0d-1e2f-3a4b5c6d7e8f",

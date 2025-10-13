@@ -39,3 +39,30 @@ export async function getExamAttemptDetails(attemptId) {
         throw new Error('Не вдалося завантажити дані іспиту. Спробуйте ще раз.')
     }
 }
+
+// Зберігаємо відповідь користувача на сервері
+export async function saveAnswer(attemptId, questionId, answer) {
+    if (USE_MOCK_DATA) {
+        console.log(`MOCK: Збереження відповіді для attemptId=${attemptId}, questionId=${questionId}`, answer)
+        return
+    }
+
+    try {
+        const url = `/api/exam-attempts/${attemptId}/answers`
+
+        // Формуємо тіло запиту, яке буде надіслано на сервер
+        const payload = {
+            question_id: questionId,
+            answer: answer
+        }
+
+        const response = await http.post(url, payload)
+        return response.data;
+
+   } catch (error) {
+        if (error.response && error.response.data && error.response.data.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося зберегти відповідь. Спробуйте ще раз.')
+    }
+}
