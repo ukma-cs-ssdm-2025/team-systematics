@@ -49,6 +49,7 @@ const letter = (index) => String.fromCharCode(65 + index)
 <style scoped>
 .question-block {
     width: 60%;
+    margin-bottom: 20px;
 }
 
 .single-choice-list li {
