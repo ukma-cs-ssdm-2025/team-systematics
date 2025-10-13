@@ -101,4 +101,10 @@ const letter = (index) => String.fromCharCode(65 + index)
     background-color: var(--color-purple);
     color: white;
 }
+
+.option-item:has(.real-radio-button:focus-visible) {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px; 
+}
+
 </style>
