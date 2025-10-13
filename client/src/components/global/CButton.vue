@@ -16,6 +16,7 @@
     color: var(--color-white);
     font-weight: bold;
     text-align: center;
+    transition: all 150ms ease;
 }
 
 .custom-button:hover {
