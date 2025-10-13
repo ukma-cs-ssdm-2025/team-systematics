@@ -28,9 +28,9 @@
                     </a>
                 </div>
 
-                <button type="submit" id="submitButton" class="submit-button">
+                <CButton type="submit" id="submitButton" class="submit-button">
                     Увійти
-                </button>
+                </CButton>
 
                 <div class="register-link-container">
                     <div class="register-text">Ще не маєте акаунту? <a href="#" class="register-link"
@@ -99,17 +99,8 @@ h1 {
 }
 
 #submitButton {
-    display: flex;
-    padding: 20px 50px;
-    justify-content: center;
-    align-items: center;
-    gap: 10px;
-    align-self: stretch;
-    border-radius: 50px;
-    background: var(--color-lavender);
-    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
-    cursor: pointer;
-    font-weight: bold;
+    background-color: var(--color-lavender);
+    color: var(--color-black);
 }
 </style>
 
@@ -118,6 +109,7 @@ import { ref } from 'vue'
 import { useAuth } from '../store/loginInfo'
 import { loginUser} from '../api/auth'
 import { useRouter } from 'vue-router'
+import CButton from '../components/global/CButton.vue'
 
 const email = ref('')
 const password = ref('')
