@@ -24,8 +24,7 @@
 }
 
 .custom-button:focus-visible {
-    outline: 3px solid var(--color-dark-purple);
+    outline: 3px solid var(--color-purple);
     outline-offset: 2px;
-    /* Невеликий відступ рамки від елемента */
 }
 </style>
