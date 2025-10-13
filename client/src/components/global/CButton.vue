@@ -17,8 +17,15 @@
     font-weight: bold;
     text-align: center;
 }
+
 .custom-button:hover {
     background-color: var(--color-purple);
     cursor: pointer;
+}
+
+.custom-button:focus-visible {
+    outline: 3px solid var(--color-dark-purple);
+    outline-offset: 2px;
+    /* Невеликий відступ рамки від елемента */
 }
 </style>
