@@ -35,16 +35,23 @@
                 </div>
             </div>
         </div>
+
+        <div class="leave-test-popup" v-if="isPopupVisible">
+            <CPopup :visible="isPopupVisible" :header="'Завершити тестування?'"
+                disclaimer="Ви не зможете повернутися до тестування після завершення." fstButton="Завершити"
+                sndButton="Скасувати" @fstAction="finalizeAndLeave" @sndAction="cancelLeave" />
+        </div>
     </main>
 </template>
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
-import { getExamAttemptDetails, saveAnswer } from '../api/attempts.js'
+import CPopup from '../components/global/CPopup.vue'
+import { getExamAttemptDetails, saveAnswer, submitExamAttempt } from '../api/attempts.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -64,6 +71,34 @@ const isSaving = ref(false)
 const currentQuestion = computed(() => questionsList.value[currentQuestionIndex.value])
 const totalQuestions = computed(() => questionsList.value.length)
 const isLastQuestion = computed(() => currentQuestionIndex.value === totalQuestions.value - 1)
+
+// керуємо поп-апом з підтвердженням готовності завершити іспит
+// щоб уникнути випадкового натискання кнопки "назад" у браузері
+// або переходу на іншу сторінку сайту
+const isPopupVisible = ref(false)
+let resolveNavigation = null
+
+function cancelLeave() {
+    isPopupVisible.value = false
+    if (resolveNavigation) {
+        resolveNavigation(false)
+    }
+}
+
+onBeforeRouteLeave(() => {
+    if (status.value !== 'in_progress') {
+        return true
+    }
+    if (isPopupVisible.value) {
+        return false
+    }
+    isPopupVisible.value = true
+    // Повертаємо проміс, який буде вирішено в confirmLeave або cancelLeave
+    return new Promise((resolve) => {
+        resolveNavigation = resolve
+    })
+})
+
 
 onMounted(async () => {
     if (!attemptId) {
@@ -112,7 +147,7 @@ async function saveAndNext() {
         await saveAnswer(attemptId, questionId, answerToSave)
 
         if (isLastQuestion.value) {
-            alert("Іспит успішно завершено!")
+            await finalizeAndLeave()
             router.push('/exams')
         } else {
             currentQuestionIndex.value++
@@ -127,4 +162,53 @@ async function saveAndNext() {
     }
 }
 
+async function finalizeAndLeave() {
+    isSaving.value = true
+    isPopupVisible.value = false
+
+    try {
+        // Перевіряємо, чи є незбережена відповідь на поточному питанні
+        const currentAnswer = allSavedAnswers.value[currentQuestion.value.id]
+        if (currentAnswer !== null && currentAnswer !== undefined) {
+            // Якщо відповідь є, зберігаємо її перед виходом
+            await saveAnswer(attemptId, currentQuestion.value.id, currentAnswer)
+        }
+
+        const updatedAttempt = await submitExamAttempt(attemptId)
+        status.value = updatedAttempt.status
+
+        if (resolveNavigation) {
+            resolveNavigation(true)
+            resolveNavigation = null
+        } else {
+            router.push('/exams')
+        }
+    } catch (err) {
+        console.error("Помилка при завершенні іспиту:", err)
+        alert("Не вдалося завершити іспит. Будь ласка, спробуйте ще раз.")
+
+        if (resolveNavigation) {
+            resolveNavigation(false)
+            resolveNavigation = null
+        }
+    } finally {
+        isSaving.value = false
+    }
+}
+
 </script>
+
+<style scoped>
+.leave-test-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: var(--color-black-half-opacity);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+</style>

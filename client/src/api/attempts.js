@@ -66,3 +66,32 @@ export async function saveAnswer(attemptId, questionId, answer) {
         throw new Error('Не вдалося зберегти відповідь. Спробуйте ще раз.')
     }
 }
+
+// Зберігаємо спробу іспиту як завершену
+export async function submitExamAttempt(attemptId) {
+    if (USE_MOCK_DATA) {
+        console.log(`MOCK: Завершення (submit) спроби ${attemptId}`)
+        return { // Приклад
+            id: attemptId,
+            exam_id: "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b", 
+            user_id: "3fa85f64-5717-4562-b3fc-2c963f66afa6",
+            status: "completed",
+            score_percent: 88,
+            started_at: "2025-10-13T19:25:55.930Z",
+            submitted_at: new Date().toISOString(), 
+            due_at: "2025-12-22T18:00:00+02:00"
+        }
+    }
+
+    try {
+        const url = `/api/attempts/${attemptId}/submit`
+        const response = await http.post(url, {})
+        return response.data
+
+    } catch (error) {
+        if (error.response && error.response.data && error.response.data.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося зберегти спробу. Спробуйте ще раз.')
+    }
+}
