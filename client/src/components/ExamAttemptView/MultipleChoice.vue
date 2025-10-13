@@ -36,13 +36,19 @@ const emit = defineEmits(['update:modelValue'])
 // Функція для обробки змін стану чекбоксів
 function handleChange(event) {
     const { value, checked } = event.target
-    let newModelValue = [...props.modelValue]
+    const currentValues = Array.isArray(props.modelValue) ? props.modelValue : []
+
+    let newModelValue = [...currentValues]
 
     if (checked) {
-        newModelValue.push(value);
+        // Перевіряємо, чи цього значення ще немає, щоб уникнути дублікатів
+        if (!newModelValue.includes(value)) {
+            newModelValue.push(value)
+        }
     } else {
         newModelValue = newModelValue.filter(id => id !== value)
     }
+    
     emit('update:modelValue', newModelValue)
 }
 </script>

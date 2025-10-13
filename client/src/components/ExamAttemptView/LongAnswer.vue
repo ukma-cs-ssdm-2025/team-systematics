@@ -1,19 +1,15 @@
 <template>
     <div class="question-block">
-        <textarea
-            class="textarea-input"
-            :value="modelValue"
-            @input="$emit('update:modelValue', $event.target.value)"
-            placeholder="Введіть вашу відповідь..."
-        ></textarea>
+        <textarea class="textarea-input" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)"
+            placeholder="Введіть вашу відповідь..."></textarea>
     </div>
 </template>
 
 <script setup>
 defineProps({
-    modelValue: { 
-        type: String, 
-        default: '' 
+    modelValue: {
+        type: String,
+        default: ''
     }
 });
 
@@ -23,12 +19,12 @@ defineEmits(['update:modelValue'])
 <style scoped>
 .question-block {
     width: 60%;
-    height: 400px; 
+    height: 400px;
     margin-bottom: 20px;
 }
 
 .textarea-input {
-    height: 100%; 
+    height: 100%;
     width: 100%;
     padding: 20px;
     background-color: var(--color-gray);
@@ -39,7 +35,7 @@ defineEmits(['update:modelValue'])
     transition: all 150ms ease;
     box-shadow: none;
     resize: none;
-    line-height: 1.5; 
+    line-height: 1.5;
 }
 
 .textarea-input:hover {
@@ -48,6 +44,6 @@ defineEmits(['update:modelValue'])
 
 .textarea-input:focus-visible {
     outline: 3px solid var(--color-purple);
-    outline-offset: 2px; 
+    outline-offset: 2px;
 }
 </style>
