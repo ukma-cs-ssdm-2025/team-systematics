@@ -102,6 +102,11 @@ h1 {
     background-color: var(--color-lavender);
     color: var(--color-black);
 }
+
+#submitButton:hover {
+    background-color: var(--color-dark-lavender);
+}
+
 </style>
 
 <script setup>
