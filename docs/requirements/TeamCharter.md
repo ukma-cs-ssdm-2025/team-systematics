@@ -11,10 +11,10 @@ Systematics
 - Колінько Владислава Володимирівна (v.kolinko@ukma.edu.ua, GitHub: @SlavaKolinko)
 
 ### 2) Ролі та відповідальності:
-- Керівник документації (Documentation Lead) - Малій Олександра
-- Керівник простежуваності (Traceability Lead) - Фломбойм Мирослава
-- Керівник якості (Quality Lead) - Колінько Владислава
-- Керівник вимог (Issue Tracker Lead) - Бакалина Анастасія
+- Security Analyst - Малій Олександра
+- Documentation Lead - Фломбойм Мирослава
+- Quality Lead - Колінько Владислава
+- Code Reviewer - Бакалина Анастасія
 
 ### 3) План комунікації:
 - Основний канал комунікації - Telegram
