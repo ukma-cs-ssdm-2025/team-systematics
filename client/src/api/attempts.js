@@ -25,8 +25,22 @@ export async function startExamAttempt(examId) {
 Бекенд збирає всі необхідні дані (назву, статус, питання, варіанти відповідей тощо)
 Сервер не повертає правильні відповіді, щоб користувач не міг їх побачити в коді відповіді */
 export async function getExamAttemptDetails(attemptId) {
-    if (USE_MOCK_DATA) {
-        return mockAttemptData
+     if (USE_MOCK_DATA) {
+        const startTimeKey = `exam_startTime_${attemptId}`
+        let savedStartedAt = localStorage.getItem(startTimeKey)
+
+        if (!savedStartedAt) {
+            console.log("MOCK: Не знайдено збережений час початку. Генеруємо новий.")
+            savedStartedAt = new Date().toISOString()
+            localStorage.setItem(startTimeKey, savedStartedAt)
+        } else {
+            console.log("MOCK: Знайдено збережений час початку:", savedStartedAt)
+        }
+
+        return {
+            ...mockAttemptData,
+            started_at: savedStartedAt
+        }
     }
 
     try {
