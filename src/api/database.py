@@ -1,24 +1,14 @@
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker, declarative_base
-from dotenv import load_dotenv
-import os
+from src.core.config import DATABASE_URL
 
-# Завантажуємо змінні з файлу .env (щоб не тримати паролі прямо в коді)
-load_dotenv()
+if not DATABASE_URL:
+    raise ValueError("DATABASE_URL not found. Check your .env file!")
 
-# Отримуємо URL бази даних із змінної середовища
-DATABASE_URL = os.getenv("DATABASE_URL")
-
-# Створюємо "движок" для роботи з базою через SQLAlchemy
 engine = create_engine(DATABASE_URL)
-
-# Налаштовуємо фабрику сесій для взаємодії з базою даних
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
-
-# Базовий клас для створення моделей (таблиць)
 Base = declarative_base()
 
-# Функція-залежність для FastAPI — створює та закриває сесію з БД
 def get_db():
     db = SessionLocal()
     try:
