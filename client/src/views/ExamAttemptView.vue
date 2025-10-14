@@ -30,7 +30,7 @@
                         </CButton>
                     </div>
                     <div class="exam-timer">
-                        <Timer :durationMinutes="durationMinutes" @time-up="finalizeAndLeave" />
+                        <Timer :durationMinutes="durationMinutes" :startedAt="startedAt" @time-up="finalizeAndLeave" />
                     </div>
                 </div>
             </div>

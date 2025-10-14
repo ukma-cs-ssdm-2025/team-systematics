@@ -13,13 +13,19 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onUnmounted, watch } from 'vue'
 
 const props = defineProps({
     durationMinutes: {
         type: Number,
         required: true,
         validator: (value) => value > 0
+    },
+    startedAt: {
+        type: String,
+         // Робимо його не required, бо він може прийти з затримкою
+        required: false,
+        default: null
     }
 })
 
@@ -52,24 +58,36 @@ const formattedTime = computed(() => {
 const isWarningTime = computed(() => remainingSeconds.value <= 300)
 
 function startTimer() {
-    remainingSeconds.value = props.durationMinutes * 60
+    // Обчислюємо час закінчення на основі часу початку та тривалості
+    const startTimeMs = new Date(props.startedAt).getTime()
+    const durationMs = props.durationMinutes * 60 * 1000
+    const endTimeMs = startTimeMs + durationMs
 
-    // Створюємо інтервал, який буде спрацьовувати кожну секунду (1000 мс)
-    timerId.value = setInterval(() => {
-        // Зменшуємо лічильник
-        remainingSeconds.value--
+    const updateRemainingTime = () => {
+        const nowMs = new Date().getTime()
+        const secondsLeft = Math.round((endTimeMs - nowMs) / 1000)
+        remainingSeconds.value = Math.max(0, secondsLeft)
 
         if (remainingSeconds.value <= 0) {
             clearInterval(timerId.value)
-            remainingSeconds.value = 0
             emit('time-up')
         }
-    }, 1000)
+    }
+
+    updateRemainingTime()
+    timerId.value = setInterval(updateRemainingTime, 1000)
 }
 
-onMounted(() => {
-    startTimer()
-})
+// Запускаємо таймер, тільки якщо обидва значення існують і валідні
+watch(
+    () => [props.startedAt, props.durationMinutes],
+    ([newStartedAt, newDurationMinutes]) => {
+        if (newStartedAt && newDurationMinutes > 0) {
+            startTimer()
+        }
+    },
+    { immediate: true }
+)
 
 onUnmounted(() => {
     if (timerId.value) {
