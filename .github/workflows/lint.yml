@@ -1,0 +1,48 @@
+name: Run Linters
+
+on:
+  push:
+    branches:
+      - main
+      - frontend
+      - backend
+  pull_request:
+    branches:
+      - main
+      - frontend
+      - backend
+
+jobs:
+  lint:
+    name: Lint JS + Python
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      # 2Setup Node.js (для Vue)
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      # Install frontend deps and run ESLint
+      - name: Run ESLint
+        working-directory: frontend
+        run: |
+          npm ci
+          npx eslint . --max-warnings=0
+
+      # Setup Python (для FastAPI)
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: 3.12
+
+      # Install backend deps and run Flake8
+      - name: Run Flake8
+        working-directory: backend
+        run: |
+          pip install -r requirements.txt flake8
+          flake8 .
