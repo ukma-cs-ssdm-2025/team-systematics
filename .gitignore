@@ -35,3 +35,6 @@ Thumbs.db
 
 # Uvicorn reload state
 .reload*
+
+# PostgreSQL data
+postgres_data
