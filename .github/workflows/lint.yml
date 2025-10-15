@@ -28,7 +28,7 @@ jobs:
 
       # Install frontend deps and run ESLint to fix issues
       - name: Fix with ESLint
-        working-directory: frontend
+        working-directory: client
         run: |
           npm ci
           npx eslint . --fix --max-warnings=0
@@ -41,7 +41,7 @@ jobs:
 
       # Install backend deps and run formatters (black, isort) and linter (flake8)
       - name: Format and Lint Python
-        working-directory: backend
+        working-directory: src/api
         run: |
           pip install -r requirements.txt black isort flake8
           isort .
