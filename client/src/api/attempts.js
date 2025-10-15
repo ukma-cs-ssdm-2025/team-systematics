@@ -26,7 +26,7 @@ export async function startExamAttempt(examId) {
 Сервер не повертає правильні відповіді, щоб користувач не міг їх побачити в коді відповіді */
 export async function getExamAttemptDetails(attemptId) {
      if (USE_MOCK_DATA) {
-        const startTimeKey = `exam_startTime_${attemptId}`
+        const startTimeKey = `exam_start_time_${attemptId}`
         let savedStartedAt = localStorage.getItem(startTimeKey)
 
         if (!savedStartedAt) {
