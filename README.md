@@ -47,6 +47,10 @@ npm run dev
 - [Користувацькі історії](/docs/requirements/user-stories.md)
 - [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
 - [Матриця простежуваності](/docs/requirements/rtm.md)
+<br>
+- [Відстеження прогресу](/docs/code-quality/progress.md)
+- [Статичний аналіз](/docs/code-quality/static-analysis.md)
+- [Огляд коду](/docs/code-quality/review-report.md)
 
 ## Архітектура:
 - [Архітектурні артефакти](/docs/architecture/)
