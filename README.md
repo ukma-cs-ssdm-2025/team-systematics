@@ -7,24 +7,10 @@
 
 ## Інструкції для запуску проекту
 
-З кореневої директорії проекту:
+З директої client:
 
 ```bash
-python3 -m venv venv      # для Mac/Linux
-python -m venv venv       # для Windows
-```
-
-### Активувати середовище Python
-
-```bash
-source venv/bin/activate  # для Mac/Linux
-venv\Scripts\activate     # для Windows
-```
-
-### Встановити залежності
-
-```bash
-pip install -r requirements.txt
+npm run build
 ```
 
 ### Запустити сервер
@@ -33,15 +19,13 @@ pip install -r requirements.txt
 uvicorn src.api.main:app --host 127.0.0.1 --port 3000
 ```
 
-### Додатково
+### Запуск фронтенду (локально)
 
-Сервер також розгорнуто на Render за адресою:
-**[https://systematics.onrender.com](https://systematics.onrender.com)**
+З директорії client:
 
-Swagger UI доступний за посиланням:
-**[https://systematics.onrender.com/api-docs](https://systematics.onrender.com/api-docs)**
-
-> Через обмеження безкоштовного плану, сервер може займати хвилину для запуску, якщо до нього довго не зверталися.
+```
+npm run dev
+```
 
 
 ## Наші учасники:
