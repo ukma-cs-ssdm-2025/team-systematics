@@ -6,6 +6,7 @@ on:
       - main
       - frontend
       - backend
+      - allyxandraaa/add-lint-workflow
 
 jobs:
   lint-and-format:
