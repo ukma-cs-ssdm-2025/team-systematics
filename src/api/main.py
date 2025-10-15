@@ -14,6 +14,11 @@ from .controllers.exams_controller import ExamsController
 from .controllers.attempts_controller import AttemptsController
 from .controllers.auth_controller import AuthController
 
+from .errors.app_errors import install_exception_handlers   
+import os
+from fastapi.staticfiles import StaticFiles
+from fastapi import Request
+from fastapi.responses import FileResponse
 
 def create_app() -> FastAPI:
     servers = [
@@ -67,9 +72,39 @@ def create_app() -> FastAPI:
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(auth_controller.router, prefix="/api")
 
+
+    # This gets the directory where this main.py file is located
+    current_file_path = os.path.dirname(os.path.abspath(__file__))
+    # This constructs the correct path to the 'dist' folder
+    build_dir = os.path.join(current_file_path, "../../client/dist")
+
+    # Path to the assets directory
+    assets_dir = os.path.join(build_dir, "assets")
+    print(assets_dir)
+
+    # Mount the static assets directory
+    # This will serve files like /assets/index-*.js and /assets/index-*.css
+    app.mount(
+        "/assets",
+        StaticFiles(directory=assets_dir),
+        name="assets",
+    )
+
+    # Catch-all route to serve the 'index.html' for any other path
+    # This is essential for SPAs with client-side routing
+    @app.get("/{full_path:path}", include_in_schema=False)
+    async def serve_vue_app(request: Request):
+        index_path = os.path.join(build_dir, "index.html")
+        if os.path.exists(index_path):
+            return FileResponse(index_path)
+        return {"error": "index.html not found"}
+
+    # Serve index.html on root path
     @app.get("/", include_in_schema=False)
-    def root():
-        return {"status": "ok", "docs": "/api-docs"}
+    async def root():
+        index_path = os.path.join(build_dir, "index.html")
+        return FileResponse(index_path)
+
 
     return app
 
