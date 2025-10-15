@@ -4,6 +4,7 @@ import LoginView from '../views/LoginView.vue'
 import MyExamsView from '../views/MyExamsView.vue'
 import ExamAttemptView from '../views/ExamAttemptView.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
+import UnauthorizedView from '../views/UnauthorizedView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -29,6 +30,15 @@ const router = createRouter({
       {
         title: '403: Доступ заборонено'
       }
+    },
+    {
+      path: '/unauthorized',
+      name: 'Unauthorized',
+      component: UnauthorizedView,
+      meta:
+      {
+        title: '401: Неавторизований доступ'
+      },
     },
     {
       path: '/exams',
@@ -57,8 +67,8 @@ router.beforeEach((to) => {
   const { token } = useAuth()
 
   if (to.meta.requiresAuth && !token.value) {
-    // Якщо немає токена — перенаправляємо на /login
-    return '/login'
+    // Якщо немає токена — перенаправляємо на /unauthorized
+    return '/unauthorized'
   }
 })
 

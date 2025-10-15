@@ -26,6 +26,7 @@ http.interceptors.response.use(
             localStorage.removeItem('userRole')
             localStorage.removeItem('userFullName')
             localStorage.removeItem('userMajor')
+            router.push('/unauthorized')
         } else if (status === 403) {
             // Недостатньо прав — перенаправляємо на сторінку 403
             router.push('/forbidden')
