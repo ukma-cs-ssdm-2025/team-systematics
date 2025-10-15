@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from src.api.repositories.user_repository import UserRepository
 from src.core.security import create_access_token
 from src.api.schemas.auth_schema import LoginRequest, LoginResponse, UserResponse
+from src.utils.hashing import verify_password, get_password_hash
 
 
 class AuthService:
@@ -16,7 +17,9 @@ class AuthService:
         if not user:
             raise HTTPException(status_code=401, detail="User not found")
 
-        if user.hashed_password != request.password:
+        print(f"getPasswordHash: {get_password_hash(request.password)}")
+
+        if not verify_password(request.password, user.hashed_password):
             raise HTTPException(status_code=401, detail="Invalid password")
 
         roles = self.user_repo.get_user_roles(user.id)
