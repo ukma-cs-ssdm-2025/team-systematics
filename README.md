@@ -7,48 +7,38 @@
 
 ## Інструкції для запуску проекту
 
-З кореневої директорії проекту:
+### Компіляція Vue проєкту
+
+З директорї client:
 
 ```bash
-python3 -m venv venv      # для Mac/Linux
-python -m venv venv       # для Windows
-```
-
-### Активувати середовище Python
-
-```bash
-source venv/bin/activate  # для Mac/Linux
-venv\Scripts\activate     # для Windows
-```
-
-### Встановити залежності
-
-```bash
-pip install -r requirements.txt
+npm run build
 ```
 
 ### Запустити сервер
+
+З кореневої директорії:
 
 ```bash
 uvicorn src.api.main:app --host 127.0.0.1 --port 3000
 ```
 
-### Додатково
+<hr>
 
-Сервер також розгорнуто на Render за адресою:
-**[https://systematics.onrender.com](https://systematics.onrender.com)**
+### Запуск серверу Vue для розробки
 
-Swagger UI доступний за посиланням:
-**[https://systematics.onrender.com/api-docs](https://systematics.onrender.com/api-docs)**
+З директорії client:
 
-> Через обмеження безкоштовного плану, сервер може займати хвилину для запуску, якщо до нього довго не зверталися.
+```
+npm run dev
+```
 
 
 ## Наші учасники:
-- Малій Олександра - Integration Lead
-- Фломбойм Мирослава - Quality Lead
-- Колінько Владислава - Backend Lead
-- Бакалина Анастасія - Documentation Lead
+- Малій Олександра - Security Analyst
+- Фломбойм Мирослава - Documentation Lead
+- Колінько Владислава - Quality Lead
+- Бакалина Анастасія - Code Reviewer
 
 ## Артефакти:
 - [Командний статут](/docs/requirements/TeamCharter.md)
@@ -57,6 +47,10 @@ Swagger UI доступний за посиланням:
 - [Користувацькі історії](/docs/requirements/user-stories.md)
 - [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
 - [Матриця простежуваності](/docs/requirements/rtm.md)
+<br>
+- [Відстеження прогресу](/docs/code-quality/progress.md)
+- [Статичний аналіз](/docs/code-quality/static-analysis.md)
+- [Огляд коду](/docs/code-quality/review-report.md)
 
 ## Архітектура:
 - [Архітектурні артефакти](/docs/architecture/)
