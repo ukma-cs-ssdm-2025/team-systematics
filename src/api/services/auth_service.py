@@ -1,0 +1,34 @@
+from fastapi import HTTPException
+from sqlalchemy.orm import Session
+from src.api.repositories.user_repository import UserRepository
+from src.core.security import create_access_token
+from src.api.schemas.auth_schema import LoginRequest, LoginResponse, UserResponse
+
+
+class AuthService:
+    def __init__(self):
+        self.user_repo = None
+
+    def login(self, db: Session, request: LoginRequest) -> LoginResponse:
+        self.user_repo = UserRepository(db)
+
+        user = self.user_repo.get_user_by_email(request.email)
+        if not user:
+            raise HTTPException(status_code=401, detail="User not found")
+
+        if user.hashed_password != request.password:
+            raise HTTPException(status_code=401, detail="Invalid password")
+
+        roles = self.user_repo.get_user_roles(user.id)
+        token = create_access_token({"sub": str(user.id), "roles": roles})
+
+        return LoginResponse(
+            token=token,
+            user=UserResponse(
+                id=str(user.id),
+                email=user.email,
+                first_name=user.first_name,
+                last_name=user.last_name,
+                roles=roles
+            )
+        )
