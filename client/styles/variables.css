@@ -1,0 +1,11 @@
+:root {
+    /* Color Palette */
+    --color-white: #eeeeee;
+    --color-gray: #D9D9D9;
+    --color-black: #000000;
+    --color-black-half-opacity: rgba(0, 0, 0, 0.5);
+    --color-purple: #361c31;
+    --color-violet: #512749;
+    --color-lavender: #e1c9e8;
+    --color-red: #ff6b6d;
+}
