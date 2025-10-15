@@ -30,7 +30,7 @@
                         </CButton>
                     </div>
                     <div class="exam-timer">
-                        <Timer :durationMinutes="durationMinutes" :startedAt="startedAt" @time-up="finalizeAndLeave" />
+                        <CTimer :durationMinutes="durationMinutes" :startedAt="startedAt" @time-up="finalizeAndLeave" />
                     </div>
                 </div>
             </div>
@@ -51,7 +51,7 @@ import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
 import CPopup from '../components/global/CPopup.vue'
-import Timer from '../components/ExamAttemptView/Timer.vue'
+import CTimer from '../components/ExamAttemptView/CTimer.vue'
 import { getExamAttemptDetails, saveAnswer, submitExamAttempt } from '../api/attempts.js'
 
 const route = useRoute()
