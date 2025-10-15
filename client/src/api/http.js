@@ -5,7 +5,7 @@ import { useRouter } from 'vue-router'
 const { logout } = useAuth()
 
 export const http = axios.create({
-    baseURL: 'http://127.0.0.1:8000',
+    baseURL: 'http://127.0.0.1:3000',
 })
 
 // Додає токен до кожного запиту
