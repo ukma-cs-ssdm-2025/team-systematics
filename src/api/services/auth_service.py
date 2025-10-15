@@ -23,12 +23,12 @@ class AuthService:
         token = create_access_token({"sub": str(user.id), "roles": roles})
 
         return LoginResponse(
-            token=token,
+            access_token=token,  # Changed from token= to access_token=
+            token_type="bearer",  # Added explicit token_type
             user=UserResponse(
                 id=str(user.id),
                 email=user.email,
-                first_name=user.first_name,
-                last_name=user.last_name,
+                full_name=f"{user.first_name} {user.last_name}".strip(),
                 roles=roles
             )
         )
