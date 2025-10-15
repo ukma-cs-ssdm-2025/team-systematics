@@ -35,7 +35,7 @@ const router = createRouter({
       component: MyExamsView,
       meta:
       {
-        requiresAuth: false,  // доступ лише для авторизованих
+        requiresAuth: true,  // доступ лише для авторизованих
         title: 'Мої іспити'
       }
     },
@@ -44,7 +44,7 @@ const router = createRouter({
       name: 'ExamAttempt',
       component: ExamAttemptView,
       meta: {
-        requiresAuth: false,
+        requiresAuth: true,
         title: 'Проходження іспиту'
       }
     }
