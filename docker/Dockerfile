@@ -23,17 +23,12 @@ FROM python:3.11-slim
 # Set the working directory in the final image
 WORKDIR /app
 
-# Install Python dependencies
-COPY requirements.txt requirements.txt
+COPY ../requirements.txt requirements.txt
+
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Copy the Python backend source code from our local machine
-COPY src/ ./src/
+COPY . .  
 
-# Copy the built frontend static files from the 'builder' stage
-COPY --from=builder /app/client/dist ./client/dist
-
-# Expose the port the app runs on
 EXPOSE 8000
 
 # Run the application

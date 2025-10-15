@@ -3,6 +3,8 @@ import { useAuth } from '../store/loginInfo'
 import LoginView from '../views/LoginView.vue'
 import MyExamsView from '../views/MyExamsView.vue'
 import ExamAttemptView from '../views/ExamAttemptView.vue'
+import ForbiddenView from '../views/ForbiddenView.vue'
+import UnauthorizedView from '../views/UnauthorizedView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -21,13 +23,22 @@ const router = createRouter({
       }
     },
     {
-      // path: '/forbidden'
-      // name: 'Forbidden',
-      // component: ForbiddenView,
-      // meta:
-      // {
-      //   title: '403: Доступ заборонено'
-      // }
+      path: '/forbidden',
+      name: 'Forbidden',
+      component: ForbiddenView,
+      meta:
+      {
+        title: '403: Доступ заборонено'
+      }
+    },
+    {
+      path: '/unauthorized',
+      name: 'Unauthorized',
+      component: UnauthorizedView,
+      meta:
+      {
+        title: '401: Неавторизований доступ'
+      },
     },
     {
       path: '/exams',
@@ -35,7 +46,7 @@ const router = createRouter({
       component: MyExamsView,
       meta:
       {
-        requiresAuth: false,  // доступ лише для авторизованих
+        requiresAuth: true,  // доступ лише для авторизованих
         title: 'Мої іспити'
       }
     },
@@ -44,7 +55,7 @@ const router = createRouter({
       name: 'ExamAttempt',
       component: ExamAttemptView,
       meta: {
-        requiresAuth: false,
+        requiresAuth: true,
         title: 'Проходження іспиту'
       }
     }
@@ -56,18 +67,18 @@ router.beforeEach((to) => {
   const { token } = useAuth()
 
   if (to.meta.requiresAuth && !token.value) {
-    // Якщо немає токена — перенаправляємо на /login
-    return '/login'
+    // Якщо немає токена — перенаправляємо на /unauthorized
+    return '/unauthorized'
   }
 })
 
 router.afterEach((to) => {
-    const defaultTitle = 'Онлайн-платформа іспитів | Systematics'
-    
-    // Встановлюємо title сторінки
-    document.title = to.meta.title 
-        ? `${to.meta.title} | Systematics`
-        : defaultTitle;
+  const defaultTitle = 'Онлайн-платформа іспитів | Systematics'
+
+  // Встановлюємо title сторінки
+  document.title = to.meta.title
+    ? `${to.meta.title} | Systematics`
+    : defaultTitle;
 });
 
 export default router

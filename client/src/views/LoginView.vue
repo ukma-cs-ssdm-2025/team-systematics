@@ -127,7 +127,16 @@ const handleLogin = async (e) => {
 
   try {
     const data = await loginUser(email.value, password.value)
-    login(data.access_token)
+    // Адаптуємо формат даних
+    const adaptedData = {
+      access_token: data.access_token,
+      token_type: "bearer",
+      role: data.user.roles[0],  // Беремо першу роль
+      full_name: data.user.full_name,
+      major_id: null,  // Якщо потрібно, додайте ці поля в схему на бекенді
+      major_name: null
+    }
+    login(adaptedData)
     alert('Вхід успішний!')
     router.push('/exams')
   } catch (err) {
