@@ -1,4 +1,4 @@
-name: Run Linters
+name: Run Linters and Auto-format
 
 on:
   push:
@@ -6,33 +6,31 @@ on:
       - main
       - frontend
       - backend
-  pull_request:
-    branches:
-      - main
-      - frontend
-      - backend
 
 jobs:
-  lint:
-    name: Lint JS + Python
+  lint-and-format:
+    name: Lint, Format, and Commit
     runs-on: ubuntu-latest
+    
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      # 2Setup Node.js (для Vue)
+      # Setup Node.js (for Vue)
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: 20
 
-      # Install frontend deps and run ESLint
-      - name: Run ESLint
+      # Install frontend deps and run ESLint to fix issues
+      - name: Fix with ESLint
         working-directory: frontend
         run: |
           npm ci
-          npx eslint . --max-warnings=0
+          npx eslint . --fix --max-warnings=0
 
       # Setup Python (для FastAPI)
       - name: Setup Python
@@ -40,9 +38,28 @@ jobs:
         with:
           python-version: 3.12
 
-      # Install backend deps and run Flake8
-      - name: Run Flake8
+      # Install backend deps and run formatters (black, isort) and linter (flake8)
+      - name: Format and Lint Python
         working-directory: backend
         run: |
-          pip install -r requirements.txt flake8
+          pip install -r requirements.txt black isort flake8
+          isort .
+          black .
           flake8 .
+
+      # Commit and push changes.
+      - name: Commit and Push Changes
+        run: |
+          git config --global user.name 'github-actions[bot]'
+          git config --global user.email 'github-actions[bot]@users.noreply.github.com'
+          
+          # Check if there are any changes to commit
+          if ! git diff --quiet; then
+            echo "Found changes to commit."
+            git add .
+            # The [skip ci] in the commit message is crucial to prevent an infinite loop
+            git commit -m "style: Auto-format and lint fixes" -m "[skip ci]"
+            git push
+          else
+            echo "No changes to commit."
+          fi
