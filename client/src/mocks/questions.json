@@ -1,0 +1,42 @@
+[
+  {
+    "id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+    "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "question_type": "single_choice",
+    "title": "Чому дорівнює визначник (детермінант) матриці [[a, b], [c, d]]?",
+    "position": 1,
+    "points": 8
+  },
+  {
+    "id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+    "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "question_type": "multi_choice",
+    "title": "Які з наступних тверджень про вектори є вірними?",
+    "position": 2,
+    "points": 15
+  },
+  {
+    "id": "a6c4e3d2-7f8a-4b9c-0d1e-2f3a4b5c6d7e",
+    "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "question_type": "short_answer",
+    "title": "Знайдіть ранг матриці [[1, 2, 3], [2, 4, 6]]. Введіть відповідь у вигляді числа.",
+    "position": 3,
+    "points": 15
+  },
+  {
+    "id": "b7d5f4e3-8a9b-4c0d-1e2f-3a4b5c6d7e8f",
+    "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "question_type": "long_answer",
+    "title": "Поясніть своїми словами, що таке власні вектори та власні значення матриці.",
+    "position": 4,
+    "points": 39
+  },
+  {
+    "id": "c8e6a5f4-9b0c-4d1e-2f3a-4b5c6d7e8f9a",
+    "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+    "question_type": "matching",
+    "title": "Встановіть відповідність між поняттям та його математичним виразом.",
+    "position": 5,
+    "points": 23
+  }
+]

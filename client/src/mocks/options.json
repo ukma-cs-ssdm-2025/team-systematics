@@ -1,0 +1,56 @@
+[
+  {
+    "id": "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a1a",
+    "question_id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+    "text": "ad - bc",
+    "is_correct": true
+  },
+  {
+    "id": "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b",
+    "question_id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+    "text": "ac - bd",
+    "is_correct": false
+  },
+  {
+    "id": "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c3c",
+    "question_id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+    "text": "ad + bc",
+    "is_correct": false
+  },
+  {
+    "id": "4d4d4d4d-4d4d-4d4d-4d4d-4d4d4d4d4d4d",
+    "question_id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+    "text": "ab - cd",
+    "is_correct": false
+  },
+  {
+    "id": "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e",
+    "question_id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+    "text": "Скалярний добуток ортогональних векторів дорівнює нулю.",
+    "is_correct": true
+  },
+  {
+    "id": "6f6f6f6f-6f6f-6f6f-6f6f-6f6f6f6f6f6f",
+    "question_id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+    "text": "Колінеарні вектори завжди мають однакову довжину.",
+    "is_correct": false
+  },
+  {
+    "id": "7a7a7a7a-7a7a-7a7a-7a7a-7a7a7a7a7a7a",
+    "question_id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+    "text": "Векторний добуток двох колінеарних векторів є нуль-вектором.",
+    "is_correct": true
+  },
+  {
+    "id": "8b8b8b8b-8b8b-8b8b-8b8b-8b8b8b8b8b8b",
+    "question_id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+    "text": "Довжина вектора може бути від'ємною.",
+    "is_correct": false
+  },
+  {
+    "id": "9c9c9c9c-9c9c-9c9c-9c9c-9c9c9c9c9c9c",
+    "question_id": "a6c4e3d2-7f8a-4b9c-0d1e-2f3a4b5c6d7e",
+    "text": "1",
+    "is_correct": true
+  }
+]

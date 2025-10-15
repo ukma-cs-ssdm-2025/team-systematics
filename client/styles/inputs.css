@@ -7,7 +7,12 @@ input[type="email"] {
     align-self: stretch;
     border-radius: 30px;
     background: var(--color-white);
-    box-shadow: 0 4px 4px 0 rgba(0, 0, 0, 0.25);
+    border: none;
+}
+
+input:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
 }
 
 label:has(+ input[required])::after {
