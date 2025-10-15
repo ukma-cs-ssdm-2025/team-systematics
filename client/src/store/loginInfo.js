@@ -47,7 +47,6 @@ export function useAuth() {
     localStorage.removeItem('userMajor')
 
     clearTimeout(inactivityTimer)
-    alert('Сесію завершено через бездіяльність або вихід.')
     router.push('/login')
   }
 
