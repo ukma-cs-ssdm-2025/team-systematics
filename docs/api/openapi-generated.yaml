@@ -127,10 +127,12 @@ components:
     Exam:
       properties:
         end_at:
+          example: '2027-10-08T10:00:00Z'
           format: date-time
           title: End At
           type: string
         id:
+          example: a1b2c3d4-e5f6-7890-1234-567890abcdef
           format: uuid
           title: Id
           type: string
@@ -138,27 +140,34 @@ components:
           anyOf:
           - type: string
           - type: 'null'
+          example: Іспит складається з 20 теоретичних питань.
           title: Instructions
         max_attempts:
+          example: 3
           title: Max Attempts
           type: integer
         owner_id:
+          example: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
           format: uuid
           title: Owner Id
           type: string
         pass_threshold:
+          example: 75
           title: Pass Threshold
           type: integer
         question_count:
           default: 0
           description: Number of available questions
+          example: 20
           title: Question Count
           type: integer
         start_at:
+          example: '2024-10-08T10:00:00Z'
           format: date-time
           title: Start At
           type: string
         title:
+          example: Вступ до Docker
           title: Title
           type: string
       required:
@@ -175,6 +184,7 @@ components:
       properties:
         end_at:
           description: End datetime (UTC); must be in the future
+          example: '2027-10-08T10:00:00Z'
           format: date-time
           title: End At
           type: string
@@ -184,33 +194,39 @@ components:
             type: string
           - type: 'null'
           description: Markdown/HTML instructions
+          example: Іспит складається з 20 теоретичних питань.
           title: Instructions
         max_attempts:
           default: 1
           description: Max attempts per user
+          example: 3
           maximum: 10.0
           minimum: 1.0
           title: Max Attempts
           type: integer
         owner_id:
           description: Instructor user id
+          example: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
           format: uuid
           title: Owner Id
           type: string
         pass_threshold:
           default: 60
           description: Passing threshold in percent
+          example: 75
           maximum: 100.0
           minimum: 0.0
           title: Pass Threshold
           type: integer
         start_at:
           description: Start datetime (UTC); must be in the past
+          example: '2024-10-08T10:00:00Z'
           format: date-time
           title: Start At
           type: string
         title:
           description: Exam title
+          example: Вступ до Docker
           maxLength: 100
           minLength: 3
           title: Title
@@ -230,6 +246,7 @@ components:
             type: string
           - type: 'null'
           description: End datetime (UTC); must be in the future
+          example: '2028-02-20T18:00:00Z'
           title: End At
         instructions:
           anyOf:
@@ -237,6 +254,7 @@ components:
             type: string
           - type: 'null'
           description: Markdown/HTML instructions
+          example: 'Оновлені інструкції: додано практичне завдання.'
           title: Instructions
         max_attempts:
           anyOf:
@@ -245,6 +263,7 @@ components:
             type: integer
           - type: 'null'
           description: Max attempts per user
+          example: 2
           title: Max Attempts
         pass_threshold:
           anyOf:
@@ -253,6 +272,7 @@ components:
             type: integer
           - type: 'null'
           description: Passing threshold in percent
+          example: 80
           title: Pass Threshold
         start_at:
           anyOf:
@@ -260,26 +280,38 @@ components:
             type: string
           - type: 'null'
           description: Start datetime (UTC); must be in the past
+          example: '2024-11-15T09:00:00Z'
           title: Start At
         title:
           anyOf:
-          - type: integer
           - maxLength: 100
             minLength: 3
             type: string
           - type: 'null'
           description: Exam title
+          example: 'Docker: Просунутий рівень'
           title: Title
       title: ExamUpdate
       type: object
     ExamsPage:
       properties:
         items:
+          example:
+          - end_at: '2027-10-08T10:00:00Z'
+            id: a1b2c3d4-e5f6-7890-1234-567890abcdef
+            instructions: Іспит складається з 20 теоретичних питань.
+            max_attempts: 3
+            owner_id: c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e
+            pass_threshold: 75
+            question_count: 20
+            start_at: '2024-10-08T10:00:00Z'
+            title: Вступ до Docker
           items:
             $ref: '#/components/schemas/Exam'
           title: Items
           type: array
         total:
+          example: 1
           title: Total
           type: integer
       required:
@@ -332,10 +364,13 @@ paths:
     post:
       operationId: add_answer_api_attempts__attempt_id__answers_post
       parameters:
-      - in: path
+      - description: Attempt id
+        example: 1a8b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d
+        in: path
         name: attempt_id
         required: true
         schema:
+          description: Attempt id
           format: uuid
           title: Attempt Id
           type: string
@@ -391,7 +426,7 @@ paths:
           title: Api-Version
           type: string
       responses:
-        '200':
+        '201':
           content:
             application/json:
               schema:
@@ -490,10 +525,13 @@ paths:
     delete:
       operationId: delete_exam_api_exams__exam_id__delete
       parameters:
-      - in: path
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
         name: exam_id
         required: true
         schema:
+          description: Exam id
           format: uuid
           title: Exam Id
           type: string
@@ -522,6 +560,7 @@ paths:
       operationId: get_exam_api_exams__exam_id__get
       parameters:
       - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
         in: path
         name: exam_id
         required: true
@@ -558,10 +597,13 @@ paths:
     patch:
       operationId: update_exam_api_exams__exam_id__patch
       parameters:
-      - in: path
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
         name: exam_id
         required: true
         schema:
+          description: Exam id
           format: uuid
           title: Exam Id
           type: string
@@ -600,10 +642,13 @@ paths:
     post:
       operationId: start_attempt_api_exams__exam_id__attempts_post
       parameters:
-      - in: path
+      - description: Exam id
+        example: f47ac10b-58cc-4372-a567-0e02b2c3d479
+        in: path
         name: exam_id
         required: true
         schema:
+          description: Exam id
           format: uuid
           title: Exam Id
           type: string
@@ -639,5 +684,7 @@ paths:
       tags:
       - Exams
 servers:
-- description: Local dev
-  url: http://localhost:3000
+- description: Production server
+  url: https://systematics.onrender.com
+- description: Local development server
+  url: http://127.0.0.1:3000

@@ -1,0 +1,114 @@
+{
+  "attempt_id": "a4b8c1d9-e2f3-4a5b-6c7d-8e9f0a1b2c3d",
+  "exam_id": "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b",
+  "exam_title": "Іспит з \"Лінійної алгебри та аналітичної геометрії\"",
+  "duration_minutes": 90,
+  "status": "in_progress",
+  "started_at": "2025-12-22T16:00:00+02:00",
+  "due_at": "2025-12-22T18:00:00+02:00",
+  "saved_answers": {},
+  "questions": [
+    {
+      "id": "e4a2c1b0-5d6e-4f7a-8b9c-0d1e2f3a4b5c",
+      "position": 1,
+      "question_type": "single_choice",
+      "title": "Чому дорівнює визначник (детермінант) матриці [[a, b], [c, d]]?",
+      "points": 8,
+      "options": [
+        {
+          "id": "1a1a1a1a-1a1a-1a1a-1a1a-1a1a1a1a1a1a",
+          "text": "ad - bc"
+        },
+        {
+          "id": "2b2b2b2b-2b2b-2b2b-2b2b-2b2b2b2b2b2b",
+          "text": "ac - bd"
+        },
+        {
+          "id": "3c3c3c3c-3c3c-3c3c-3c3c-3c3c3c3c3c3c",
+          "text": "ad + bc"
+        },
+        {
+          "id": "4d4d4d4d-4d4d-4d4d-4d4d-4d4d4d4d4d4d",
+          "text": "ab - cd"
+        }
+      ]
+    },
+    {
+      "id": "f5b3d2c1-6e7f-4a8b-9c0d-1e2f3a4b5c6d",
+      "position": 2,
+      "question_type": "multi_choice",
+      "title": "Які з наступних тверджень про вектори є вірними?",
+      "points": 15,
+      "options": [
+        {
+          "id": "5e5e5e5e-5e5e-5e5e-5e5e-5e5e5e5e5e5e",
+          "text": "Скалярний добуток ортогональних векторів дорівнює нулю."
+        },
+        {
+          "id": "6f6f6f6f-6f6f-6f6f-6f6f-6f6f6f6f6f6f",
+          "text": "Колінеарні вектори завжди мають однакову довжину."
+        },
+        {
+          "id": "7a7a7a7a-7a7a-7a7a-7a7a-7a7a7a7a7a7a",
+          "text": "Векторний добуток двох колінеарних векторів є нуль-вектором."
+        },
+        {
+          "id": "8b8b8b8b-8b8b-8b8b-8b8b-8b8b8b8b8b8b",
+          "text": "Довжина вектора може бути від'ємною."
+        }
+      ]
+    },
+    {
+      "id": "a6c4e3d2-7f8a-4b9c-0d1e-2f3a4b5c6d7e",
+      "position": 3,
+      "question_type": "short_answer",
+      "title": "Знайдіть ранг матриці [[1, 2, 3], [2, 4, 6]]. Введіть відповідь у вигляді числа.",
+      "points": 15,
+      "input_type": "number"
+    },
+    {
+      "id": "b7d5f4e3-8a9b-4c0d-1e2f-3a4b5c6d7e8f",
+      "position": 4,
+      "question_type": "long_answer",
+      "title": "Поясніть своїми словами, що таке власні вектори та власні значення матриці.",
+      "points": 39
+    },
+    {
+      "id": "c8e6a5f4-9b0c-4d1e-2f3a-4b5c6d7e8f9a",
+      "position": 5,
+      "question_type": "matching",
+      "title": "Встановіть відповідність між поняттям та його математичним виразом.",
+      "points": 23,
+      "matching_data": {
+        "prompts": [
+          {
+            "id": "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1",
+            "text": "Довжина вектора a = (x, y, z)"
+          },
+          {
+            "id": "e2e2e2e2-e2e2-e2e2-e2e2-e2e2e2e2e2e2",
+            "text": "Скалярний добуток векторів a та b"
+          },
+          {
+            "id": "f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3",
+            "text": "Рівняння площини"
+          }
+        ],
+        "matches": [
+          {
+            "id": "d1d1d1d1-d1d1-d1d1-d1d1-d1d1d1d1d1d1",
+            "text": "√(x² + y² + z²)"
+          },
+          {
+            "id": "e2e2e2e2-e2e2-e2e2-e2e2-e2e2e2e2e2e2",
+            "text": "|a| * |b| * cos(θ)"
+          },
+          {
+            "id": "f3f3f3f3-f3f3-f3f3-f3f3-f3f3f3f3f3f3",
+            "text": "Ax + By + Cz + D = 0"
+          }
+        ]
+      }
+    }
+  ]
+}
