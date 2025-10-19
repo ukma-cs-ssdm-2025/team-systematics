@@ -2,7 +2,8 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, Query, Path, status, Depends
 from uuid import UUID
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
-from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from src.api.schemas.attempts import Attempt
+from src.utils.auth import get_current_user_id
 from src.api.services.exams_service import ExamsService
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -12,7 +13,7 @@ class ExamsController:
         self.service = service
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
 
-        @self.router.get("", response_model=ExamsPage, summary="List exams")
+        @self.router.get("", summary="List exams")
         async def list_exams(db: Session = Depends(get_db), limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
             return self.service.list(db, limit=limit, offset=offset)
 
@@ -34,5 +35,5 @@ class ExamsController:
             return None
 
         @self.router.post("/{exam_id}/attempts", response_model=Attempt, status_code=status.HTTP_201_CREATED, summary="Start an attempt for exam")
-        async def start_attempt(payload: AttemptStartRequest, exam_id: UUID, db: Session = Depends(get_db)):
-            return self.service.start_attempt(db, exam_id, payload)
+        async def start_attempt(user_id: UUID = Depends(get_current_user_id), exam_id: UUID = Path(...), db: Session = Depends(get_db)):
+            return self.service.start_attempt(db, exam_id, user_id)

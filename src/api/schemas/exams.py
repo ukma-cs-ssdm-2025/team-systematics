@@ -43,6 +43,11 @@ class ExamCreate(BaseModel):
         example="2027-10-08T10:00:00Z",
         description="End datetime (UTC)"
     )
+    duration_minutes: int = Field(
+        60,
+        description="Duration of the exam in minutes",
+        example=120
+    )
     max_attempts: conint(ge=1, le=10) = Field(
         1,
         description="Max attempts per user",
@@ -83,6 +88,11 @@ class ExamUpdate(BaseModel):
         description="End datetime (UTC)",
         example="2028-02-20T18:00:00Z"
     )
+    duration_minutes: Optional[int] = Field(
+        None,
+        description="Duration of the exam in minutes",
+        example=120
+    )
     max_attempts: Optional[conint(ge=1, le=10)] = Field(
         None,
         description="Max attempts per user",
@@ -118,6 +128,11 @@ class Exam(BaseModel):
         ...,
         example="2027-10-08T10:00:00Z"
     )
+    duration_minutes: int = Field(
+        ...,
+        example=60,
+        description="Duration of the exam in minutes"
+    )
     max_attempts: int = Field(
         ...,
         example=3
@@ -149,6 +164,7 @@ class ExamsPage(BaseModel):
                 "start_at": "2024-10-08T10:00:00Z",
                 "end_at": "2027-10-08T10:00:00Z",
                 "max_attempts": 3,
+                "duration_minutes": 120,
                 "pass_threshold": 75,
                 "owner_id": "c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e",
                 "question_count": 20
