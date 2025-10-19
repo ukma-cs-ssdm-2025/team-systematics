@@ -1,62 +1,66 @@
-from __future__ import annotations
-from typing import Dict, Optional, List
-from uuid import UUID, uuid4
+from sqlalchemy.orm import Session
+from uuid import UUID
 from datetime import datetime, timedelta
-from threading import RLock
-
-from ..schemas.attempts import Attempt, Answer
+# НОВЕ: Імпортуємо Optional
+from typing import Optional
+from src.models.exam import Attempt, Answer
+from src.api.schemas.attempts import AnswerUpsert
 
 class AttemptsRepository:
-    def __init__(self) -> None:
-        self._attempts: Dict[UUID, Attempt] = {}
-        self._answers: Dict[UUID, Dict[UUID, Answer]] = {}
-        self._lock = RLock()
+    def __init__(self, db: Session):
+        self.db = db
 
-    def create_attempt(self, exam_id: UUID, user_id: UUID) -> Attempt:
-        with self._lock:
-            attempt_id = uuid4()
-            now = datetime.utcnow()
-            due = now + timedelta(seconds=300)
-            att = Attempt(
-                id=attempt_id,
-                exam_id=exam_id,
-                user_id=user_id,
-                status="in_progress",
-                started_at=now,
-                due_at=due,
-                submitted_at=None,
-                score_percent=None,
-            )
-            self._attempts[attempt_id] = att
-            self._answers[attempt_id] = {}
-            return att
+    def create_attempt(self, exam_id: UUID, user_id: UUID, duration_minutes: int) -> Attempt:
+        due_at = datetime.utcnow() + timedelta(minutes=duration_minutes)
+        new_attempt = Attempt(
+            exam_id=exam_id,
+            user_id=user_id,
+            status="in_progress",
+            started_at=datetime.utcnow(),
+            due_at=due_at
+        )
+        self.db.add(new_attempt)
+        self.db.commit()
+        self.db.refresh(new_attempt)
+        return new_attempt
 
+    # ВИПРАВЛЕНО: Замінено 'Attempt | None' на 'Optional[Attempt]'
     def get_attempt(self, attempt_id: UUID) -> Optional[Attempt]:
-        return self._attempts.get(attempt_id)
+        return self.db.query(Attempt).filter(Attempt.id == attempt_id).first()
 
-    def upsert_answer(self, attempt_id: UUID, question_id: UUID, text: str | None, selected_option_ids: list[UUID] | None) -> Answer:
-        with self._lock:
-            if attempt_id not in self._answers:
-                self._answers[attempt_id] = {}
-            ans_id = uuid4()
-            ans = Answer(
-                id=ans_id,
+    def upsert_answer(self, attempt_id: UUID, payload: AnswerUpsert) -> Answer:
+        answer_value = {
+            "text": payload.text,
+            "selected_option_ids": [str(uuid) for uuid in payload.selected_option_ids] if payload.selected_option_ids else None
+        }
+
+        answer = self.db.query(Answer).filter(
+            Answer.attempt_id == attempt_id,
+            Answer.question_id == payload.question_id
+        ).first()
+
+        if answer:
+            answer.value = answer_value
+        else:
+            answer = Answer(
                 attempt_id=attempt_id,
-                question_id=question_id,
-                text=text,
-                selected_option_ids=selected_option_ids,
-                saved_at=datetime.utcnow(),
+                question_id=payload.question_id,
+                value=answer_value
             )
-            self._answers[attempt_id][question_id] = ans
-            return ans
+            self.db.add(answer)
+        
+        self.db.commit()
+        self.db.refresh(answer)
+        return answer
 
+    # ВИПРАВЛЕНО: Замінено 'Attempt | None' на 'Optional[Attempt]'
     def submit_attempt(self, attempt_id: UUID) -> Optional[Attempt]:
-        with self._lock:
-            att = self._attempts.get(attempt_id)
-            if not att:
-                return None
-            if att.status != "in_progress":
-                return att
-            att = att.model_copy(update={"status": "submitted", "submitted_at": datetime.utcnow()})
-            self._attempts[attempt_id] = att
-            return att
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+        
+        attempt.status = "submitted"
+        attempt.submitted_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt
