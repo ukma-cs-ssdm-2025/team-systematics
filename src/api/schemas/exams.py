@@ -112,6 +112,8 @@ class Exam(BaseModel):
         example=20
     )
 
+    model_config = {"from_attributes": True}
+
 class ExamsPage(BaseModel):
     items: List[Exam] = Field(
         ...,
@@ -133,6 +135,8 @@ class ExamsPage(BaseModel):
         ...,
         example=1
     )
+
+    model_config = {"from_attributes": True}
 
 @validator("end_at")
 def end_at_must_be_after_start_at(cls, v, values, **kwargs):

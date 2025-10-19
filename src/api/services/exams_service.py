@@ -10,7 +10,8 @@ class ExamsService:
     def list(self, db: Session, limit: int, offset: int) -> ExamsPage:
         repo = ExamsRepository(db)
         items, total = repo.list(limit=limit, offset=offset)
-        return ExamsPage(items=items, total=total)
+        pydantic_items = [Exam.model_validate(item) for item in items]
+        return ExamsPage(items=pydantic_items, total=total)
 
     def get(self, db: Session, exam_id: UUID) -> Exam:
         repo = ExamsRepository(db)
