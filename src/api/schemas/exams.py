@@ -2,7 +2,25 @@ from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
-from pydantic import BaseModel, Field, conint, constr, validator, PastDatetime, FutureDatetime
+from pydantic import BaseModel, Field, conint, constr, validator
+
+def end_at_must_be_after_start_at(cls, v, values):
+    """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
+
+    Args:
+        v: Значення поля `end_at`, яке проходить валідацію.
+        values: Словник значень інших полів моделі, які вже пройшли валідацію.
+
+    Returns:
+        Не змінене значення `end_at`, якщо валідація успішна.
+
+    Raises:
+        ValueError: Якщо `end_at` є раніше або збігається з `start_at`.
+    """
+    if "start_at" in values and values["start_at"] and v:
+        if v <= values["start_at"]:
+            raise ValueError("end_at must be after start_at")
+    return v
 
 class ExamCreate(BaseModel):
     title: constr(min_length=3, max_length=100) = Field(
@@ -15,15 +33,15 @@ class ExamCreate(BaseModel):
         description="Markdown/HTML instructions",
         example="Іспит складається з 20 теоретичних питань."
     )
-    start_at: PastDatetime = Field(
+    start_at: datetime = Field(
         ...,
-        example="2024-10-08T10:00:00Z",
-        description="Start datetime (UTC); must be in the past"
+        example="2026-10-08T10:00:00Z",
+        description="Start datetime (UTC)"
     )
-    end_at: FutureDatetime = Field(
+    end_at: datetime = Field(
         ...,
         example="2027-10-08T10:00:00Z",
-        description="End datetime (UTC); must be in the future"
+        description="End datetime (UTC)"
     )
     max_attempts: conint(ge=1, le=10) = Field(
         1,
@@ -41,6 +59,9 @@ class ExamCreate(BaseModel):
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
 
+    _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
+
+
 class ExamUpdate(BaseModel):
     title: Optional[constr(min_length=3, max_length=100)] = Field(
         None,
@@ -52,14 +73,14 @@ class ExamUpdate(BaseModel):
         description="Markdown/HTML instructions",
         example="Оновлені інструкції: додано практичне завдання."
     )
-    start_at: Optional[PastDatetime] = Field(
+    start_at: Optional[datetime] = Field(
         None,
-        description="Start datetime (UTC); must be in the past",
-        example="2024-11-15T09:00:00Z"
+        description="Start datetime (UTC)",
+        example="2026-11-15T09:00:00Z"
     )
-    end_at: Optional[FutureDatetime] = Field(
+    end_at: Optional[datetime] = Field(
         None,
-        description="End datetime (UTC); must be in the future",
+        description="End datetime (UTC)",
         example="2028-02-20T18:00:00Z"
     )
     max_attempts: Optional[conint(ge=1, le=10)] = Field(
@@ -72,6 +93,9 @@ class ExamUpdate(BaseModel):
         description="Passing threshold in percent",
         example=80
     )
+
+    # Attach the same validator to this model
+    _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class Exam(BaseModel):
     id: UUID = Field(
@@ -86,17 +110,17 @@ class Exam(BaseModel):
         None,
         example="Іспит складається з 20 теоретичних питань."
     )
-    start_at: PastDatetime = Field(
+    start_at: datetime = Field(
         ...,
         example="2024-10-08T10:00:00Z"
     )
-    end_at: FutureDatetime = Field(
+    end_at: datetime = Field(
         ...,
         example="2027-10-08T10:00:00Z"
     )
     max_attempts: int = Field(
         ...,
-        example=3 
+        example=3
     )
     pass_threshold: int = Field(
         ...,
@@ -137,9 +161,3 @@ class ExamsPage(BaseModel):
     )
 
     model_config = {"from_attributes": True}
-
-@validator("end_at")
-def end_at_must_be_after_start_at(cls, v, values, **kwargs):
-    if "start_at" in values and values["start_at"] is not None and v <= values["start_at"]:
-        raise ValueError("end_at must be after start_at")
-    return v
