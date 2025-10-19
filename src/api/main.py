@@ -23,7 +23,7 @@ from fastapi.responses import FileResponse
 def create_app() -> FastAPI:
     servers = [
         {"url": "https://systematics.onrender.com", "description": "Production server"},
-        {"url": "http://127.0.0.1:8000", "description": "Local development server"},
+        {"url": "http://127.0.0.1:3000", "description": "Local development server"},
     ]
 
     app = FastAPI(
