@@ -1,8 +1,8 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum
+from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from ..db.session import Base
+from src.api.database import Base 
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -44,8 +44,6 @@ class Question(Base):
     
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
-    # Для matching questions
-    matching_data = Column(JSONB) 
 
 class Option(Base):
     __tablename__ = "options"
@@ -77,10 +75,15 @@ class Answer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     attempt_id = Column(UUID(as_uuid=True), ForeignKey("attempts.id"), nullable=False)
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
-    
-    # Використовуємо JSONB для гнучкості збереження різних типів відповідей
-    # (текст, id опції, масив id, об'єкт для matching)
-    value = Column(JSONB) 
+    answer_text = Column(String, nullable=True)
+    answer_json = Column(JSONB, nullable=True)
+    saved_at = Column(TIMESTAMP(timezone=True), nullable=False) 
     
     attempt = relationship("Attempt", back_populates="answers")
     question = relationship("Question")
+    selected_options = relationship("AnswerOption", cascade="all, delete-orphan")
+
+class AnswerOption(Base):
+    __tablename__ = "answer_options"
+    answer_id = Column(UUID(as_uuid=True), ForeignKey("answers.id"), primary_key=True)
+    selected_option_id = Column(UUID(as_uuid=True), ForeignKey("options.id"), primary_key=True)

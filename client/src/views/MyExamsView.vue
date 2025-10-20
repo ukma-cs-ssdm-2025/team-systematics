@@ -127,7 +127,7 @@ async function handleStartExam() {
 
     try {
         const attemptData = await startExamAttempt(selectedExam.value.id)
-        const attemptId = attemptData.attempt_id
+        const attemptId = attemptData.id
         router.push(`/exam/${attemptId}`)
     } catch (err) {
         console.error("Помилка при спробі розпочати іспит:", err)

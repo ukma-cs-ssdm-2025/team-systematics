@@ -1,44 +1,60 @@
-from __future__ import annotations
-from typing import List, Tuple
+from sqlalchemy.orm import Session
 from uuid import UUID
-
-from ..repositories.exams_repository import ExamsRepository
-from ..repositories.attempts_repository import AttemptsRepository
-from ..schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
-from ..schemas.attempts import AttemptStartRequest, Attempt
-from ..errors.app_errors import NotFoundError
+from src.api.repositories.exams_repository import ExamsRepository
+from src.api.repositories.attempts_repository import AttemptsRepository
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
+from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from src.api.errors.app_errors import NotFoundError
+from datetime import datetime, timezone
 
 class ExamsService:
-    def __init__(self, exams_repo: ExamsRepository, attempts_repo: AttemptsRepository) -> None:
-        self.exams_repo = exams_repo
-        self.attempts_repo = attempts_repo
+    def list(self, db: Session, limit: int, offset: int):
+        repo = ExamsRepository(db)
+        items, _ = repo.list(limit=limit, offset=offset)
+        now = datetime.now(timezone.utc)
+        future = []
+        completed = []
+        for item in items:
+            exam = Exam.model_validate(item)
+            if exam.end_at > now:
+                future.append(exam)
+            else:
+                completed.append(exam)
+        return {"future": future, "completed": completed}
 
-    def list(self, limit: int, offset: int) -> ExamsPage:
-        items, total = self.exams_repo.list(limit=limit, offset=offset)
-        return ExamsPage(items=items, total=total)
-
-    def get(self, exam_id: UUID) -> Exam:
-        exam = self.exams_repo.get(exam_id)
+    def get(self, db: Session, exam_id: UUID) -> Exam:
+        repo = ExamsRepository(db)
+        exam = repo.get(exam_id)
         if not exam:
-            raise NotFoundError()
+            raise NotFoundError("Exam not found")
         return exam
 
-    def create(self, payload: ExamCreate) -> Exam:
-        return self.exams_repo.create(payload)
+    def create(self, db: Session, payload: ExamCreate) -> Exam:
+        repo = ExamsRepository(db)
+        return repo.create(payload)
 
-    def update(self, exam_id: UUID, patch: ExamUpdate) -> Exam:
-        updated = self.exams_repo.update(exam_id, patch)
+    def update(self, db: Session, exam_id: UUID, patch: ExamUpdate) -> Exam:
+        repo = ExamsRepository(db)
+        updated = repo.update(exam_id, patch)
         if not updated:
-            raise NotFoundError()
+            raise NotFoundError("Exam not found for update")
         return updated
 
-    def delete(self, exam_id: UUID) -> None:
-        ok = self.exams_repo.delete(exam_id)
+    def delete(self, db: Session, exam_id: UUID) -> None:
+        repo = ExamsRepository(db)
+        ok = repo.delete(exam_id)
         if not ok:
-            raise NotFoundError()
+            raise NotFoundError("Exam not found for delete")
 
-    def start_attempt(self, exam_id: UUID, payload: AttemptStartRequest) -> Attempt:
-        exam = self.exams_repo.get(exam_id)
+    def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
+        exams_repo = ExamsRepository(db)
+        exam = exams_repo.get(exam_id)
         if not exam:
-            raise NotFoundError()
-        return self.attempts_repo.create_attempt(exam_id=exam_id, user_id=payload.user_id)
+            raise NotFoundError("Exam not found")
+            
+        attempts_repo = AttemptsRepository(db)
+        return attempts_repo.create_attempt(
+            exam_id=exam_id,
+            user_id=user_id,
+            duration_minutes=exam.duration_minutes
+        )
