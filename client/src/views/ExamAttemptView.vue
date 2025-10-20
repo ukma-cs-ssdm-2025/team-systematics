@@ -166,7 +166,7 @@
 
             if (isLastQuestion.value) {
                 await finalizeAndLeave()
-                router.push('/exams')
+                router.push(`/exams-results/{attemptId}`)
             } else {
                 currentQuestionIndex.value++
                 localStorage.setItem(localStorageKey, currentQuestionIndex.value)
@@ -202,8 +202,6 @@
             if (resolveNavigation) {
                 resolveNavigation(true)
                 resolveNavigation = null
-            } else {
-                router.push('/exams')
             }
         } catch (err) {
             console.error("Помилка при завершенні іспиту:", err)
