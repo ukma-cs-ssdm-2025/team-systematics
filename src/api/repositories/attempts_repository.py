@@ -24,8 +24,8 @@ class AttemptsRepository:
             exam_id=exam_id,
             user_id=user_id,
             status="in_progress",
-            started_at=started_at,
-            due_at=due_at,
+            started_at=to_utc_iso(started_at),
+            due_at=to_utc_iso(due_at),
         )
         self.db.add(new_attempt)
         self.db.commit()
@@ -36,23 +36,26 @@ class AttemptsRepository:
         return self.db.query(Attempt).filter(Attempt.id == attempt_id).first()
 
     def upsert_answer(self, attempt_id: UUID, payload: AnswerUpsert) -> Answer:
-        answer_value = {
-            "text": payload.text,
-            "selected_option_ids": [str(u) for u in payload.selected_option_ids] if payload.selected_option_ids else None,
-        }
-
         answer = self.db.query(Answer).filter(
             Answer.attempt_id == attempt_id,
             Answer.question_id == payload.question_id,
         ).first()
 
+        selected_options = [str(u) for u in payload.selected_option_ids] if payload.selected_option_ids else None
+        answer_json_data = {"selected_option_ids": selected_options}
+        current_time = datetime.utcnow()
+
         if answer:
-            answer.value = answer_value
+            answer.answer_text = payload.text
+            answer.answer_json = answer_json_data
+            answer.saved_at = current_time
         else:
             answer = Answer(
                 attempt_id=attempt_id,
                 question_id=payload.question_id,
-                value=answer_value,
+                answer_text=payload.text,
+                answer_json=answer_json_data,
+                saved_at=current_time,
             )
             self.db.add(answer)
 
