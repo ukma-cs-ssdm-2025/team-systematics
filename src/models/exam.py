@@ -44,8 +44,6 @@ class Question(Base):
     
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
-    # Для matching questions
-    matching_data = Column(JSONB) 
 
 class Option(Base):
     __tablename__ = "options"
