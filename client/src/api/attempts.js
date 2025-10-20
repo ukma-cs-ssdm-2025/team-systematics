@@ -62,7 +62,7 @@ export async function saveAnswer(attemptId, questionId, answer) {
     }
 
     try {
-        const url = `/api/exam-attempts/${attemptId}/answers`
+        const url = `/api/attempts/${attemptId}/answers`
 
         // Формуємо тіло запиту, яке буде надіслано на сервер
         const payload = {
