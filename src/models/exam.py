@@ -1,5 +1,5 @@
 import uuid
-from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean
+from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from src.api.database import Base 
@@ -75,10 +75,9 @@ class Answer(Base):
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
     attempt_id = Column(UUID(as_uuid=True), ForeignKey("attempts.id"), nullable=False)
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
-    
-    # Використовуємо JSONB для гнучкості збереження різних типів відповідей
-    # (текст, id опції, масив id, об'єкт для matching)
-    value = Column(JSONB) 
+    answer_text = Column(String, nullable=True)
+    answer_json = Column(JSONB, nullable=True)
+    saved_at = Column(TIMESTAMP(timezone=True), nullable=False) 
     
     attempt = relationship("Attempt", back_populates="answers")
     question = relationship("Question")
