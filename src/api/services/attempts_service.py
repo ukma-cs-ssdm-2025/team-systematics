@@ -22,3 +22,10 @@ class AttemptsService:
         if att.status != "in_progress":
             raise ConflictError("Attempt is already submitted")
         return repo.submit_attempt(attempt_id)
+
+    def get_attempt_details(self, db: Session, attempt_id: UUID):
+        repo = AttemptsRepository(db)
+        att = repo.get_attempt_with_details(attempt_id)
+        if not att:
+            raise NotFoundError("Attempt not found")
+        return att

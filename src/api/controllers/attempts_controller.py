@@ -18,3 +18,7 @@ class AttemptsController:
         @self.router.post("/{attempt_id}/submit", response_model=Attempt, summary="Submit attempt")
         async def submit(attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.submit(db, attempt_id)
+
+        @self.router.get("/{attempt_id}", summary="Get attempt details for UI")
+        async def get_attempt_details(attempt_id: UUID, db: Session = Depends(get_db)):
+            return self.service.get_attempt_details(db, attempt_id)
