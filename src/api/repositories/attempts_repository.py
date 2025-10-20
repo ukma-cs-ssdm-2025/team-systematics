@@ -4,7 +4,7 @@ from datetime import datetime, timedelta
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
-from src.models.exam import Attempt, Answer, Exam, Question, Option
+from src.models.exam import Attempt, Answer, Exam, Question, Option, AnswerOption
 from src.models.matching import MatchingOption
 from src.api.schemas.attempts import AnswerUpsert
 
@@ -36,28 +36,51 @@ class AttemptsRepository:
         return self.db.query(Attempt).filter(Attempt.id == attempt_id).first()
 
     def upsert_answer(self, attempt_id: UUID, payload: AnswerUpsert) -> Answer:
+        question = self.db.query(Question).filter(Question.id == payload.question_id).first()
+        if not question:
+            raise ValueError("Question not found")
+
         answer = self.db.query(Answer).filter(
             Answer.attempt_id == attempt_id,
             Answer.question_id == payload.question_id,
         ).first()
 
-        selected_options = [str(u) for u in payload.selected_option_ids] if payload.selected_option_ids else None
-        answer_json_data = {"selected_option_ids": selected_options}
         current_time = datetime.utcnow()
 
-        if answer:
-            answer.answer_text = payload.text
-            answer.answer_json = answer_json_data
-            answer.saved_at = current_time
-        else:
+        if not answer:
             answer = Answer(
                 attempt_id=attempt_id,
                 question_id=payload.question_id,
-                answer_text=payload.text,
-                answer_json=answer_json_data,
-                saved_at=current_time,
+                saved_at=current_time, 
             )
             self.db.add(answer)
+            self.db.flush()
+        else:
+            answer.saved_at = current_time
+
+        answer.saved_at = current_time
+
+        q_type = str(question.question_type.value)
+
+        if q_type in ('single_choice', 'multi_choice'):
+            self.db.query(AnswerOption).filter(
+                AnswerOption.answer_id == answer.id
+            ).delete(synchronize_session=False)
+
+            if payload.selected_option_ids:
+                for option_id in payload.selected_option_ids:
+                    new_answer_option = AnswerOption(
+                        answer_id=answer.id,
+                        selected_option_id=option_id
+                    )
+                    self.db.add(new_answer_option)
+            
+            answer.answer_text = None
+            answer.answer_json = None
+
+        elif q_type in ('short_answer', 'long_answer'):
+            answer.answer_text = payload.text
+            answer.answer_json = None
 
         self.db.commit()
         self.db.refresh(answer)
