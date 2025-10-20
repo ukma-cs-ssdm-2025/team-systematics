@@ -1,5 +1,6 @@
 import { http } from '../api/http.js'
 import mockAttemptData from '../mocks/examAttempts.json'
+import mockResultsData from '../mocks/examAttemptResults.json'
 
 // Тимчасово використовуємо заглушку
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
@@ -114,5 +115,21 @@ export async function submitExamAttempt(attemptId) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти спробу. Спробуйте ще раз.')
+    }
+}
+
+export async function getExamAttemptResults(attemptId) {
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        return mockResultsData
+    }
+
+    try {
+        const response = await http.get(`/api/attempts/${attemptId}/results`);
+        return response.data;
+     } catch (error) {
+        if (error.response && error.response.data && error.response.data.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося отримати результати іспиту. Спробуйте ще раз.')
     }
 }
