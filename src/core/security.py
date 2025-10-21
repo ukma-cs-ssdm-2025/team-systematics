@@ -44,11 +44,17 @@ def has_roles(user_roles: Iterable[str] | None,
     Unknown roles are ignored.
     """
     def _norm(items: Iterable[str] | None) -> set[str]:
+        unknown: list[str] = []
         out: set[str] = set()
         for x in (items or []):
             canon = _canonical_role(x)
             if canon:
                 out.add(canon)
+            else:
+                if x not in (None, "", " "):
+                    unknown.append(str(x))
+        if strict and unknown:
+            raise ValueError(f"Unknown roles: {', '.join(unknown)}")
         return out
 
     ur = _norm(user_roles)
