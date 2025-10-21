@@ -34,7 +34,9 @@ def create_app() -> FastAPI:
 
     origins = [
         "http://localhost:5173",
-        "https://ukma-cs-ssdm-2025.github.io"
+        "http://localhost:3000",
+        "http://localhost:8000",
+        "https://ukma-cs-ssdm-2025.github.io",
     ]
 
     app.add_middleware(

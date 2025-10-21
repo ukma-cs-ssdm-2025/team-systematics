@@ -1,4 +1,4 @@
-# Build the Vue.js Frontend ----
+# Build the Vue.js Frontend
 FROM node:20-alpine AS builder
 
 # Set the working directory for the frontend
@@ -16,20 +16,19 @@ COPY client/ ./
 # Build the frontend for production.
 RUN npm run build
 
-
 # Build the Final Production Image ----
 FROM python:3.11-slim
 
-# Set the working directory in the final image
 WORKDIR /app
 
-COPY ../requirements.txt requirements.txt
+COPY requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-COPY . .  
+COPY --from=builder /app/client/dist /app/client/dist
 
-EXPOSE 8000
+EXPOSE 3000
 
 # Run the application
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "3000"]
+
