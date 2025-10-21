@@ -1,0 +1,13 @@
+from src.core.security import has_roles
+
+def test_case_insensitive_and_trim_whitespace():
+    """Comparison should ignore case and surrounding spaces."""
+    user_roles = [" Student ", "AdMiN"]
+    assert has_roles(user_roles, ["student"]) is True
+    assert has_roles(user_roles, ["admin"], mode="all") is True
+    assert has_roles(user_roles, ["student", "admin"], mode="all") is True
+
+def test_english_synonyms_are_mapped_to_canonical():
+    """'instructor' -> teacher; 'invigilator' -> proctor."""
+    assert has_roles(["instructor"], ["teacher"]) is True
+    assert has_roles(["invigilator"], ["proctor"]) is True
