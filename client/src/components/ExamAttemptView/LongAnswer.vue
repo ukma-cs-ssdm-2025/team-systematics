@@ -1,7 +1,24 @@
 <template>
     <div class="question-block">
-        <textarea class="textarea-input" :value="modelValue" @input="$emit('update:modelValue', $event.target.value)"
-            placeholder="Введіть вашу відповідь..."></textarea>
+        <textarea
+            v-if="!isReviewMode"
+            class="textarea-input"
+            :value="modelValue"
+            @input="$emit('update:modelValue', $event.target.value)"
+            placeholder="Введіть розгорнуту відповідь..."
+        ></textarea>
+
+        <div v-else class="review-display">
+            <div class="student-answer">
+                <p class="answer-text">
+                    {{ questionData.student_answer_text }}
+                </p>
+                
+                <div class="points-display">
+                    ({{ questionData.earned_points ?? '--' }} / {{ questionData.points }} б)
+                </div>
+            </div>
+        </div>
     </div>
 </template>
 
@@ -10,7 +27,15 @@ defineProps({
     modelValue: {
         type: String,
         default: ''
-    }
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
+    questionData: {
+        type: Object,
+        default: () => ({})
+    },
 });
 
 defineEmits(['update:modelValue'])
@@ -23,7 +48,7 @@ defineEmits(['update:modelValue'])
     margin-bottom: 20px;
 }
 
-.textarea-input {
+.textarea-input, .review-display {
     height: 100%;
     width: 100%;
     padding: 20px;
@@ -45,5 +70,16 @@ defineEmits(['update:modelValue'])
 .textarea-input:focus-visible {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
+}
+
+.review-display {
+    position: relative;
+}
+
+.points-display {
+    position: absolute;
+    left: 20px;
+    bottom: 20px;
+    color: var(--color-black-half-opacity);
 }
 </style>
