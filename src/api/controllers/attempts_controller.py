@@ -1,34 +1,24 @@
+from sqlalchemy.orm import Session
 from uuid import UUID
-from fastapi import APIRouter, status, Depends, Path
-
-from ..schemas.attempts import AnswerUpsert, Answer, Attempt
-from ..services.attempts_service import AttemptsService
+from fastapi import APIRouter, status, Depends
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt
+from src.api.services.attempts_service import AttemptsService
 from .versioning import require_api_version
-
-EXAMPLE_ATTEMPT_ID = "1a8b3c4d-5e6f-7a8b-9c0d-1e2f3a4b5c6d"
+from src.api.database import get_db
 
 class AttemptsController:
     def __init__(self, service: AttemptsService) -> None:
         self.service = service
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
 
-        @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED,
-                          summary="Save or update an answer within an attempt")
-        async def add_answer(
-            payload: AnswerUpsert,
-            attempt_id: UUID = Path(
-                ...,
-                description="Attempt id",
-                example=EXAMPLE_ATTEMPT_ID
-            )
-        ) -> Answer:
-            return self.service.add_answer(attempt_id, payload)
+        @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
+        async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
+            return self.service.add_answer(db, attempt_id, payload)
 
-        @self.router.post(
-            "/{attempt_id}/submit",
-            response_model=Attempt,
-            status_code=status.HTTP_201_CREATED,
-            summary="Submit attempt"
-        )
-        async def submit(attempt_id: UUID) -> Attempt:
-            return self.service.submit(attempt_id)
+        @self.router.post("/{attempt_id}/submit", response_model=Attempt, summary="Submit attempt")
+        async def submit(attempt_id: UUID, db: Session = Depends(get_db)):
+            return self.service.submit(db, attempt_id)
+
+        @self.router.get("/{attempt_id}", summary="Get attempt details for UI")
+        async def get_attempt_details(attempt_id: UUID, db: Session = Depends(get_db)):
+            return self.service.get_attempt_details(db, attempt_id)

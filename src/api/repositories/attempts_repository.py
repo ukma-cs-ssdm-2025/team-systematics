@@ -1,62 +1,173 @@
-from __future__ import annotations
-from typing import Dict, Optional, List
-from uuid import UUID, uuid4
+from sqlalchemy.orm import Session, load_only
+from uuid import UUID
 from datetime import datetime, timedelta
-from threading import RLock
+from src.utils.datetime_utils import to_utc_iso
+from typing import Optional, Dict, Any, List
 
-from ..schemas.attempts import Attempt, Answer
+from src.models.exam import Attempt, Answer, Exam, Question, Option, AnswerOption
+from src.models.matching import MatchingOption
+from src.api.schemas.attempts import AnswerUpsert
 
 class AttemptsRepository:
-    def __init__(self) -> None:
-        self._attempts: Dict[UUID, Attempt] = {}
-        self._answers: Dict[UUID, Dict[UUID, Answer]] = {}
-        self._lock = RLock()
+    def __init__(self, db: Session):
+        self.db = db
 
-    def create_attempt(self, exam_id: UUID, user_id: UUID) -> Attempt:
-        with self._lock:
-            attempt_id = uuid4()
-            now = datetime.utcnow()
-            due = now + timedelta(seconds=300)
-            att = Attempt(
-                id=attempt_id,
-                exam_id=exam_id,
-                user_id=user_id,
-                status="in_progress",
-                started_at=now,
-                due_at=due,
-                submitted_at=None,
-                score_percent=None,
-            )
-            self._attempts[attempt_id] = att
-            self._answers[attempt_id] = {}
-            return att
+    def create_attempt(self, exam_id: UUID, user_id: UUID, duration_minutes: int) -> Attempt:
+        print(f"DEBUG: Received duration_minutes={duration_minutes}, type={type(duration_minutes)}")
+        if not isinstance(duration_minutes, int) or duration_minutes <= 0:
+            raise ValueError(f"Invalid duration_minutes: {duration_minutes}")
+            
+        started_at = datetime.utcnow()
+        due_at = started_at + timedelta(minutes=duration_minutes)
+        print(f"Creating attempt: started_at={started_at.isoformat()}, due_at={due_at.isoformat()}, duration={duration_minutes}")
+        new_attempt = Attempt(
+            exam_id=exam_id,
+            user_id=user_id,
+            status="in_progress",
+            started_at=to_utc_iso(started_at),
+            due_at=to_utc_iso(due_at),
+        )
+        self.db.add(new_attempt)
+        self.db.commit()
+        self.db.refresh(new_attempt)
+        return new_attempt
 
     def get_attempt(self, attempt_id: UUID) -> Optional[Attempt]:
-        return self._attempts.get(attempt_id)
+        return self.db.query(Attempt).filter(Attempt.id == attempt_id).first()
 
-    def upsert_answer(self, attempt_id: UUID, question_id: UUID, text: str | None, selected_option_ids: list[UUID] | None) -> Answer:
-        with self._lock:
-            if attempt_id not in self._answers:
-                self._answers[attempt_id] = {}
-            ans_id = uuid4()
-            ans = Answer(
-                id=ans_id,
+    def upsert_answer(self, attempt_id: UUID, payload: AnswerUpsert) -> Answer:
+        question = self.db.query(Question).filter(Question.id == payload.question_id).first()
+        if not question:
+            raise ValueError("Question not found")
+
+        answer = self.db.query(Answer).filter(
+            Answer.attempt_id == attempt_id,
+            Answer.question_id == payload.question_id,
+        ).first()
+
+        current_time = datetime.utcnow()
+
+        if not answer:
+            answer = Answer(
                 attempt_id=attempt_id,
-                question_id=question_id,
-                text=text,
-                selected_option_ids=selected_option_ids,
-                saved_at=datetime.utcnow(),
+                question_id=payload.question_id,
+                saved_at=current_time, 
             )
-            self._answers[attempt_id][question_id] = ans
-            return ans
+            self.db.add(answer)
+            self.db.flush()
+        else:
+            answer.saved_at = current_time
+
+        answer.saved_at = current_time
+
+        q_type = str(question.question_type.value)
+
+        if q_type in ('single_choice', 'multi_choice'):
+            self.db.query(AnswerOption).filter(
+                AnswerOption.answer_id == answer.id
+            ).delete(synchronize_session=False)
+
+            if payload.selected_option_ids:
+                for option_id in payload.selected_option_ids:
+                    new_answer_option = AnswerOption(
+                        answer_id=answer.id,
+                        selected_option_id=option_id
+                    )
+                    self.db.add(new_answer_option)
+            
+            answer.answer_text = None
+            answer.answer_json = None
+
+        elif q_type in ('short_answer', 'long_answer'):
+            answer.answer_text = payload.text
+            answer.answer_json = None
+
+        self.db.commit()
+        self.db.refresh(answer)
+        return answer
 
     def submit_attempt(self, attempt_id: UUID) -> Optional[Attempt]:
-        with self._lock:
-            att = self._attempts.get(attempt_id)
-            if not att:
-                return None
-            if att.status != "in_progress":
-                return att
-            att = att.model_copy(update={"status": "submitted", "submitted_at": datetime.utcnow()})
-            self._attempts[attempt_id] = att
-            return att
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+
+        attempt.status = "submitted"
+        attempt.submitted_at = datetime.utcnow()
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt
+
+    def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
+        """Збирає та форматує всю інформацію для сторінки складання іспиту.
+
+        Цей метод агрегує дані про спробу, іспит, відсортовані питання,
+        варіанти відповідей, дані для питань на відповідність та збережені
+        відповіді користувача в один зручний для фронтенду об'єкт.
+
+        Args:
+            attempt_id: ID спроби для якої потрібно отримати деталі.
+
+        Returns:
+            Словник з повною інформацією або `None`, якщо спробу не знайдено.
+        """
+        attempt = self.get_attempt(attempt_id)
+        if not attempt or not attempt.exam:
+            return None
+        exam = attempt.exam
+
+        # 1. Завантажуємо питання, впорядковані за позицією
+        questions: List[Question] = self.db.query(Question).filter(
+            Question.exam_id == exam.id
+        ).order_by(Question.position).all()
+        question_ids = [q.id for q in questions]
+
+        # 2. Оптимізація: завантажуємо всі опції та дані для 'matching' одним запитом
+        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
+        if question_ids:
+            options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
+            for o in options:
+                opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
+
+        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
+        if question_ids:
+            matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
+            for m in matching_rows:
+                q_id = m.question_id
+                if q_id not in match_by_q:
+                    match_by_q[q_id] = {'prompts': [], 'matches': []}
+                match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
+                match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+
+        # 3. Формуємо фінальний список питань для фронтенду
+        questions_out: List[Dict[str, Any]] = []
+        for q in questions:
+            q_type = q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
+            q_out: Dict[str, Any] = {
+                'id': str(q.id),
+                'position': q.position,
+                'question_type': q_type,
+                'title': q.title,
+                'points': q.points,
+            }
+
+            if q_type in ('single_choice', 'multi_choice'):
+                q_out['options'] = opts_by_q.get(q.id, [])
+            elif q_type == 'short_answer':
+                q_out['input_type'] = 'text' # Або інша логіка, якщо потрібно
+            elif q_type == 'matching':
+                q_out['matching_data'] = match_by_q.get(q.id, {'prompts': [], 'matches': []})
+
+            questions_out.append(q_out)
+
+        # 4. Збираємо все в один об'єкт-результат
+        result: Dict[str, Any] = {
+            'attempt_id': str(attempt.id),
+            'exam_id': str(exam.id),
+            'exam_title': exam.title,
+            'duration_minutes': exam.duration_minutes,
+            'status': str(attempt.status.value) if hasattr(attempt.status, 'value') else str(attempt.status),
+            'started_at': to_utc_iso(attempt.started_at),
+            'due_at': to_utc_iso(attempt.due_at),
+            'questions': questions_out,
+        }
+        return result
