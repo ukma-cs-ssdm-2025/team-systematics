@@ -62,6 +62,7 @@ import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import { getExamAttemptResults } from '../api/attempts.js'
 import Tooltip from '../components/global/CTooltip.vue'
+import { formatDuration } from '../utils/formatters.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,13 +92,11 @@ onMounted(async () => {
 
 // Обчислювана властивість для форматування витраченого часу
 const formattedTimeSpent = computed(() => {
-    if (!results.value || !results.value.time_spent_seconds) return '00 хв 00 сек'
-
-    const totalSeconds = results.value.time_spent_seconds
-    const minutes = Math.floor(totalSeconds / 60)
-    const seconds = totalSeconds % 60
-
-    return `${String(minutes).padStart(2, '0')} хв ${String(seconds).padStart(2, '0')} сек`
+    if (!results.value || typeof results.value.time_spent_seconds !== 'number') {
+        return '00 хв 00 сек' 
+    }
+    // Викликаємо нашу нову, протестовану функцію
+    return formatDuration(results.value.time_spent_seconds)
 })
 
 function viewAnswers() {
