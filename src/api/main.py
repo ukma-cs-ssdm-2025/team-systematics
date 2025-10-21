@@ -12,14 +12,14 @@ from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.database import engine
-from src.models import user, role, user_role, exam
+from src.models import users, roles, userRoles, exams
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
-    user.Base.metadata.create_all(bind=engine)
-    role.Base.metadata.create_all(bind=engine)
-    user_role.Base.metadata.create_all(bind=engine)
-    exam.Base.metadata.create_all(bind=engine)
+    users.Base.metadata.create_all(bind=engine)
+    roles.Base.metadata.create_all(bind=engine)
+    userRoles.Base.metadata.create_all(bind=engine)
+    exams.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
