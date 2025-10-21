@@ -18,7 +18,10 @@ ROLE_SYNONYMS: dict[str, str] = {
     "lecturer":  "teacher",
     "professor": "teacher",
     "invigilator": "proctor",
-    "monitor":     "proctor",
+    "monitor":  "proctor",
+    "студент":  "student",
+    "викладач": "teacher",
+    "наглядач": "proctor",
 }
 
 def _canonical_role(value: Optional[str]) -> Optional[str]:
