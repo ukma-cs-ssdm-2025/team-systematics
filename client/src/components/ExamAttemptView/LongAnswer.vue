@@ -63,6 +63,10 @@ defineEmits(['update:modelValue'])
     line-height: 1.5;
 }
 
+.review-display {
+    cursor: not-allowed;
+}
+
 .textarea-input:hover {
     border-color: var(--color-dark-gray);
 }
