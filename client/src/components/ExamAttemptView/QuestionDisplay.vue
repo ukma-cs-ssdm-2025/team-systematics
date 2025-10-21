@@ -2,35 +2,58 @@
     <div class="question-display-container">
         <!-- Заголовок питання (спільний для всіх типів) -->
         <div class="header">
-            <p class="title">{{ question.title }}</p>
+            <p class="title">
+                <p v-if="isReviewMode" class="review-question-label"> Питання {{  props.position }} </p>
+                {{ question.title }}
+            </p>
         </div>
 
         <div class="body">
             <!-- 1. Single Choice (Радіокнопки) -->
             <div v-if="question.question_type === 'single_choice'">
-                <SingleChoice :options="question.options" v-model="localAnswer" />
+                <SingleChoice
+                    :options="question.options" v-model="localAnswer"
+                    :is-review-mode="isReviewMode"
+                    :earned-points="question.earned_points" 
+                />
             </div>
 
             <!-- 2. Multi Choice (Чекбокси) -->
             <div v-else-if="question.question_type === 'multi_choice'">
-                <MultipleChoice :options="question.options" v-model="localAnswer" />
+                <MultipleChoice
+                    :options="question.options"
+                    v-model="localAnswer"
+                    :is-review-mode="isReviewMode"
+                    :earned-points="question.earned_points"
+                />
             </div>
 
             <!-- 3. Short Answer (Коротка відповідь) -->
             <div v-else-if="question.question_type === 'short_answer'">
                 <ShortAnswer v-model="localAnswer" :inputType="question.answer_format"
-                    :placeholder="question.answer_format === 'text' ? 'Введіть вашу відповідь...' : 'Введіть число...'" />
+                    :placeholder="question.answer_format === 'text' ? 'Введіть вашу відповідь...' : 'Введіть число...'"
+                    :is-review-mode="isReviewMode"
+                    :question-data="question"
+                />
             </div>
 
             <!-- 4. Long Answer (Розгорнута відповідь) -->
             <div v-else-if="question.question_type === 'long_answer'">
-                <LongAnswer v-model="localAnswer" placeholder="Введіть відповідь..." />
+                <LongAnswer
+                    v-model="localAnswer"
+                    placeholder="Введіть відповідь..."
+                    :is-review-mode="isReviewMode"
+                />
             </div>
 
             <!-- 5. Matching (Відповідність) -->
             <div v-else-if="question.question_type === 'matching'">
-                <Matching :prompts="question.matching_data.prompts" :matches="question.matching_data.matches"
-                    :modelValue="localAnswer" @update:modelValue="localAnswer = $event" />
+                <Matching
+                    :prompts="question.matching_data.prompts"
+                    :matches="question.matching_data.matches"
+                    :modelValue="localAnswer"
+                    :is-review-mode="isReviewMode"
+                    @update:modelValue="localAnswer = $event" />
             </div>
         </div>
     </div>
@@ -52,6 +75,18 @@ const props = defineProps({
     savedAnswer: {
         type: [String, Number, Array, Object],
         default: null
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
+    position: {
+        type: Number,
+        default: null
+    },
+    points: {
+        type: Number,
+        default: 0
     }
 })
 
@@ -120,5 +155,10 @@ watch(localAnswer, (newValue) => {
 <style scoped>
 .header {
     margin-bottom: 20px;
+}
+
+.review-question-label {
+    font-weight: bold;
+    margin: 20px 0;
 }
 </style>

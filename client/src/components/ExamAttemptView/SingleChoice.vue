@@ -25,8 +25,11 @@
                     <!-- 3. Текст варіанту відповіді -->
                      <div class="option-content">
                         <p class="option-text">{{ option.text }}</p>
-                        <p v-if="isReviewMode && isChecked(option)" class="option-points">
-                            ({{ props.earnedPoints }} б)
+                        <p 
+                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
+                            class="option-points"
+                        >
+                            ({{ option.is_correct && option.is_selected ? earnedPoints : 0 }} б)
                         </p>
                     </div>
                 </label>

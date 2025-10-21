@@ -30,7 +30,7 @@
                     <div class="option-content">
                         <p class="option-text">{{ option.text }}</p>
                         <p
-                            v-if="isReviewMode && option.is_correct && option.earned_points_per_option > 0"
+                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
                             class="option-points">
                                 ({{ option.earned_points_per_option }} б)
                         </p>

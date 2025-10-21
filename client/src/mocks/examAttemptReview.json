@@ -1,0 +1,72 @@
+{
+  "exam_title": "Теорія ймовірності та математична статистика",
+  "questions": [
+    {
+      "id": "q1",
+      "position": 1,
+      "question_type": "single_choice",
+      "title": "Що вивчає теорія ймовірностей?",
+      "points": 20,
+      "earned_points": 20,
+      "options": [
+        { "id": "o1a", "text": "Тільки детерміновані (однозначно визначені) явища", "is_correct": false, "is_selected": false },
+        { "id": "o1b", "text": "Закономірності масових випадкових подій", "is_correct": true, "is_selected": true },
+        { "id": "o1c", "text": "Методи обчислення площ фігур", "is_correct": false, "is_selected": false },
+        { "id": "o1d", "text": "Правила гри в шахи", "is_correct": false, "is_selected": false }
+      ]
+    },
+    {
+      "id": "q2",
+      "position": 2,
+      "question_type": "long_answer",
+      "title": "Сформулюйте своїми словами центральну граничну теорему.",
+      "points": 20,
+      "earned_points": null,
+      "student_answer_text": "Центральна гранична теорема стверджує, що сума великої кількості незалежних та однаково розподілених випадкових величин має розподіл, близький до нормального, незалежно від початкового розподілу цих величин."
+    },
+    {
+      "id": "q3",
+      "position": 3,
+      "question_type": "multi_choice",
+      "title": "Які з наведених величин є характеристиками випадкової величини?",
+      "points": 20,
+      "earned_points": 10,
+      "options": [
+        { "id": "o3a", "text": "Математичне сподівання", "is_correct": true, "is_selected": true, "earned_points_per_option": 10 },
+        { "id": "o3b", "text": "Інтеграл Лебега", "is_correct": false, "is_selected": true, "earned_points_per_option": 0 },
+        { "id": "o3c", "text": "Дисперсія", "is_correct": true, "is_selected": false, "earned_points_per_option": 0 },
+        { "id": "o3d", "text": "Похідна функції", "is_correct": false, "is_selected": false, "earned_points_per_option": 0 }
+      ]
+    },
+    {
+      "id": "q4",
+      "position": 4,
+      "question_type": "matching",
+      "title": "Встановіть відповідність між типом розподілу та його властивістю.",
+      "points": 20,
+      "earned_points": 15,
+      "matching_data": {
+        "prompts": [
+          { "id": "p4a", "text": "Біноміальний розподіл", "student_match_id": "m4a", "correct_match_id": "m4a", "earned_points_per_match": 10 },
+          { "id": "p4b", "text": "Нормальний розподіл", "student_match_id": "m4c", "correct_match_id": "m4b", "earned_points_per_match": 0 },
+          { "id": "p4c", "text": "Рівномірний розподіл", "student_match_id": "m4c", "correct_match_id": "m4c", "earned_points_per_match": 5 }
+        ],
+        "matches": [
+          { "id": "m4a", "text": "Описує кількість 'успіхів' у серії незалежних випробувань." },
+          { "id": "m4b", "text": "Графік щільності має форму дзвона." },
+          { "id": "m4c", "text": "Всі значення на заданому інтервалі мають однакову ймовірність." }
+        ]
+      }
+    },
+    {
+      "id": "q5",
+      "position": 5,
+      "question_type": "short_answer",
+      "title": "Яка ймовірність випадіння 'орла' при одному підкиданні симетричної монети? Введіть відповідь у вигляді десяткового дробу (напр., 0.5).",
+      "points": 20,
+      "earned_points": 0,
+      "student_answer_text": "50%",
+      "correct_answer_text": "0.5"
+    }
+  ]
+}

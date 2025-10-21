@@ -6,6 +6,7 @@ import ExamAttemptView from '../views/ExamAttemptView.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
+import ExamReviewView from '../views/ExamReviewView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -68,7 +69,16 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Результати іспиту'
        }
-    }
+    },
+    {
+      path: '/exam/:attemptId/review', 
+      name: 'ExamReview',
+      component: ExamReviewView,
+      meta: {
+        requiresAuth: true,
+        title: 'Перегляд відповідей'
+      }
+    },
     ]
 })
 

@@ -10,5 +10,8 @@
     --color-lavender: #e1c9e8;
     --color-dark-lavender: #d1bbd8;
     --color-red: #ff6b6d;
+    --color-red-half-opacity: rgba(255, 107, 109, 0.5);
     --color-orange: #df7a05;
+    --color-green: #9FE5A7;
+    --color-green-half-opacity: rgba(159, 229, 167, 0.5);
 }
