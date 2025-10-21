@@ -3,6 +3,7 @@ from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQ
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from src.api.database import Base 
+from .attempt import Attempt
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -11,11 +12,6 @@ class QuestionType(str, enum.Enum):
     short_answer = "short_answer"
     long_answer = "long_answer"
     matching = "matching"
-
-class AttemptStatus(str, enum.Enum):
-    in_progress = "in_progress"
-    submitted = "submitted"
-    expired = "expired"
 
 class Exam(Base):
     __tablename__ = "exams"
@@ -53,22 +49,6 @@ class Option(Base):
     is_correct = Column(Boolean, default=False)
     
     question = relationship("Question", back_populates="options")
-
-class Attempt(Base):
-    __tablename__ = "attempts"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    exam_id = Column(UUID(as_uuid=True), ForeignKey("exams.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    
-    status = Column(SQLAlchemyEnum(AttemptStatus), default=AttemptStatus.in_progress)
-    started_at = Column(DateTime, nullable=False)
-    due_at = Column(DateTime, nullable=False)
-    submitted_at = Column(DateTime)
-    score_percent = Column(Integer)
-    
-    user = relationship("User")
-    exam = relationship("Exam")
-    answers = relationship("Answer", back_populates="attempt", cascade="all, delete-orphan")
 
 class Answer(Base):
     __tablename__ = "answers"
