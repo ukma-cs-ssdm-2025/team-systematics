@@ -3,7 +3,6 @@ from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQ
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from src.api.database import Base 
-from .attempt import Attempt
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -28,6 +27,7 @@ class Exam(Base):
     owner = relationship("User")
     
     questions = relationship("Question", back_populates="exam", cascade="all, delete-orphan")
+    attempts = relationship("Attempt", back_populates="exam")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -49,21 +49,3 @@ class Option(Base):
     is_correct = Column(Boolean, default=False)
     
     question = relationship("Question", back_populates="options")
-
-class Answer(Base):
-    __tablename__ = "answers"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    attempt_id = Column(UUID(as_uuid=True), ForeignKey("attempts.id"), nullable=False)
-    question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
-    answer_text = Column(String, nullable=True)
-    answer_json = Column(JSONB, nullable=True)
-    saved_at = Column(TIMESTAMP(timezone=True), nullable=False) 
-    
-    attempt = relationship("Attempt", back_populates="answers")
-    question = relationship("Question")
-    selected_options = relationship("AnswerOption", cascade="all, delete-orphan")
-
-class AnswerOption(Base):
-    __tablename__ = "answer_options"
-    answer_id = Column(UUID(as_uuid=True), ForeignKey("answers.id"), primary_key=True)
-    selected_option_id = Column(UUID(as_uuid=True), ForeignKey("options.id"), primary_key=True)
