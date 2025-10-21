@@ -4,7 +4,7 @@
             <li v-for="(option, i) in options" :key="option.id">
                 <label 
                     class="option-item" 
-                    :class="{ 'selected': modelValue === option.id }"
+                    :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
                 >
                     <!-- 1. Справжня радіокнопка, яку повністю приховаємо -->
                     <input 
@@ -12,8 +12,9 @@
                         class="real-radio-button"
                         :name="uniqueGroupName"
                         :value="option.id"
-                        :checked="modelValue === option.id"
-                        @change="$emit('update:modelValue', option.id)"
+                        :checked="isChecked(option)"
+                        :disabled="isReviewMode"
+                        @change="$emit('update:modelValue', option.id) && !isReviewMode"
                     />
                     
                     <!-- 2. Бейдж з літерою, який тепер виконує роль кастомної кнопки -->
@@ -22,7 +23,15 @@
                     </div>
 
                     <!-- 3. Текст варіанту відповіді -->
-                    <span class="option-text">{{ option.text }}</span>
+                     <div class="option-content">
+                        <p class="option-text">{{ option.text }}</p>
+                        <p 
+                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
+                            class="option-points"
+                        >
+                            ({{ option.is_correct && option.is_selected ? earnedPoints : 0 }} б)
+                        </p>
+                    </div>
                 </label>
             </li>
         </ol>
@@ -33,8 +42,22 @@
 import { computed } from 'vue'
 
 const props = defineProps({
-    options: { type: Array, required: true },
-    modelValue: { type: [String, Number], default: null }
+    options: {
+        type: Array,
+        required: true
+    },
+    modelValue: {
+        type: [String, Number],
+        default: null
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
+    earnedPoints: {
+        type: Number,
+        default: null
+    },
 })
 
 defineEmits(['update:modelValue'])
@@ -44,6 +67,28 @@ const uniqueGroupName = computed(() => `group-${Math.random()}`)
 
 // Функція для генерації літер A, B, C...
 const letter = (index) => String.fromCharCode(65 + index)
+
+function isChecked(option) {
+    if (props.isReviewMode) {
+        return option.is_selected;
+    }
+    return props.modelValue === option.id
+}
+
+function getOptionClasses(option) {
+    if (!props.isReviewMode) {
+        // В режимі проходження, нам потрібен тільки клас 'selected'
+        return { selected: isChecked(option) }
+    }
+    
+    // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
+    return {
+        selected: option.is_selected,
+        correct: option.is_correct, 
+        incorrect: option.is_selected && !option.is_correct
+    }
+}
+
 </script>
 
 <style scoped>
@@ -106,6 +151,35 @@ const letter = (index) => String.fromCharCode(65 + index)
 .option-item:has(.real-radio-button:focus-visible) {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px; 
+}
+
+.option-content {
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.option-points {
+    color: var(--color-black-half-opacity);
+}
+
+.option-item.review-mode {
+    cursor: not-allowed;
+}
+.option-item.review-mode:hover {
+    border-color: var(--color-gray);
+}
+
+.option-item.review-mode.selected:hover {
+    border-color: var(--color-purple);
+}
+
+.option-item.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.option-item.incorrect {
+    background-color: var(--color-red-half-opacity);
 }
 
 </style>

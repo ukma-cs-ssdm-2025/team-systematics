@@ -1,6 +1,7 @@
 import { http } from '../api/http.js'
 import mockAttemptData from '../mocks/examAttempts.json'
 import mockResultsData from '../mocks/examAttemptResults.json'
+import mockReviewData from '../mocks/examAttemptReview.json'
 
 // Тимчасово використовуємо заглушку
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
@@ -124,12 +125,30 @@ export async function getExamAttemptResults(attemptId) {
     }
 
     try {
-        const response = await http.get(`/api/attempts/${attemptId}/results`);
-        return response.data;
+        const response = await http.get(`/api/attempts/${attemptId}/results`)
+        return response.data
      } catch (error) {
         if (error.response && error.response.data && error.response.data.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати результати іспиту. Спробуйте ще раз.')
+    }
+}
+
+export async function getExamAttemptReview(attemptId) {
+    const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+
+    if (USE_MOCK_DATA) {
+        return mockReviewData
+    }
+
+    try {
+        const response = await http.get(`/api/attempts/${attemptId}/review`)
+        return response.data
+    } catch (error) {
+        if (error.response && error.response.data && error.response.data.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося отримати огляд іспиту. Спробуйте ще раз')
     }
 }

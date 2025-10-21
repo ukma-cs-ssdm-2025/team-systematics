@@ -14,17 +14,24 @@
                     {{ prompt.text }}
                 </label>
 
-                <select
-                    :id="`match-select-${prompt.id}`"
-                    class="match-select"
-                    :value="modelValue[prompt.id] || ''"
-                    @change="updateMatch(prompt.id, $event.target.value)"
-                >
-                    <option disabled value="">Виберіть відповідь...</option>
-                    <option v-for="match in shuffledMatches" :key="match.id" :value="match.id">
-                        {{ match.text }}
-                    </option>
-                </select>
+                <div v-if="!isReviewMode" class="match-item">
+                    <select
+                        :id="`match-select-${prompt.id}`"
+                        class="match-select"
+                        :value="modelValue[prompt.id] || ''"
+                        @change="updateMatch(prompt.id, $event.target.value)"
+                    >
+                        <option disabled value="">Виберіть відповідь...</option>
+                        <option v-for="match in shuffledMatches" :key="match.id" :value="match.id">
+                            {{ match.text }}
+                        </option>
+                    </select>
+                </div>
+
+                <div v-else class="review-item" :class="getReviewClasses(prompt)">
+                    <span class="review-text">{{ getMatchText(prompt.student_match_id) }}</span>
+                    <span class="review-points">({{ prompt.earned_points_per_match }} б)</span>
+                </div>
             </div>
 
         </div>
@@ -32,12 +39,25 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, watch } from 'vue'
 
 const props = defineProps({
-    prompts: { type: Array, required: true },
-    matches: { type: Array, required: true },
-    modelValue: { type: Object, default: () => ({}) }
+    prompts: {
+        type: Array,
+        required: true
+    },
+    matches: {
+        type: Array,
+        required: true
+    },
+    modelValue: {
+        type: Object,
+        default: () => ({})
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -54,14 +74,37 @@ function shuffleArray(array) {
     return array
 }
 
-onMounted(() => {
-    shuffledMatches.value = shuffleArray([...props.matches])
-})
+watch(
+    () => props.matches, 
+    (newMatches) => {
+        // Перевіряємо, чи newMatches - це дійсно масив з елементами
+        if (Array.isArray(newMatches) && newMatches.length > 0 && !props.isReviewMode) {
+            shuffledMatches.value = shuffleArray([...newMatches]);
+        }
+    },
+    { immediate: true }
+)
 
 function updateMatch(promptId, selectedMatchId) {
     const newModelValue = { ...props.modelValue }
     newModelValue[promptId] = selectedMatchId
     emit('update:modelValue', newModelValue)
+}
+
+function getMatchText(matchId) {
+    if (!matchId)
+        return 'Відповідь не надано'
+    const match = props.matches.find(m => m.id === matchId)
+    return match ? match.text : 'Невідома відповідь'
+}
+
+function getReviewClasses(prompt) {
+    if (!props.isReviewMode)
+        return {}
+    return {
+        correct: prompt.student_match_id === prompt.correct_match_id,
+        incorrect: prompt.student_match_id !== prompt.correct_match_id
+    }
 }
 </script>
 
@@ -100,7 +143,7 @@ function updateMatch(promptId, selectedMatchId) {
     height: 100%;
 }
 
-.match-select {
+.match-select, .review-item {
     width: 100%;
     height: 100%;
     padding: 0 16px;
@@ -125,4 +168,18 @@ function updateMatch(promptId, selectedMatchId) {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
 }
+
+.review-item.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.review-item.incorrect {
+    background-color: var(--color-red-half-opacity);
+}
+
+.review-points {
+    color: var(--color-black-half-opacity);
+    margin-left: 8px;
+}
+
 </style>

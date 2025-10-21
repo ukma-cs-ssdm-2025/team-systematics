@@ -2,23 +2,39 @@
     <div class="question-block">
         <ol class="multi-choice-list">
             <li v-for="option in options" :key="option.id">
-                <label class="option-item" :class="{ 'selected': modelValue.includes(option.id) }">
+                <label 
+                    class="option-item" 
+                    :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
+                >
                     <!-- 1. Справжній чекбокс, який ми приховаємо -->
-                    <input type="checkbox" class="real-checkbox" :value="option.id"
-                        :checked="modelValue.includes(option.id)" @change="handleChange" />
+                    <input 
+                        type="checkbox"
+                        class="real-checkbox"
+                        :value="option.id"
+                        :checked="isChecked(option)"
+                        :disabled="isReviewMode"
+                        @change="!isReviewMode && handleChange($event)"
+                    />
 
                     <!-- 2. Наш кастомний чекбокс, який змінює вигляд -->
                     <div class="custom-checkbox" aria-hidden="true">
                         <!-- Іконка галочки (SVG), яка з'являється при виборі -->
                         <svg xmlns="http://www.w3.org/2000/svg" width="17" height="13" viewBox="0 0 17 13" fill="none"
-                            v-if="modelValue.includes(option.id)">
+                            v-if="isChecked(option)">
                             <path d="M5.7 12.025L0 6.325L1.425 4.9L5.7 9.175L14.875 0L16.3 1.425L5.7 12.025Z"
                                 fill="black" />
                         </svg>
                     </div>
 
                     <!-- 3. Текст варіанту відповіді -->
-                    <span class="option-text">{{ option.text }}</span>
+                    <div class="option-content">
+                        <p class="option-text">{{ option.text }}</p>
+                        <p
+                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
+                            class="option-points">
+                                ({{ option.earned_points_per_option }} б)
+                        </p>
+                    </div>
                 </label>
             </li>
         </ol>
@@ -26,9 +42,25 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
+
 const props = defineProps({
-    options: { type: Array, required: true },
-    modelValue: { type: Array, default: () => [] }
+    options: {
+        type: Array,
+        required: true
+    },
+    modelValue: {
+        type: Array,
+        default: () => []
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
+    earnedPoints: {
+        type: Number,
+        default: null
+    }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -51,6 +83,25 @@ function handleChange(event) {
     
     emit('update:modelValue', newModelValue)
 }
+
+function isChecked(option) {
+    if (props.isReviewMode) {
+        return option.is_selected
+    }
+    return Array.isArray(props.modelValue) && props.modelValue.includes(option.id)
+}
+
+function getOptionClasses(option) {
+    if (!props.isReviewMode) {
+        return { selected: isChecked(option) }
+    }
+    return {
+        selected: option.is_selected,
+        correct: option.is_correct,
+        incorrect: option.is_selected && !option.is_correct
+    }
+}
+
 </script>
 
 <style scoped>
@@ -126,5 +177,34 @@ function handleChange(event) {
 .option-item:has(.real-checkbox:focus-visible) {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
+}
+
+.option-content {
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.option-points {
+    color: var(--color-black-half-opacity);
+}
+
+.option-item.review-mode {
+    cursor: not-allowed;
+}
+.option-item.review-mode:hover {
+    border-color: var(--color-gray);
+}
+
+.option-item.review-mode.selected:hover {
+    border-color: var(--color-purple);
+}
+
+.option-item.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.option-item.incorrect {
+    background-color: var(--color-red-half-opacity);
 }
 </style>

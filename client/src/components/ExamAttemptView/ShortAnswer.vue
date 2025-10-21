@@ -1,12 +1,35 @@
 <template>
     <div class="question-block">
         <input 
+            v-if="!isReviewMode"
             :type="inputType"
             class="text-input"
             :value="modelValue"
             @input="handleInput"
             :placeholder="inputType === 'text' ? 'Введіть вашу відповідь...' : 'Введіть число...'"
         />
+        <div v-else class="review-display">
+            <div 
+                class="student-answer"
+                :class="{
+                    'correct': isCorrect,
+                    'incorrect': !isCorrect && questionData.student_answer_text !== null
+                }"
+            >
+                <div class="answer-content">
+                    <span class="answer-text">
+                        {{ questionData.student_answer_text }}
+                    </span>
+                    <span class="answer-points">
+                        ({{ isCorrect ? questionData.earned_points : 0 }} б)
+                    </span>
+                </div>
+            </div>
+        
+            <div v-if="!isCorrect" class="correct-answer">
+                <strong>Правильна відповідь:</strong> {{ questionData.correct_answer_text }}
+            </div>
+        </div>
     </div>
 </template>
 
@@ -20,8 +43,16 @@ const props = defineProps({
         type: String,
         default: 'text', // За замовчуванням - текстове поле
         validator: (value) => ['text', 'number'].includes(value) // Дозволяємо тільки 'text' або 'number'
+    },
+    isReviewMode: {
+        type: Boolean,
+        default: false
+    },
+    questionData: { 
+        type: Object, 
+        default: () => ({}) 
     }
-});
+})
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -43,7 +74,7 @@ function handleInput(event) {
     margin-bottom: 20px;
 }
 
-.text-input {
+.text-input, .student-answer {
     width: 40%;
     padding: 20px;
     background-color: var(--color-gray);
@@ -62,5 +93,37 @@ function handleInput(event) {
 .text-input:focus-visible {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px; 
+}
+
+.review-display {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.answer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.answer-points {
+    color: var(--color-black-half-opacity);
+}
+
+.student-answer {
+    cursor: not-allowed;
+}
+
+.student-answer.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.student-answer.incorrect {
+    background-color: var(--color-red-half-opacity);
+}
+
+.correct-answer {
+    font-size: 0.8em;
 }
 </style>
