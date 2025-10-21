@@ -84,9 +84,9 @@ function getOptionClasses(option) {
     // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
     return {
         selected: option.is_selected,
-        correct: option.is_correct,
+        correct: option.is_correct, 
         incorrect: option.is_selected && !option.is_correct
-    };
+    }
 }
 
 </script>
