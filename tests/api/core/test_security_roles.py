@@ -11,3 +11,14 @@ def test_english_synonyms_are_mapped_to_canonical():
     """'instructor' -> teacher; 'invigilator' -> proctor."""
     assert has_roles(["instructor"], ["teacher"]) is True
     assert has_roles(["invigilator"], ["proctor"]) is True
+
+def test_ukrainian_synonyms_supported():
+    """Ukrainian synonyms map to canonical roles."""
+    assert has_roles(["викладач"], ["teacher"]) is True
+    assert has_roles(["наглядач"], ["proctor"]) is True
+    assert has_roles(["студент"], ["student"]) is True
+
+def test_unknown_roles_ignored_by_default():
+    """Unknown roles are ignored when strict=False (default)."""
+    assert has_roles(["unknown_role", "student"], ["student"]) is True
+    assert has_roles(["unknown_role"], ["student"]) is False
