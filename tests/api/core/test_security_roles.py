@@ -1,3 +1,4 @@
+import pytest
 from src.core.security import has_roles
 
 def test_case_insensitive_and_trim_whitespace():
@@ -22,3 +23,12 @@ def test_unknown_roles_ignored_by_default():
     """Unknown roles are ignored when strict=False (default)."""
     assert has_roles(["unknown_role", "student"], ["student"]) is True
     assert has_roles(["unknown_role"], ["student"]) is False
+
+def test_strict_mode_raises_on_unknown():
+    with pytest.raises(ValueError):
+        has_roles(["student", "mystery"], ["student"], strict=True)
+
+def test_generators_are_supported():
+    user_iter = (r for r in ["student", "admin"])
+    req_iter = (r for r in ["admin"])
+    assert has_roles(user_iter, req_iter) is True
