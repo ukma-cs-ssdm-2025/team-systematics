@@ -1,0 +1,46 @@
+services:
+  api:
+    build:
+      context: .
+      dockerfile: src/Dockerfile
+    ports:
+      # Expose the API's port 8000 to port 8000
+      - "3000:3000"
+    volumes:
+      # Mount local source code into the container.
+      - ./src:/app/src
+    env_file:
+      - ./.env
+    depends_on:
+      - db
+
+  # The Frontend Development Server Service
+  frontend:
+    image: node:20-alpine
+    working_dir: /app/client
+    ports:
+      - "5173:5173"
+    volumes:
+      # Mount local client code into the container
+      - ./client:/app/client
+    # Install dependencies and run the dev server
+    command: sh -c "npm install && npm run dev"
+
+  # The PostgreSQL Database Service
+  db:
+    build:
+      context: ./postgresql
+      dockerfile: Dockerfile
+    ports:
+      # Expose the DB port to port 5432 for pgAdmin
+      - "5432:5432"
+    volumes:
+      # Persistent data storage for the database
+      - postgres_data:/var/lib/postgresql/data
+    env_file:
+      # Load database credentials from the .env file
+      - ./.env
+
+# Define the named volume for persistent DB storage
+volumes:
+  postgres_data:
