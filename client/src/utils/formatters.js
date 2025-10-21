@@ -1,25 +1,26 @@
-const SECONDS_IN_MINUTE = 60;
-const MINUTE_LABEL = 'хв';
-const SECOND_LABEL = 'сек';
+const SECONDS_IN_MINUTE = 60
+const SECONDS_IN_HOUR = 3600
+
+const HOUR_LABEL = 'год'
+const MINUTE_LABEL = 'хв'
+const SECOND_LABEL = 'сек'
+
+function pad(num) {
+  return String(num).padStart(2, '0')
+}
 
 export function formatDuration(totalSeconds) {
-  if (totalSeconds >= 3600) {
-    const hours = Math.floor(totalSeconds / 3600)
-    const minutes = Math.floor((totalSeconds % 3600) / 60)
-    const seconds = totalSeconds % 60
-
-    const paddedHours = String(hours).padStart(2, '0')
-    const paddedMinutes = String(minutes).padStart(2, '0')
-    const paddedSeconds = String(seconds).padStart(2, '0')
-
-    return `${paddedHours} год ${paddedMinutes} ${MINUTE_LABEL} ${paddedSeconds} ${SECOND_LABEL}`;
+  if (typeof totalSeconds !== 'number' || isNaN(totalSeconds) || totalSeconds < 0) {
+    totalSeconds = 0
   }
 
-  const minutes = Math.floor(totalSeconds / SECONDS_IN_MINUTE)
+  const hours = Math.floor(totalSeconds / SECONDS_IN_HOUR)
+  const minutes = Math.floor((totalSeconds % SECONDS_IN_HOUR) / SECONDS_IN_MINUTE)
   const seconds = totalSeconds % SECONDS_IN_MINUTE
 
-  const paddedMinutes = String(minutes).padStart(2, '0')
-  const paddedSeconds = String(seconds).padStart(2, '0')
-
-  return `${paddedMinutes} ${MINUTE_LABEL} ${paddedSeconds} ${SECOND_LABEL}`
+  if (hours > 0) {
+    return `${pad(hours)} ${HOUR_LABEL} ${pad(minutes)} ${MINUTE_LABEL} ${pad(seconds)} ${SECOND_LABEL}`
+  } else {
+    return `${pad(minutes)} ${MINUTE_LABEL} ${pad(seconds)} ${SECOND_LABEL}`
+  }
 }
