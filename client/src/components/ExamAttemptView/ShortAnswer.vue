@@ -12,19 +12,22 @@
             <div 
                 class="student-answer"
                 :class="{
-                    'correct': questionData.student_answer_text === questionData.correct_answer_text,
-                    'incorrect': questionData.student_answer_text !== questionData.correct_answer_text
+                    'correct': isCorrect,
+                    'incorrect': !isCorrect && questionData.student_answer_text !== null
                 }"
             >
-                <p class="answer-text">{{ questionData.student_answer_text }}</p>
-                <p class="answer-points">{{ questionData.earnedPoints }}</p>
+                <div class="answer-content">
+                    <span class="answer-text">
+                        {{ questionData.student_answer_text }}
+                    </span>
+                    <span class="answer-points">
+                        ({{ isCorrect ? questionData.earned_points : 0 }} б)
+                    </span>
+                </div>
             </div>
-
-            <div 
-                v-if="questionData.student_answer_text !== questionData.correct_answer_text"
-                class="correct-answer"
-            >
-                Правильна відповідь: {{ questionData.correct_answer_text }}
+        
+            <div v-if="!isCorrect" class="correct-answer">
+                <strong>Правильна відповідь:</strong> {{ questionData.correct_answer_text }}
             </div>
         </div>
     </div>
@@ -49,7 +52,7 @@ const props = defineProps({
         type: Object, 
         default: () => ({}) 
     }
-});
+})
 
 const emit = defineEmits(['update:modelValue'])
 
@@ -96,6 +99,16 @@ function handleInput(event) {
     display: flex;
     flex-direction: column;
     gap: 12px;
+}
+
+.answer-content {
+    display: flex;
+    justify-content: space-between;
+    flex-grow: 1;
+}
+
+.answer-points {
+    color: var(--color-black-half-opacity);
 }
 
 .student-answer {
