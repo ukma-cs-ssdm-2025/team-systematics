@@ -2,10 +2,23 @@
     <div class="question-display-container">
         <!-- Заголовок питання (спільний для всіх типів) -->
         <div class="header">
-            <p class="title">
-                <p v-if="isReviewMode" class="review-question-label"> Питання {{  props.position }} </p>
-                {{ question.title }}
-            </p>
+            <div v-if="isReviewMode" class="question-meta">
+                <span class="review-question-label">Питання {{ question.position }}</span>
+                
+                <div 
+                    v-if="question.earned_points === null" 
+                    class="tooltip-container"
+                >
+                    <span class="info-icon">!</span>
+                    <div class="tooltip-text">
+                        <strong>Увага!</strong> Деякі типи завдань (з розгорнутою відповіддю) потребують
+                        перевірки викладачем. Оцінка за такі завдання буде відображена лише після їхньої
+                        перевірки. Загальна оцінка не враховує оцінку таких завдань до моменту їхньої перевірки.
+                    </div>
+                </div>
+            </div>
+
+            <div class="title">{{ question.title }}</div>
         </div>
 
         <div class="body">
@@ -43,6 +56,7 @@
                     v-model="localAnswer"
                     placeholder="Введіть відповідь..."
                     :is-review-mode="isReviewMode"
+                    :question-data="question"
                 />
             </div>
 
@@ -154,11 +168,71 @@ watch(localAnswer, (newValue) => {
 
 <style scoped>
 .header {
+    display: flex;
+    flex-direction: column;
+    align-items: baseline; 
+    gap: 16px;
     margin-bottom: 20px;
 }
 
 .review-question-label {
     font-weight: bold;
     margin: 20px 0;
+}
+
+.tooltip-container {
+    position: relative;
+    display: inline-block;
+    vertical-align: middle;
+    margin-left: 8px;
+}
+
+.info-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background-color: var(--color-orange);
+    color: var(--color-white);
+    font-weight: bold;
+    font-size: 0.8rem;
+    cursor: help;
+    user-select: none;
+    margin-bottom: 2px;
+}
+
+.tooltip-text {
+    visibility: hidden;
+    opacity: 0;
+    width: 500px;
+    background-color: #f0f0f0;
+    text-align: left;
+    padding: 15px;
+    border-radius: 10px;
+    border: 2px solid var(--color-orange);
+    position: absolute;
+    z-index: 1;
+    bottom: 150%;
+    left: 50%;
+    transform: translateX(-50%);
+    transition: opacity 0.3s, visibility 0.3s;
+}
+
+.tooltip-text::after {
+    content: "";
+    position: absolute;
+    top: 100%;
+    left: 50%;
+    transform: translateX(-50%);
+    border-width: 8px;
+    border-style: solid;
+    border-color: var(--color-orange) transparent transparent transparent;
+}
+
+.tooltip-container:hover .tooltip-text {
+    visibility: visible;
+    opacity: 1;
 }
 </style>
