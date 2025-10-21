@@ -40,8 +40,11 @@ def has_roles(user_roles: Iterable[str] | None,
               *, mode: str = "any",
               strict: bool = False) -> bool:
     """
-    Check roles with canonicalization.
-    Unknown roles are ignored.
+    Determine whether a user's roles satisfy a requirement.
+
+    Canonical roles: {'student','teacher','proctor'}.
+    English and Ukrainian synonyms are mapped. Unknown roles are ignored by
+    default, or raise ValueError when strict=True.
     """
     def _norm(items: Iterable[str] | None) -> set[str]:
         unknown: list[str] = []
