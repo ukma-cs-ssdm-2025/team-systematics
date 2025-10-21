@@ -151,6 +151,7 @@
     async function saveAndNext() {
         const questionId = currentQuestion.value.id
         const answerToSave = allSavedAnswers.value[questionId]
+        const questionType = currentQuestion.value.question_type
 
         // Перевірка, чи є відповідь
         if (answerToSave === null || answerToSave === undefined || (Array.isArray(answerToSave) && answerToSave.length === 0)) {
@@ -161,11 +162,11 @@
         isSaving.value = true
         try {
             // Відправляємо відповідь на бекенд
-            await saveAnswer(attemptId, questionId, answerToSave)
+            await saveAnswer(attemptId, questionId, answerToSave, questionType)
 
             if (isLastQuestion.value) {
                 await finalizeAndLeave()
-                router.push('/exams')
+                router.push(`/exams-results/{attemptId}`)
             } else {
                 currentQuestionIndex.value++
                 localStorage.setItem(localStorageKey, currentQuestionIndex.value)
@@ -189,7 +190,8 @@
             const currentAnswer = allSavedAnswers.value[currentQuestion.value.id]
             if (currentAnswer !== null && currentAnswer !== undefined) {
                 // Якщо відповідь є, зберігаємо її перед виходом
-                await saveAnswer(attemptId, currentQuestion.value.id, currentAnswer)
+                const questionType = currentQuestion.value.question_type
+                await saveAnswer(attemptId, currentQuestion.value.id, currentAnswer, questionType)
             }
 
             const updatedAttempt = await submitExamAttempt(attemptId)
@@ -200,8 +202,6 @@
             if (resolveNavigation) {
                 resolveNavigation(true)
                 resolveNavigation = null
-            } else {
-                router.push('/exams')
             }
         } catch (err) {
             console.error("Помилка при завершенні іспиту:", err)

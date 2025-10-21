@@ -5,6 +5,7 @@ import MyExamsView from '../views/MyExamsView.vue'
 import ExamAttemptView from '../views/ExamAttemptView.vue'
 import ForbiddenView from '../views/ForbiddenView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
+import ExamResultsView from '../views/ExamResultsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -58,8 +59,17 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Проходження іспиту'
       }
+    },
+    {
+      path: '/exams-results/:attemptId',
+      name: 'ExamResults',
+      component: ExamResultsView,
+      meta: {
+        requiresAuth: true,
+        title: 'Результати іспиту'
+       }
     }
-  ]
+    ]
 })
 
 // Перевіряє доступ до маршрутів перед переходом

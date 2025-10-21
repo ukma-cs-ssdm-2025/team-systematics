@@ -1,5 +1,6 @@
 import { http } from '../api/http.js'
 import mockAttemptData from '../mocks/examAttempts.json'
+import mockResultsData from '../mocks/examAttemptResults.json'
 
 // Тимчасово використовуємо заглушку
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
@@ -55,23 +56,30 @@ export async function getExamAttemptDetails(attemptId) {
 }
 
 // Зберігаємо відповідь користувача на сервері
-export async function saveAnswer(attemptId, questionId, answer) {
+export async function saveAnswer(attemptId, questionId, answer, questionType) {
     if (USE_MOCK_DATA) {
         console.log(`MOCK: Збереження відповіді для attemptId=${attemptId}, questionId=${questionId}`, answer)
         return
     }
 
     try {
-        const url = `/api/exam-attempts/${attemptId}/answers`
+        const url = `/api/attempts/${attemptId}/answers`
 
         // Формуємо тіло запиту, яке буде надіслано на сервер
-        const payload = {
-            question_id: questionId,
-            answer: answer
+        let payload = {
+            question_id: questionId
         }
 
+        if (questionType === 'single_choice' || questionType === 'multi_choice') {
+            payload.selected_option_ids = Array.isArray(answer) ? answer : [answer]
+        } else {
+            payload.text = typeof answer === 'object'
+            && answer !== null ? JSON.stringify(answer) : String(answer)
+        }
+
+        console.log("Sending payload to saveAnswer:", payload)
         const response = await http.post(url, payload)
-        return response.data;
+        return response.data
 
    } catch (error) {
         if (error.response && error.response.data && error.response.data.detail) {
@@ -107,5 +115,21 @@ export async function submitExamAttempt(attemptId) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти спробу. Спробуйте ще раз.')
+    }
+}
+
+export async function getExamAttemptResults(attemptId) {
+    if (import.meta.env.VITE_USE_MOCK_DATA === 'true') {
+        return mockResultsData
+    }
+
+    try {
+        const response = await http.get(`/api/attempts/${attemptId}/results`);
+        return response.data;
+     } catch (error) {
+        if (error.response && error.response.data && error.response.data.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося отримати результати іспиту. Спробуйте ще раз.')
     }
 }
