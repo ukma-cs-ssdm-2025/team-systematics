@@ -177,3 +177,7 @@ class ExamsPage(BaseModel):
     )
 
     model_config = {"from_attributes": True}
+
+class ExamsResponse(BaseModel):
+    future: List[ExamSchema]
+    completed: List[ExamSchema]
