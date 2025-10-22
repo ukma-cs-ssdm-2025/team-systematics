@@ -2,7 +2,8 @@ import uuid
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from src.api.database import Base 
+from src.api.database import Base
+from src.models.matchingOptions import MatchingOption 
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -40,6 +41,10 @@ class Question(Base):
     
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
+    matching_options = relationship("MatchingOption", 
+                                    foreign_keys=[MatchingOption.question_id], 
+                                    primaryjoin="Question.id == MatchingOption.question_id",
+                                    cascade="all, delete-orphan")
 
 class Option(Base):
     __tablename__ = "options"
