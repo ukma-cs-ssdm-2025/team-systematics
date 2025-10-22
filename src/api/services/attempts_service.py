@@ -59,7 +59,7 @@ class AttemptsService:
         attempt.correct_answers = grading_result.correct_count
         attempt.incorrect_answers = grading_result.incorrect_count
         attempt.pending_count = grading_result.pending_count
-        attempt.score = final_score
+        attempt.earned_points = final_score
 
         if grading_result.pending_count > 0:
             attempt.status = AttemptStatus.submitted
