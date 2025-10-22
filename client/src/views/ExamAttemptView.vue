@@ -166,7 +166,7 @@
 
             if (isLastQuestion.value) {
                 await finalizeAndLeave()
-                router.push(`/exams-results/{attemptId}`)
+                router.push(`/exams-results/${attemptId}`)
             } else {
                 currentQuestionIndex.value++
                 localStorage.setItem(localStorageKey, currentQuestionIndex.value)
