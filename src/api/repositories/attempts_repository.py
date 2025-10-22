@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, load_only
+from sqlalchemy import func
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
 from src.utils.datetime_utils import to_utc_iso
