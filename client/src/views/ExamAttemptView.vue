@@ -166,7 +166,6 @@
 
             if (isLastQuestion.value) {
                 await finalizeAndLeave()
-                router.push(`/exams-results/${attemptId}`)
             } else {
                 currentQuestionIndex.value++
                 localStorage.setItem(localStorageKey, currentQuestionIndex.value)
@@ -198,6 +197,8 @@
             status.value = updatedAttempt.status
             localStorage.removeItem(localStorageKey)
             localStorage.removeItem(startTimeKey)
+
+            router.push(`/exams-results/${attemptId}`)
 
             if (resolveNavigation) {
                 resolveNavigation(true)
