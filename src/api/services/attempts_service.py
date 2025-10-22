@@ -2,8 +2,10 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.services.grading_service import GradingService
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptStatus, AttemptResultResponse
-from src.api.schemas.exams import Exam, Question 
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
+from src.models.attempts import AttemptStatus
+from src.api.schemas.exams import Exam
+from src.models.exams import Question
 from src.api.errors.app_errors import NotFoundError, ConflictError
 
 class AttemptsService:
