@@ -190,7 +190,7 @@ class AttemptsRepository:
         return {
             "exam_title": attempt.exam.title,
             "attempt_status": attempt.status.value,
-            "score_percent": attempt.score_percent or 0,
+            "score": attempt.earned_points or 0,
             "time_spent_seconds": attempt.time_spent_seconds or 0,
             "total_questions": len(attempt.exam.questions),
             "answers_given": (attempt.correct_answers or 0) + (attempt.incorrect_answers or 0) + (attempt.pending_count or 0),

@@ -55,11 +55,11 @@ class AttemptsService:
         final_score = 0.0
         if total_exam_weight > 0:
             final_score = (grading_result.earned_weight / total_exam_weight) * 100
-        
+
         attempt.correct_answers = grading_result.correct_count
         attempt.incorrect_answers = grading_result.incorrect_count
         attempt.pending_count = grading_result.pending_count
-        attempt.score_percent = int(round(final_score))
+        attempt.score = final_score
 
         if grading_result.pending_count > 0:
             attempt.status = AttemptStatus.submitted
@@ -74,6 +74,7 @@ class AttemptsService:
     def get_attempt_details(self, db: Session, attempt_id: UUID):
         repo = AttemptsRepository(db)
         att = repo.get_attempt_with_details(attempt_id)
+        print(f"Спроба з функції отримання результатів: {att}")
         if not att:
             raise NotFoundError("Attempt not found")
         return att
@@ -94,10 +95,11 @@ class AttemptsService:
         return AttemptResultResponse(
             exam_title=data["exam_title"],
             status=status,
-            score_percent=float(data["score_percent"]),
+            score=float(data["score"]),
             time_spent_seconds=data["time_spent_seconds"],
             total_questions=data["total_questions"],
             answers_given=data["answers_given"],
             correct_answers=data["correct_answers"],
             incorrect_answers=data["incorrect_answers"],
+            pending_count=data["pending_count"]
         )

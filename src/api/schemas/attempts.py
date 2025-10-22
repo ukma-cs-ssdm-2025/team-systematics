@@ -34,9 +34,10 @@ class Answer(BaseModel):
 class AttemptResultResponse(BaseModel):
     exam_title: str
     status: str # in_progress | submitted | completed
-    score_percent: float # do not round
+    score: float
     time_spent_seconds: int
     total_questions: int
     answers_given: int
     correct_answers: int
     incorrect_answers: int
+    pending_count: int
