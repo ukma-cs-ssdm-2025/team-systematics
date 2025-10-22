@@ -21,6 +21,7 @@ class Attempt(Base):
     due_at = Column(DateTime, nullable=False)
     submitted_at = Column(DateTime)
     score_percent = Column(Integer)
+    time_spent_seconds = Column(Integer, nullable=True)
     
     user = relationship("User")
     exam = relationship("Exam", back_populates="attempts")

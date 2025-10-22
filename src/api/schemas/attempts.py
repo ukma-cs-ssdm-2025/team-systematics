@@ -13,6 +13,7 @@ class Attempt(BaseModel):
     due_at: datetime
     submitted_at: Optional[PastDatetime] = None
     score_percent: Optional[conint(ge=0, le=100)] = None
+    time_spent_seconds: Optional[int] = None
 
 class AttemptStartRequest(BaseModel):
     user_id: UUID = Field(..., description="Student user id starting the attempt")
