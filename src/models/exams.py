@@ -46,7 +46,7 @@ class Question(Base):
     exam_id = Column(UUID(as_uuid=True), ForeignKey("exams.id"), nullable=False)
     question_type = Column(SQLAlchemyEnum(QuestionType), nullable=False)
     title = Column(String, nullable=False)
-    points = Column(Integer, default=1)
+    points = Column(Integer, nullable=True)
     position = Column(Integer, default=0)
     
     exam = relationship("Exam", back_populates="questions")
