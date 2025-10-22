@@ -8,7 +8,7 @@ import enum
 class AttemptStatus(str, enum.Enum):
     in_progress = "in_progress"
     submitted = "submitted"
-    expired = "expired"
+    completed = "completed"
 
 class Attempt(Base):
     __tablename__ = "attempts"
