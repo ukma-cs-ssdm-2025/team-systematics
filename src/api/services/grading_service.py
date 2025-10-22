@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from collections import defaultdict
 from src.models.attempts import Attempt
-from src.models.exams import Question, QuestionType, QuestionTypeWeight
+from src.models.exams import Exam, Question, QuestionType, QuestionTypeWeight
 
 class GradingResult:
     """Проста структура для повернення результатів оцінювання."""
