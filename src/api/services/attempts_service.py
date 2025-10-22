@@ -9,8 +9,7 @@ from src.api.schemas.attempts import (
     AttemptResultResponse
 )
 from src.models.attempts import Attempt, AttemptStatus, Answer
-from src.api.schemas.exams import Exam
-from src.models.exams import Question
+from src.models.exams import Exam, Question
 from src.api.errors.app_errors import NotFoundError, ConflictError
 
 class AttemptsService:
