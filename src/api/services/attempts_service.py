@@ -56,6 +56,8 @@ class AttemptsService:
         if total_exam_weight > 0:
             final_score = (grading_result.earned_weight / total_exam_weight) * 100
 
+        final_score = min(100.0, final_score)
+
         attempt.correct_answers = grading_result.correct_count
         attempt.incorrect_answers = grading_result.incorrect_count
         attempt.pending_count = grading_result.pending_count
