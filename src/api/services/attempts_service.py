@@ -1,4 +1,5 @@
 from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import func
 from uuid import UUID
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.services.grading_service import GradingService
