@@ -2,7 +2,7 @@ from fastapi import HTTPException
 from sqlalchemy.orm import Session
 from src.api.repositories.user_repository import UserRepository
 from src.core.security import create_access_token
-from src.api.schemas.auth_schema import LoginRequest, LoginResponse, UserResponse
+from src.api.schemas.auth import LoginRequest, LoginResponse, UserResponse
 from src.utils.hashing import verify_password, get_password_hash
 
 
