@@ -23,7 +23,7 @@ class AttemptsService:
             raise ConflictError("Attempt is locked or submitted")
         return repo.upsert_answer(attempt_id, payload)
 
-    def submit(self, db: Session, attempt_id: UUID) -> Attempt:
+    def submit(self, db: Session, attempt_id: UUID) -> AttemptSchema:
         """
         Завершує спробу, запускає повний процес оцінювання та зберігає результати.
         """
