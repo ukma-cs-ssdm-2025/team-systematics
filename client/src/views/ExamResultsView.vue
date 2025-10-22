@@ -20,7 +20,7 @@
 
                 <div class="score-block">
                     <span class="score-label">Оцінка:</span>
-                    <span class="score-value">{{ results.score_percent }} / 100</span>
+                    <span class="score-value">{{ results.score }} / 100</span>
                 </div>
 
                 <ul class="statistics-list">
