@@ -13,6 +13,16 @@ class QuestionType(str, enum.Enum):
     long_answer = "long_answer"
     matching = "matching"
 
+class QuestionTypeWeight(Base):
+    __tablename__ = 'question_type_weights'
+    question_type = Column( SQLAlchemyEnum(
+            QuestionType,
+            name="question_type_enum_weights",
+            create_type=False),
+            primary_key=True
+    )
+    weight = Column(Integer, nullable=False, default=1)
+
 class Exam(Base):
     __tablename__ = "exams"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
