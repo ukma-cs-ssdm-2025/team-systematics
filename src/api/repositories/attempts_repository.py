@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, load_only
+from sqlalchemy.orm import Session, load_only, joinedload
 from sqlalchemy import func
 from uuid import UUID
 from datetime import datetime, timedelta, timezone
