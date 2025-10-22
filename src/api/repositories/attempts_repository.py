@@ -1,6 +1,6 @@
 from sqlalchemy.orm import Session, load_only
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
@@ -92,7 +92,7 @@ class AttemptsRepository:
         if not attempt:
             return None
 
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
         attempt.submitted_at = current_time
         attempt.status = AttemptStatus.submitted
     
