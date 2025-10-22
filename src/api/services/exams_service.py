@@ -4,23 +4,32 @@ from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from src.models.attempts import AttemptStatus
 from src.api.errors.app_errors import NotFoundError
 from datetime import datetime, timezone
 
 class ExamsService:
-    def list(self, db: Session, limit: int, offset: int):
+    def list(self, db: Session, user_id: UUID, limit: int, offset: int):
+        """
+        Завжди повертає персоналізований список іспитів для користувача.
+        """
         repo = ExamsRepository(db)
-        items, _ = repo.list(limit=limit, offset=offset)
+        items_with_status, _ = repo.list(user_id=user_id, limit=limit, offset=offset)
+        
         now = datetime.now(timezone.utc)
-        future = []
-        completed = []
-        for item in items:
-            exam = Exam.model_validate(item)
-            if exam.end_at > now:
-                future.append(exam)
-            else:
-                completed.append(exam)
-        return {"future": future, "completed": completed}
+        future_or_active = []
+        completed_by_user = []
+
+        for exam_model, attempt_status in items_with_status:
+            exam_schema = Exam.model_validate(exam_model)
+
+            if attempt_status in (AttemptStatus.submitted, AttemptStatus.completed):
+                completed_by_user.append(exam_schema)
+            
+            elif exam_schema.end_at > now:
+                future_or_active.append(exam_schema)
+
+        return {"future": future_or_active, "completed": completed_by_user}
 
     def get(self, db: Session, exam_id: UUID) -> Exam:
         repo = ExamsRepository(db)
