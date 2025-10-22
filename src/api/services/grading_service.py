@@ -62,7 +62,7 @@ class GradingService:
             correct_data = correct_data_map[question.id]
             
             if question.question_type in (QuestionType.single_choice, QuestionType.multi_choice):
-                user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.options}
+                user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.selected_options}
                 if user_option_ids == correct_data.get('options', set()):
                     is_correct = True
             

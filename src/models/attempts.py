@@ -38,9 +38,11 @@ class Answer(Base):
     
     attempt = relationship("Attempt", back_populates="answers")
     question = relationship("Question")
-    selected_options = relationship("AnswerOption", cascade="all, delete-orphan")
+    selected_options = relationship("AnswerOption", back_populates="answer", cascade="all, delete-orphan")
 
 class AnswerOption(Base):
     __tablename__ = "answer_options"
     answer_id = Column(UUID(as_uuid=True), ForeignKey("answers.id"), primary_key=True)
     selected_option_id = Column(UUID(as_uuid=True), ForeignKey("options.id"), primary_key=True)
+
+    answer = relationship("Answer", back_populates="selected_options")

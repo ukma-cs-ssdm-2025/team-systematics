@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload
+from sqlalchemy.orm import Session, joinedload, selectinload
 from uuid import UUID
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.services.grading_service import GradingService
@@ -33,7 +33,7 @@ class AttemptsService:
             joinedload(Attempt.exam).selectinload(Exam.questions).selectinload(Question.options),
             joinedload(Attempt.exam).selectinload(Exam.questions).selectinload(Question.matching_options),
             selectinload(Attempt.answers).joinedload(Answer.question),
-            selectinload(Attempt.answers).selectinload(Answer.options)
+            selectinload(Attempt.answers).selectinload(Answer.selected_options)
         ).one_or_none()
 
         if not attempt:
