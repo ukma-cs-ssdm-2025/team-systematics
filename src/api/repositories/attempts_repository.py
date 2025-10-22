@@ -4,8 +4,9 @@ from datetime import datetime, timedelta
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
-from src.models.exam import Attempt, Answer, Exam, Question, Option, AnswerOption
-from src.models.matching import MatchingOption
+from src.models.exams import Exam, Question, Option
+from src.models.attempts import Attempt, Answer, AnswerOption
+from src.models.matchingOptions import MatchingOption
 from src.api.schemas.attempts import AnswerUpsert
 
 class AttemptsRepository:

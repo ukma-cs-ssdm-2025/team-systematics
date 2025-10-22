@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 # НОВЕ: Імпортуємо Optional для сумісності з Python 3.9
 from typing import List, Tuple, Optional
-from src.models.exam import Exam
+from src.models.exams import Exam
 from src.api.schemas.exams import ExamCreate, ExamUpdate
 
 class ExamsRepository:

@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
-from src.models.user import User
-from src.models.role import Role
-from src.models.user_role import UserRole
+from src.models.users import User
+from src.models.roles import Role
+from src.models.userRoles import UserRole
 
 
 class UserRepository:
