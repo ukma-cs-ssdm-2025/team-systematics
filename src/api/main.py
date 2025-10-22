@@ -13,6 +13,7 @@ from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.database import engine
 from src.models import users, roles, userRoles, exams
+from src.api.controllers.exam_results_controller import router as exam_results_router
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -63,6 +64,7 @@ def create_app() -> FastAPI:
     app.include_router(auth_controller.router, prefix="/api")
     app.include_router(exams_controller.router, prefix="/api")
     app.include_router(attempts_controller.router, prefix="/api")
+    app.include_router(exam_results_router)
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))

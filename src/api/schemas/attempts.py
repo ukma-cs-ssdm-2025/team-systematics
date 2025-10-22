@@ -29,3 +29,13 @@ class Answer(BaseModel):
     text: Optional[str] = None
     selected_option_ids: Optional[List[UUID]] = None    
     saved_at: PastDatetime
+
+class AttemptResultResponse(BaseModel):
+    exam_title: str
+    status: str # in_progress | submitted | completed
+    score_percent: float # do not round
+    time_spent_seconds: int
+    total_questions: int
+    answers_given: int
+    correct_answers: int
+    incorrect_answers: int
