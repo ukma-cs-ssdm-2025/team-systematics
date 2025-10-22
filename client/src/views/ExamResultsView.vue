@@ -31,8 +31,8 @@
                     }}</strong></li>
                     <li>Надано неправильних відповідей: <strong>{{ results.incorrect_answers }} / {{
                         results.total_questions }}</strong></li>
-                    <li v-if="results.pending_review_count > 0" class="pending">
-                        Питань, що очікують перевірки: <strong>{{ results.pending_review_count }}</strong>
+                    <li v-if="results.pending_count > 0" class="pending">
+                        Питань, що очікують перевірки: <strong>{{ results.pending_count }}</strong>
 
                          <Tooltip>
                             <template #trigger>
@@ -81,6 +81,7 @@ onMounted(async () => {
     try {
         const data = await getExamAttemptResults(attemptId)
         results.value = data
+        console.log(data)
         document.title = `Результати ${data.exam_title} | Systematics`
     } catch (err) {
         error.value = "Не вдалося завантажити результати."
