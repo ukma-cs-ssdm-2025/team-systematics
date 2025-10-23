@@ -2,7 +2,8 @@ import uuid
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from src.api.database import Base 
+from src.api.database import Base
+from src.models.matchingOptions import MatchingOption 
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -12,10 +13,15 @@ class QuestionType(str, enum.Enum):
     long_answer = "long_answer"
     matching = "matching"
 
-class AttemptStatus(str, enum.Enum):
-    in_progress = "in_progress"
-    submitted = "submitted"
-    expired = "expired"
+class QuestionTypeWeight(Base):
+    __tablename__ = 'question_type_weights'
+    question_type = Column( SQLAlchemyEnum(
+            QuestionType,
+            name="question_type_enum_weights",
+            create_type=False),
+            primary_key=True
+    )
+    weight = Column(Integer, nullable=False, default=1)
 
 class Exam(Base):
     __tablename__ = "exams"
@@ -32,6 +38,7 @@ class Exam(Base):
     owner = relationship("User")
     
     questions = relationship("Question", back_populates="exam", cascade="all, delete-orphan")
+    attempts = relationship("Attempt", back_populates="exam")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -39,11 +46,15 @@ class Question(Base):
     exam_id = Column(UUID(as_uuid=True), ForeignKey("exams.id"), nullable=False)
     question_type = Column(SQLAlchemyEnum(QuestionType), nullable=False)
     title = Column(String, nullable=False)
-    points = Column(Integer, default=1)
+    points = Column(Integer, nullable=True)
     position = Column(Integer, default=0)
     
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
+    matching_options = relationship("MatchingOption", 
+                                    foreign_keys=[MatchingOption.question_id], 
+                                    primaryjoin="Question.id == MatchingOption.question_id",
+                                    cascade="all, delete-orphan")
 
 class Option(Base):
     __tablename__ = "options"
@@ -53,37 +64,3 @@ class Option(Base):
     is_correct = Column(Boolean, default=False)
     
     question = relationship("Question", back_populates="options")
-
-class Attempt(Base):
-    __tablename__ = "attempts"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    exam_id = Column(UUID(as_uuid=True), ForeignKey("exams.id"), nullable=False)
-    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
-    
-    status = Column(SQLAlchemyEnum(AttemptStatus), default=AttemptStatus.in_progress)
-    started_at = Column(DateTime, nullable=False)
-    due_at = Column(DateTime, nullable=False)
-    submitted_at = Column(DateTime)
-    score_percent = Column(Integer)
-    
-    user = relationship("User")
-    exam = relationship("Exam")
-    answers = relationship("Answer", back_populates="attempt", cascade="all, delete-orphan")
-
-class Answer(Base):
-    __tablename__ = "answers"
-    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    attempt_id = Column(UUID(as_uuid=True), ForeignKey("attempts.id"), nullable=False)
-    question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
-    answer_text = Column(String, nullable=True)
-    answer_json = Column(JSONB, nullable=True)
-    saved_at = Column(TIMESTAMP(timezone=True), nullable=False) 
-    
-    attempt = relationship("Attempt", back_populates="answers")
-    question = relationship("Question")
-    selected_options = relationship("AnswerOption", cascade="all, delete-orphan")
-
-class AnswerOption(Base):
-    __tablename__ = "answer_options"
-    answer_id = Column(UUID(as_uuid=True), ForeignKey("answers.id"), primary_key=True)
-    selected_option_id = Column(UUID(as_uuid=True), ForeignKey("options.id"), primary_key=True)

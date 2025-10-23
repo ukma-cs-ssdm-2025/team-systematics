@@ -20,7 +20,7 @@
 
                 <div class="score-block">
                     <span class="score-label">Оцінка:</span>
-                    <span class="score-value">{{ results.score_percent }} / 100</span>
+                    <span class="score-value">{{ roundedScore }} / 100</span>
                 </div>
 
                 <ul class="statistics-list">
@@ -31,8 +31,8 @@
                     }}</strong></li>
                     <li>Надано неправильних відповідей: <strong>{{ results.incorrect_answers }} / {{
                         results.total_questions }}</strong></li>
-                    <li v-if="results.pending_review_count > 0" class="pending">
-                        Питань, що очікують перевірки: <strong>{{ results.pending_review_count }}</strong>
+                    <li v-if="results.pending_count > 0" class="pending">
+                        Питань, що очікують перевірки: <strong>{{ results.pending_count }}</strong>
 
                          <Tooltip>
                             <template #trigger>
@@ -72,6 +72,16 @@ const loading = ref(true)
 const error = ref(null)
 const results = ref(null)
 
+const roundedScore = computed(() => {
+    if (!results.value || typeof results.value.score !== 'number') {
+        return 0
+    }
+    const ceiledScore = Math.ceil(results.value.score)
+    
+    // обмежуємо максимальним значенням 100
+    return Math.min(100, ceiledScore)
+})
+
 onMounted(async () => {
     if (!attemptId) {
         error.value = "Не знайдено ID спроби."
@@ -81,6 +91,7 @@ onMounted(async () => {
     try {
         const data = await getExamAttemptResults(attemptId)
         results.value = data
+        console.log(data)
         document.title = `Результати ${data.exam_title} | Systematics`
     } catch (err) {
         error.value = "Не вдалося завантажити результати."
