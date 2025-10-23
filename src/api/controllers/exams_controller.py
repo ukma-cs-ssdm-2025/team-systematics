@@ -3,7 +3,8 @@ from fastapi import APIRouter, Query, Path, status, Depends
 from uuid import UUID
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
 from src.api.schemas.attempts import Attempt
-from src.utils.auth import get_current_user_id
+from src.models.users import User
+from src.utils.auth import get_current_user_id, get_current_user 
 from src.api.services.exams_service import ExamsService
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -14,8 +15,13 @@ class ExamsController:
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
 
         @self.router.get("", summary="List exams")
-        async def list_exams(db: Session = Depends(get_db), limit: int = Query(10, ge=1, le=100), offset: int = Query(0, ge=0)):
-            return self.service.list(db, limit=limit, offset=offset)
+        async def list_exams(
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+            limit: int = Query(10, ge=1, le=100),
+            offset: int = Query(0, ge=0)
+            ):
+            return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(payload: ExamCreate, db: Session = Depends(get_db)):
