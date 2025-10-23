@@ -5,7 +5,7 @@ from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
 from src.models.attempts import AttemptStatus
-from src.api.errors.app_errors import NotFoundError
+from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 
 class ExamsService:
@@ -60,7 +60,16 @@ class ExamsService:
         exam = exams_repo.get(exam_id)
         if not exam:
             raise NotFoundError("Exam not found")
-            
+
+        user_attempts_count = attempts_repo.get_user_attempt_count(
+            user_id=user_id,
+            exam_id=exam_id
+        )
+
+       # Перевіряємо, чи не перевищено ліміт спроб
+        if user_attempts_count >= exam.max_attempts:
+            raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
+
         attempts_repo = AttemptsRepository(db)
         return attempts_repo.create_attempt(
             exam_id=exam_id,

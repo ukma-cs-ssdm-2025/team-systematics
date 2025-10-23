@@ -198,3 +198,13 @@ class AttemptsRepository:
             "incorrect_answers": attempt.incorrect_answers or 0,
             "pending_count": attempt.pending_count or 0,
         }
+
+    def get_user_attempt_count(self, user_id: UUID, exam_id: UUID) -> int:
+    """
+    Рахує кількість існуючих спроб для конкретного користувача та іспиту.
+    """
+    count = self.db.query(Attempt).filter(
+        Attempt.exam_id == exam_id,
+        Attempt.user_id == user_id
+    ).count()
+    return count
