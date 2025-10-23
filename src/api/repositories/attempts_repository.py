@@ -200,11 +200,11 @@ class AttemptsRepository:
         }
 
     def get_user_attempt_count(self, user_id: UUID, exam_id: UUID) -> int:
-    """
-    Рахує кількість існуючих спроб для конкретного користувача та іспиту.
-    """
-    count = self.db.query(Attempt).filter(
-        Attempt.exam_id == exam_id,
-        Attempt.user_id == user_id
-    ).count()
-    return count
+        """
+        Рахує кількість існуючих спроб для конкретного користувача та іспиту.
+        """
+        count = self.db.query(Attempt).filter(
+            Attempt.exam_id == exam_id,
+            Attempt.user_id == user_id
+        ).count()
+        return count

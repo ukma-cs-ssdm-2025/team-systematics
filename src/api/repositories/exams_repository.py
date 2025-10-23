@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
+from sqlalchemy import and_, func
 from uuid import UUID
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
@@ -14,15 +14,17 @@ class ExamsRepository:
         """
         Повертає персоналізований список іспитів для конкретного користувача.
         """
+        # Підраховуємо кількість спроб іспиту
+        attempt_count_subquery = self.db.query(
+            func.count(Attempt.id)
+        ).filter(
+            Attempt.exam_id == Exam.id,
+            Attempt.user_id == user_id
+        ).correlate(Exam).scalar_subquery().label("user_attempts_count")
+
         query = self.db.query(
             Exam,
-            Attempt.status
-        ).outerjoin(
-            Attempt,
-            and_(
-                Exam.id == Attempt.exam_id,
-                Attempt.user_id == user_id
-            )
+            attempt_count_subquery
         ).order_by(Exam.end_at.desc())
 
         total = query.count()
