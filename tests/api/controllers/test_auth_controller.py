@@ -6,7 +6,7 @@ from uuid import uuid4
 from src.api.controllers.auth_controller import AuthController
 from src.api.database import get_db
 from src.api.controllers.versioning import require_api_version
-from src.api.schemas.auth_schema import LoginRequest, LoginResponse, UserResponse
+from src.api.schemas.auth import LoginRequest, LoginResponse, UserResponse
 
 
 @pytest.fixture
