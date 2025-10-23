@@ -1,11 +1,12 @@
-from sqlalchemy.orm import Session, load_only
+from sqlalchemy.orm import Session, load_only, joinedload
+from sqlalchemy import func
 from uuid import UUID
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
 from src.models.exams import Exam, Question, Option
-from src.models.attempts import Attempt, Answer, AnswerOption
+from src.models.attempts import Attempt, AttemptStatus, Answer, AnswerOption
 from src.models.matchingOptions import MatchingOption
 from src.api.schemas.attempts import AnswerUpsert
 
@@ -92,8 +93,14 @@ class AttemptsRepository:
         if not attempt:
             return None
 
-        attempt.status = "submitted"
-        attempt.submitted_at = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
+        attempt.submitted_at = current_time
+        attempt.status = AttemptStatus.submitted
+    
+        if attempt.started_at:
+            time_difference = current_time - attempt.started_at
+            attempt.time_spent_seconds = int(time_difference.total_seconds())
+            
         self.db.commit()
         self.db.refresh(attempt)
         return attempt
@@ -172,3 +179,22 @@ class AttemptsRepository:
             'questions': questions_out,
         }
         return result
+
+    def get_attempt_result_raw(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
+        attempt = self.db.query(Attempt).options(
+            joinedload(Attempt.exam)
+        ).filter(Attempt.id == attempt_id).first()
+        if not attempt:
+            return None
+
+        return {
+            "exam_title": attempt.exam.title,
+            "attempt_status": attempt.status.value,
+            "score": attempt.earned_points or 0,
+            "time_spent_seconds": attempt.time_spent_seconds or 0,
+            "total_questions": len(attempt.exam.questions),
+            "answers_given": (attempt.correct_answers or 0) + (attempt.incorrect_answers or 0) + (attempt.pending_count or 0),
+            "correct_answers": attempt.correct_answers or 0,
+            "incorrect_answers": attempt.incorrect_answers or 0,
+            "pending_count": attempt.pending_count or 0,
+        }
