@@ -4,7 +4,6 @@ from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
-from src.models.attempts import AttemptStatus
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 
@@ -20,10 +19,10 @@ class ExamsService:
         future_or_active = []
         completed_by_user = []
 
-        for exam_model, attempt_status in items_with_status:
+        for exam_model, user_attempts_count in items_with_status:
             exam_schema = Exam.model_validate(exam_model)
 
-            if attempt_status in (AttemptStatus.submitted, AttemptStatus.completed):
+            if user_attempts_count >= exam_schema.max_attempts:
                 completed_by_user.append(exam_schema)
             
             elif exam_schema.end_at > now:
@@ -58,6 +57,9 @@ class ExamsService:
     def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
         exams_repo = ExamsRepository(db)
         exam = exams_repo.get(exam_id)
+
+        attempts_repo = AttemptsRepository(db)
+        
         if not exam:
             raise NotFoundError("Exam not found")
 
@@ -70,7 +72,6 @@ class ExamsService:
         if user_attempts_count >= exam.max_attempts:
             raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
 
-        attempts_repo = AttemptsRepository(db)
         return attempts_repo.create_attempt(
             exam_id=exam_id,
             user_id=user_id,
