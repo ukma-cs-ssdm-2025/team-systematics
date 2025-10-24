@@ -25,6 +25,9 @@ COPY requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
 
+# Copy Python source code from the src directory into the container.
+COPY src/ .
+
 COPY --from=builder /app/client/dist /app/client/dist
 
 EXPOSE 3000
