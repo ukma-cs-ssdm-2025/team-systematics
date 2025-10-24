@@ -21,6 +21,9 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Python looks in app directory
+ENV PYTHONPATH="${PYTHONPATH}:/app"
+
 COPY requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
@@ -33,5 +36,5 @@ COPY --from=builder /app/client/dist /app/client/dist
 EXPOSE 3000
 
 # Run the application
-CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "3000"]
 
