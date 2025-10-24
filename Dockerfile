@@ -30,5 +30,5 @@ COPY --from=builder /app/client/dist /app/client/dist
 EXPOSE 3000
 
 # Run the application
-CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "3000"]
+CMD ["uvicorn", "api.main:app", "--host", "0.0.0.0", "--port", "3000"]
 
