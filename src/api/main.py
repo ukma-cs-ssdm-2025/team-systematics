@@ -40,6 +40,7 @@ def create_app() -> FastAPI:
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8000",
+        "https://systematics-client.onrender.com",
         "https://ukma-cs-ssdm-2025.github.io",
     ]
 

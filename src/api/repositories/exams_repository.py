@@ -1,17 +1,35 @@
 from sqlalchemy.orm import Session
+from sqlalchemy import and_, func
 from uuid import UUID
-# НОВЕ: Імпортуємо Optional для сумісності з Python 3.9
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
+from src.models.attempts import Attempt
 from src.api.schemas.exams import ExamCreate, ExamUpdate
 
 class ExamsRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self, limit: int, offset: int) -> Tuple[List[Exam], int]:
-        total = self.db.query(Exam).count()
-        items = self.db.query(Exam).offset(offset).limit(limit).all()
+    def list(self, user_id: UUID, limit: int, offset: int) -> Tuple[List[Exam], int]:
+        """
+        Повертає персоналізований список іспитів для конкретного користувача.
+        """
+        # Підраховуємо кількість спроб іспиту
+        attempt_count_subquery = self.db.query(
+            func.count(Attempt.id)
+        ).filter(
+            Attempt.exam_id == Exam.id,
+            Attempt.user_id == user_id
+        ).correlate(Exam).scalar_subquery().label("user_attempts_count")
+
+        query = self.db.query(
+            Exam,
+            attempt_count_subquery
+        ).order_by(Exam.end_at.desc())
+
+        total = query.count()
+        items = query.offset(offset).limit(limit).all()
+        
         return items, total
 
     # ВИПРАВЛЕНО: Замінено 'Exam | None' на 'Optional[Exam]'

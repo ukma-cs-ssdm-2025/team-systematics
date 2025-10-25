@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi import APIRouter, status, Depends
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
 from src.api.services.attempts_service import AttemptsService
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -22,3 +22,7 @@ class AttemptsController:
         @self.router.get("/{attempt_id}", summary="Get attempt details for UI")
         async def get_attempt_details(attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.get_attempt_details(db, attempt_id)
+
+        @self.router.get("/{attempt_id}/results", response_model=AttemptResultResponse, summary="Send exam results")
+        async def read_attempt_result(attempt_id: UUID, db: Session = Depends(get_db)):
+            return self.service.get_attempt_result(db, attempt_id=attempt_id)

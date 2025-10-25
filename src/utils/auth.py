@@ -3,6 +3,9 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from src.core.config import JWT_SECRET, JWT_ALGORITHM
+from sqlalchemy.orm import Session
+from src.api.database import get_db
+from src.models.users import User
 
 security = HTTPBearer()
 
@@ -84,3 +87,16 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid authentication credentials"
         )
+
+def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_current_user_id)) -> User:
+    """
+    Залежність FastAPI, яка спочатку отримує ID користувача з токена,
+    а потім завантажує та повертає повний об'єкт користувача з бази даних.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
+        )
+    return user

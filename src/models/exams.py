@@ -2,7 +2,8 @@ import uuid
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
-from src.api.database import Base 
+from src.api.database import Base
+from src.models.matchingOptions import MatchingOption 
 import enum
 
 class QuestionType(str, enum.Enum):
@@ -11,6 +12,16 @@ class QuestionType(str, enum.Enum):
     short_answer = "short_answer"
     long_answer = "long_answer"
     matching = "matching"
+
+class QuestionTypeWeight(Base):
+    __tablename__ = 'question_type_weights'
+    question_type = Column( SQLAlchemyEnum(
+            QuestionType,
+            name="question_type_enum_weights",
+            create_type=False),
+            primary_key=True
+    )
+    weight = Column(Integer, nullable=False, default=1)
 
 class Exam(Base):
     __tablename__ = "exams"
@@ -35,11 +46,15 @@ class Question(Base):
     exam_id = Column(UUID(as_uuid=True), ForeignKey("exams.id"), nullable=False)
     question_type = Column(SQLAlchemyEnum(QuestionType), nullable=False)
     title = Column(String, nullable=False)
-    points = Column(Integer, default=1)
+    points = Column(Integer, nullable=True)
     position = Column(Integer, default=0)
     
     exam = relationship("Exam", back_populates="questions")
     options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
+    matching_options = relationship("MatchingOption", 
+                                    foreign_keys=[MatchingOption.question_id], 
+                                    primaryjoin="Question.id == MatchingOption.question_id",
+                                    cascade="all, delete-orphan")
 
 class Option(Base):
     __tablename__ = "options"

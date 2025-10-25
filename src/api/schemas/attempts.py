@@ -13,6 +13,7 @@ class Attempt(BaseModel):
     due_at: datetime
     submitted_at: Optional[PastDatetime] = None
     score_percent: Optional[conint(ge=0, le=100)] = None
+    time_spent_seconds: Optional[int] = None
 
 class AttemptStartRequest(BaseModel):
     user_id: UUID = Field(..., description="Student user id starting the attempt")
@@ -29,3 +30,14 @@ class Answer(BaseModel):
     text: Optional[str] = None
     selected_option_ids: Optional[List[UUID]] = None    
     saved_at: PastDatetime
+
+class AttemptResultResponse(BaseModel):
+    exam_title: str
+    status: str # in_progress | submitted | completed
+    score: float
+    time_spent_seconds: int
+    total_questions: int
+    answers_given: int
+    correct_answers: int
+    incorrect_answers: int
+    pending_count: int
