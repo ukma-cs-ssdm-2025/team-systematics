@@ -35,10 +35,10 @@ npm run dev
 
 
 ## Наші учасники:
-- Малій Олександра - Security Analyst
-- Фломбойм Мирослава - Documentation Lead
-- Колінько Владислава - Quality Lead
-- Бакалина Анастасія - Code Reviewer
+- Малій Олександра - Debugger
+- Фломбойм Мирослава - QA Planner
+- Колінько Владислава - Test Lead
+- Бакалина Анастасія - Integration Lead
 
 ## Артефакти:
 - [Командний статут](/docs/requirements/TeamCharter.md)
