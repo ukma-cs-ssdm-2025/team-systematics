@@ -31,7 +31,7 @@ class AttemptsController:
         @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
             summary="Отримати детальний огляд спроби іспиту")
         async def get_exam_attempt_review(
-            attempt_id: UUID = Path(..., description="ID спроби іспиту"),
+            attempt_id: UUID,
             db: Session = Depends(get_db),
             review_service: ExamReviewService = Depends(get_exam_review_service)
         ):
