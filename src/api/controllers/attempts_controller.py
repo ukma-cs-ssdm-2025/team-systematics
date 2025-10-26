@@ -4,13 +4,14 @@ from fastapi import APIRouter, status, Depends
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
-from src.api.services.exam_review_service import get_attempt_review
+from src.api.services.exam_review_service import ExamReviewService
 from .versioning import require_api_version
 from src.api.database import get_db
 
 class AttemptsController:
-    def __init__(self, service: AttemptsService) -> None:
+    def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
         self.service = service
+        self.review_service = review_service
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
 
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
@@ -32,8 +33,8 @@ class AttemptsController:
         @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
             summary="Отримати детальний огляд спроби іспиту")
         async def get_exam_attempt_review(
+            self,
             attempt_id: UUID,
             db: Session = Depends(get_db),
-            review_service: ExamAttemptReviewService = Depends(get_attempt_review)
         ):
             return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
