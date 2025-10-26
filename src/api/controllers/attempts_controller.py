@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi import APIRouter, status, Depends
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
+from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -26,3 +27,12 @@ class AttemptsController:
         @self.router.get("/{attempt_id}/results", response_model=AttemptResultResponse, summary="Send exam results")
         async def read_attempt_result(attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.get_attempt_result(db, attempt_id=attempt_id)
+
+        @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
+            summary="Отримати детальний огляд спроби іспиту")
+        async def get_exam_attempt_review(
+            attempt_id: UUID = Path(..., description="ID спроби іспиту"),
+            db: Session = Depends(get_db),
+            review_service: ExamReviewService = Depends(get_exam_review_service)
+        ):
+            return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
