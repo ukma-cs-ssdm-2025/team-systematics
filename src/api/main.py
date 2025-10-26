@@ -70,6 +70,7 @@ def create_app() -> FastAPI:
     app.include_router(exams_controller.router, prefix="/api")
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
+    app.include_router(exam_review_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
