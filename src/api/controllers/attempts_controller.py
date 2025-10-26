@@ -4,6 +4,7 @@ from fastapi import APIRouter, status, Depends
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
+from src.api.services.exam_review_service import get_attempt_review
 from .versioning import require_api_version
 from src.api.database import get_db
 
@@ -33,6 +34,6 @@ class AttemptsController:
         async def get_exam_attempt_review(
             attempt_id: UUID,
             db: Session = Depends(get_db),
-            review_service: ExamReviewService = Depends(get_exam_review_service)
+            review_service: ExamAttemptReviewService = Depends(get_attempt_review)
         ):
             return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
