@@ -11,7 +11,7 @@ class SingleChoiceOption(BaseModel):
     is_selected: bool
 
 class MultiChoiceOption(SingleChoiceOption):
-    earned_points_per_option: int
+    earned_points_per_option: float
 
 # --- Моделі для типу "Matching" ---
 
@@ -20,7 +20,7 @@ class MatchingPrompt(BaseModel):
     text: str
     student_match_id: Optional[str]
     correct_match_id: str
-    earned_points_per_match: int
+    earned_points_per_match: float
 
 class MatchingMatch(BaseModel):
     id: str
@@ -37,8 +37,8 @@ class BaseQuestionReview(BaseModel):
     id: str
     position: int
     title: str
-    points: int
-    earned_points: Optional[int] # 'null' для питань, що чекають на перевірку
+    points: float
+    earned_points: Optional[float] # 'null' для питань, що чекають на перевірку
 
 # --- Конкретні типи питань ---
 
