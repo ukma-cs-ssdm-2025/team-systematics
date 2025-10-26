@@ -144,6 +144,8 @@ function getReviewClasses(prompt) {
 }
 
 .match-select, .review-item {
+    display: flex;
+    align-items: center;
     width: 100%;
     height: 100%;
     padding: 0 16px;
@@ -158,6 +160,7 @@ function getReviewClasses(prompt) {
     background-position: right 16px center;
     background-repeat: no-repeat;
     background-size: 24px;
+    cursor: not-allowed;
 }
 
 .match-select:hover {
