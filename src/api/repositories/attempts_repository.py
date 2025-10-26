@@ -208,3 +208,14 @@ class AttemptsRepository:
             Attempt.user_id == user_id
         ).count()
         return count
+
+    def get_attempt_for_review(self, attempt_id: UUID) -> Optional[Attempt]:
+        """
+        Завантажує спробу з усіма необхідними пов'язаними даними для
+        побудови сторінки детального огляду (review).
+        """
+        return self.db.query(Attempt).options(
+            joinedload(Attempt.exam).joinedload(Exam.questions).joinedload(Question.options),
+            joinedload(Attempt.exam).joinedload(Exam.questions).joinedload(Question.matching_options),
+            joinedload(Attempt.answers).joinedload(Answer.selected_options)
+        ).filter(Attempt.id == attempt_id).first()
