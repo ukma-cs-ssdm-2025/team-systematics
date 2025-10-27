@@ -2,7 +2,7 @@ import axios from 'axios'
 import router from '../router'
 
 export const http = axios.create({
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: import.meta.env.VITE_API_BASE_URL,
 })
 
 // Додає токен до кожного запиту

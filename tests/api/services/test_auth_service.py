@@ -4,7 +4,7 @@ from fastapi import HTTPException
 
 import src.api.services.auth_service as svc_module
 from src.api.services.auth_service import AuthService
-from src.api.schemas.auth_schema import LoginRequest
+from src.api.schemas.auth import LoginRequest
 
 
 class StubUser:

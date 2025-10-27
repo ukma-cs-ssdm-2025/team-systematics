@@ -21,9 +21,15 @@ FROM python:3.11-slim
 
 WORKDIR /app
 
+# Python looks in app directory
+ENV PYTHONPATH="${PYTHONPATH}:/app"
+
 COPY requirements.txt requirements.txt
 
 RUN pip install --no-cache-dir -r requirements.txt
+
+# Copy Python source code from the src directory into the container.
+COPY src/ ./src/
 
 COPY --from=builder /app/client/dist /app/client/dist
 

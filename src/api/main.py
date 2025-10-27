@@ -8,11 +8,14 @@ from src.api.errors.app_errors import install_exception_handlers
 from src.api.services.exams_service import ExamsService
 from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
+from src.api.services.courses_service import CoursesService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
+from src.api.controllers.courses_controller import CoursesController
 from src.api.database import engine
 from src.models import users, roles, userRoles, exams
+from src.models import course as course_models
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -20,6 +23,7 @@ def create_app() -> FastAPI:
     roles.Base.metadata.create_all(bind=engine)
     userRoles.Base.metadata.create_all(bind=engine)
     exams.Base.metadata.create_all(bind=engine)
+    course_models.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
@@ -36,6 +40,7 @@ def create_app() -> FastAPI:
         "http://localhost:5173",
         "http://localhost:3000",
         "http://localhost:8000",
+        "https://systematics-client.onrender.com",
         "https://ukma-cs-ssdm-2025.github.io",
     ]
 
@@ -58,12 +63,13 @@ def create_app() -> FastAPI:
     exams_controller = ExamsController(exams_service)
     attempts_controller = AttemptsController(attempts_service)
     auth_controller = AuthController(auth_service)
+    courses_controller = CoursesController(CoursesService())
 
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
     app.include_router(exams_controller.router, prefix="/api")
     app.include_router(attempts_controller.router, prefix="/api")
-    app.include_router(exam_review_controller.router, prefix="/api")
+    app.include_router(courses_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
