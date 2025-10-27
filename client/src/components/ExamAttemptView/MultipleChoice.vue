@@ -32,7 +32,7 @@
                         <p
                             v-if="isReviewMode && (option.is_correct || option.is_selected)"
                             class="option-points">
-                                ({{ option.earned_points_per_option }} б)
+                                ({{ formattedPointsPerOption(option) }} б)
                         </p>
                     </div>
                 </label>
@@ -42,7 +42,6 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
 
 const props = defineProps({
     options: {
@@ -100,6 +99,10 @@ function getOptionClasses(option) {
         correct: option.is_correct,
         incorrect: option.is_selected && !option.is_correct
     }
+}
+
+function formattedPointsPerOption(option) {
+    return option.earned_points_per_option.toFixed(0)
 }
 
 </script>

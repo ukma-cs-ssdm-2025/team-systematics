@@ -21,7 +21,7 @@
                         {{ questionData.student_answer_text }}
                     </span>
                     <span class="answer-points">
-                        ({{ isCorrect ? questionData.earned_points : 0 }} б)
+                        ({{ isCorrect ? formattedPoints : 0 }} б)
                     </span>
                 </div>
             </div>
@@ -70,6 +70,10 @@ function handleInput(event) {
 
 const isCorrect = computed(() => {
     return props.isReviewMode && props.questionData?.earned_points > 0
+})
+
+const formattedPoints = computed(() => {
+    return props.questionData.toFixed(0)
 })
 
 </script>
