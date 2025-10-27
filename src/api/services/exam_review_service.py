@@ -7,6 +7,7 @@ from src.models.exams import Exam, Question, Option, MatchingOption, QuestionTyp
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.weights_repository import WeightsRepository
 from src.api.errors.app_errors import NotFoundError
+from src.utils.largest_remainder import distribute_largest_remainder
 
 # Імпортуємо схеми Pydantic для відповіді
 from src.api.schemas.exam_review import (
@@ -41,34 +42,37 @@ class ExamReviewService:
         
         weights_map = weights_repo.get_all_weights()
     
-        # 2. Розраховуємо загальну вагу іспиту
-        total_exam_weight = 0
-        for question in attempt.exam.questions:
-            # Використовуємо вагу з мапи, або 1 за замовчуванням
-            total_exam_weight += weights_map.get(question.question_type, 1)
+        total_exam_weight = sum(
+            weights_map.get(q.question_type, 1) for q in attempt.exam.questions
+        )
 
-        # 3. Розраховуємо вартість однієї одиниці ваги
-        # (уникаємо ділення на нуль, якщо в іспиті немає питань)
         if total_exam_weight == 0:
             points_per_weight_unit = 0.0
         else:
-            # Масштабуємо до 100 балів
             points_per_weight_unit = 100.0 / total_exam_weight
 
-        # 4. Створюємо мапу реальних балів для кожного питання
-        true_points_map = {}
-        for question in attempt.exam.questions:
-            weight = weights_map.get(question.question_type, 1)
-            true_points_map[question.id] = weight * points_per_weight_unit
+        # 1. Розраховуємо точні (float) бали для кожного питання
+        true_points_map = {
+            q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
+            for q in attempt.exam.questions
+        }
         
+        # 2. Викликаємо функцію розподілу залишку, щоб отримати гарантовану суму 100
+        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
+        
+        # 3. Подальша логіка використовує вже скориговані цілі бали
         student_answers_map = {answer.question_id: answer for answer in attempt.answers}
         
         review_questions = []
         for question in sorted(attempt.exam.questions, key=lambda q: q.position):
             student_answer = student_answers_map.get(question.id)
-            # 5. Передаємо розраховані бали в допоміжну функцію
-            true_question_points = true_points_map.get(question.id, 0.0)
-            question_data = self._build_question_review_data(question, student_answer, true_question_points)
+            final_question_points = final_points_map.get(question.id, 0)
+            
+            question_data = self._build_question_review_data(
+                question, 
+                student_answer, 
+                final_question_points
+            )
             review_questions.append(question_data)
             
         return ExamAttemptReviewResponse(
