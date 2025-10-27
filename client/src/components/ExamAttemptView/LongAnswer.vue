@@ -24,7 +24,7 @@
 
 <script setup>
 import { computed } from 'vue'
-defineProps({
+const props = defineProps({
     modelValue: {
         type: String,
         default: ''
