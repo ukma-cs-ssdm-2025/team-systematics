@@ -161,13 +161,13 @@ class ExamReviewService:
                 text=opt.text,
                 is_correct=opt.is_correct,
                 is_selected=is_selected,
-                earned_points_per_option=round(earned_points_per_option)
+                earned_points_per_option=earned_points_per_option
             ))
             
         return MultiChoiceQuestionReview(
             **base_data,
             options=options_data,
-            earned_points=round(total_earned_points)
+            earned_points=total_earned_points
         )
 
     def _build_long_answer_data(self, base_data, student_answer):
@@ -225,5 +225,5 @@ class ExamReviewService:
         return MatchingQuestionReview(
             **base_data,
             matching_data=MatchingData(prompts=prompts_data, matches=matches_data),
-            earned_points=round(total_earned_points)
+            earned_points=total_earned_points
         )
