@@ -1,6 +1,7 @@
 from sqlalchemy.orm import Session, load_only, joinedload
 from sqlalchemy import func
 from uuid import UUID
+import json
 from datetime import datetime, timedelta, timezone
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
@@ -82,6 +83,16 @@ class AttemptsRepository:
 
         elif q_type in ('short_answer', 'long_answer'):
             answer.answer_text = payload.text
+            answer.answer_json = None
+
+        elif q_type == 'matching':
+            answer.answer_text = None
+        try:
+            if payload.text:
+                answer.answer_json = json.loads(payload.text)
+            else:
+                answer.answer_json = None
+        except (json.JSONDecodeError, TypeError):
             answer.answer_json = None
 
         self.db.commit()
