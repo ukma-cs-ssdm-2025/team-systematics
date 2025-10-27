@@ -197,7 +197,7 @@ class ExamReviewService:
         prompts_data = []
         total_earned_points = 0
         
-        # Створюємо унікальні ID для `matches` з тексту, оскільки в БД їх немає
+        match_id_to_text_map = {str(opt.id): opt.correct_match for opt in question.matching_options}
         all_matches = sorted(list({opt.correct_match for opt in question.matching_options}))
         matches_data = [MatchingMatch(id=match_text, text=match_text) for match_text in all_matches]
         
@@ -206,18 +206,20 @@ class ExamReviewService:
         student_pairs = student_answer.answer_json if student_answer and student_answer.answer_json else {}
 
         for pair in question.matching_options:
-            student_match = student_pairs.get(pair.prompt)
+            student_selected_match_id = student_pairs.get(str(pair.id))
+            student_selected_match_text = match_id_to_text_map.get(student_selected_match_id) if student_selected_match_id else None
             earned_points_per_match = 0
-            if student_match == pair.correct_match:
+
+            if student_selected_match_text == pair.correct_match:
                 earned_points_per_match = points_per_match
                 total_earned_points += earned_points_per_match
 
             prompts_data.append(MatchingPrompt(
-                id=str(pair.id), # Використовуємо ID з MatchingOption
+                id=str(pair.id),
                 text=pair.prompt,
-                student_match_id=student_match,
+                student_match_id=student_selected_match_text,
                 correct_match_id=pair.correct_match,
-                earned_points_per_match=round(earned_points_per_match)
+                earned_points_per_match=earned_points_per_match
             ))
             
         return MatchingQuestionReview(
