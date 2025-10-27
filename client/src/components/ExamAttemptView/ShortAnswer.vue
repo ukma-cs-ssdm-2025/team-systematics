@@ -73,7 +73,7 @@ const isCorrect = computed(() => {
 })
 
 const formattedPoints = computed(() => {
-    return props.questionData.toFixed(0)
+    return props.questionData.earned_points.toFixed(0)
 })
 
 </script>
