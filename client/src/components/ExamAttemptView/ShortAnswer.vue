@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 const props = defineProps({
     modelValue: { 
         type: String, 
@@ -66,6 +67,11 @@ function handleInput(event) {
     }
     emit('update:modelValue', value)
 }
+
+const isCorrect = computed(() => {
+    return props.isReviewMode && props.questionData?.earned_points > 0
+})
+
 </script>
 
 <style scoped>
