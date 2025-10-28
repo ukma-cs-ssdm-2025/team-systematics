@@ -29,7 +29,7 @@
                             v-if="isReviewMode && (option.is_correct || option.is_selected)"
                             class="option-points"
                         >
-                            ({{ option.is_correct && option.is_selected ? earnedPoints : 0 }} б)
+                            ({{ option.is_correct && option.is_selected ? formattedPoints : 0 }} б)
                         </p>
                     </div>
                 </label>
@@ -88,6 +88,10 @@ function getOptionClasses(option) {
         incorrect: option.is_selected && !option.is_correct
     }
 }
+
+const formattedPoints = computed(() => {
+    return props.earnedPoints.toFixed(0)
+})
 
 </script>
 

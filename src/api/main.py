@@ -8,6 +8,7 @@ from src.api.errors.app_errors import install_exception_handlers
 from src.api.services.exams_service import ExamsService
 from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
+from src.api.services.exam_review_service import ExamReviewService
 from src.api.services.courses_service import CoursesService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
@@ -58,11 +59,12 @@ def create_app() -> FastAPI:
     # Ініціалізуємо сервіси
     exams_service = ExamsService()
     attempts_service = AttemptsSvc()
+    exam_review_service = ExamReviewService()
     auth_service = AuthService()
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
-    attempts_controller = AttemptsController(attempts_service)
+    attempts_controller = AttemptsController(attempts_service, exam_review_service)
     auth_controller = AuthController(auth_service)
     courses_controller = CoursesController(CoursesService())
 
@@ -71,7 +73,7 @@ def create_app() -> FastAPI:
     app.include_router(exams_controller.router, prefix="/api")
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
-    
+        
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(current_file_path, "../../client/dist")

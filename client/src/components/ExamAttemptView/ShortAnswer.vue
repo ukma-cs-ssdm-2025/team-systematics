@@ -21,7 +21,7 @@
                         {{ questionData.student_answer_text }}
                     </span>
                     <span class="answer-points">
-                        ({{ isCorrect ? questionData.earned_points : 0 }} б)
+                        ({{ isCorrect ? formattedPoints : 0 }} б)
                     </span>
                 </div>
             </div>
@@ -34,6 +34,7 @@
 </template>
 
 <script setup>
+import { computed } from 'vue'
 const props = defineProps({
     modelValue: { 
         type: String, 
@@ -66,6 +67,15 @@ function handleInput(event) {
     }
     emit('update:modelValue', value)
 }
+
+const isCorrect = computed(() => {
+    return props.isReviewMode && props.questionData?.earned_points > 0
+})
+
+const formattedPoints = computed(() => {
+    return props.questionData.earned_points.toFixed(0)
+})
+
 </script>
 
 <style scoped>
