@@ -14,6 +14,7 @@ class UserResponse(BaseModel):
     # Замість first_name та last_name використаємо одне поле,
     # як у вашій моделі user.py
     full_name: str 
+    user_major: str
     roles: List[str] = [] # Ролі, якщо ви їх реалізуєте
 
 class LoginResponse(BaseModel):
