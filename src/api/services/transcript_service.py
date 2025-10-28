@@ -2,11 +2,10 @@ from uuid import UUID
 import math
 from sqlalchemy.orm import Session
 from collections import defaultdict
-from src.api.repositories.certificate_repository import CertificateRepository
-from src.api.schemas.certificate import CertificateResponse, CourseResult, Statistics
+from src.api.repositories.transcript_repository import TranscriptRepository
+from src.api.schemas.transcript import TranscriptResponse, CourseResult, Statistics
 
-class CertificateService:
-    # Метод _convert_rating_to_grades залишається без змін
+class TranscriptService:
     def _convert_rating_to_grades(self, rating: float) -> tuple[str, str]:
         if 90 <= rating <= 100:
             return ("A", "Відмінно")
@@ -23,8 +22,8 @@ class CertificateService:
         else: # 1-34
             return ("F", "Незадовільно")
 
-    def get_certificate_for_user(self, user_id: UUID, db: Session) -> CertificateResponse:
-        repository = CertificateRepository(db)
+    def get_transcript_for_user(self, user_id: UUID, db: Session) -> TranscriptResponse:
+        repository = TranscriptRepository(db)
         
         all_exams = repository.get_all_exams()
         user_attempts = repository.get_all_attempts_by_user(user_id)
@@ -85,4 +84,4 @@ class CertificateService:
             average_rating=final_average_rating
         )
 
-        return CertificateResponse(courses=course_results, statistics=statistics)
+        return TranscriptResponse(courses=course_results, statistics=statistics)

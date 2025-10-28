@@ -18,7 +18,7 @@ class Statistics(BaseModel):
     a_grades_count: int = Field(..., description="Кількість курсів, зданих на оцінку 'A'", example=1)
     average_rating: float = Field(..., description="Середній рейтинг по всіх зданих курсах", example=92.0)
 
-class CertificateResponse(BaseModel):
+class TranscriptResponse(BaseModel):
     """Головна модель відповіді для сторінки 'Мій атестат'."""
     courses: List[CourseResult]
     statistics: Statistics

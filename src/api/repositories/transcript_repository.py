@@ -4,7 +4,7 @@ from typing import List
 from src.models.exams import Exam
 from src.models.attempts import Attempt
 
-class CertificateRepository:
+class TranscriptRepository:
     def __init__(self, db: Session):
         self.db = db
 
