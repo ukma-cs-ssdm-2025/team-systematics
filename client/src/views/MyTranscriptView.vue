@@ -63,7 +63,7 @@
 import { ref, onMounted } from 'vue'
 import Header from '../components/global/Header.vue'
 import { useAuth } from '../store/loginInfo.js'
-import { getTranscript } from '../api/users.js'
+import { getTranscript } from '../api/transcript.js'
 
 const transcriptData = ref(null)
 const loading = ref(true)
