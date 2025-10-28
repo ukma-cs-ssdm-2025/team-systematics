@@ -38,7 +38,7 @@ h2, h3 {
 table {
     width: 100%;
     border-collapse: collapse;
-    table-layout: fixed;
+    table-layout: auto;
 }
 
 th {
@@ -61,22 +61,15 @@ tbody tr:last-child {
 }
 
 thead th, tbody td, li {
-    padding: 12px 12px 12px 0px;
+    padding: 12px 48px 12px 0px;
 }
 
-table th:nth-child(1) {
-    width: 30%; /* 1.5x */
+.results-table th:nth-child(1) {
+    width: 40%;
 }
 
-table th:nth-child(2),
-table th:nth-child(3) {
-    width: 20%; /* 1x */
-}
-
-table th:nth-child(4),
-table th:nth-child(5),
-table th:nth-child(6) {
-    width: 10%; /* 0.5x */
+.results-table th:not(:first-child) {
+    min-width: 160px;
 }
 
 li {
