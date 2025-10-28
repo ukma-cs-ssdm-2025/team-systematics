@@ -20,7 +20,6 @@ export function useAuth() {
     userRole.value = data.role
     userFullName.value = data.full_name
     userMajor.value = data.major_name
-    console.log(userMajor.value)
 
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('userRole', data.role)
