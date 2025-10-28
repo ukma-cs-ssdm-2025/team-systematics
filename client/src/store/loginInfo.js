@@ -1,4 +1,4 @@
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { useRouter } from 'vue-router'
 
 // Стан користувача
@@ -11,6 +11,10 @@ let inactivityTimer = null
 
 export function useAuth() {
   const router = useRouter()
+  
+  const isStudent = computed(() => userRole.value === 'student')
+  const isTeacher = computed(() => userRole.value === 'teacher')
+  const isSupervisor = computed(() => userRole.value === 'supervisor')
 
   // Зберігає всі дані користувача після успішного входу
   const login = (data) => {
@@ -70,6 +74,9 @@ export function useAuth() {
     role: userRole,
     fullName: userFullName,
     major: userMajor,
+    isStudent,
+    isTeacher,
+    isSupervisor,
     login,
     logout,
     startInactivityTimer

@@ -3,17 +3,17 @@
         <nav class="nav">
             <div class="nav-list-container">
                 <ul class="nav-list">
-                    <li class="nav-item" :class="{ active: route.path === '/exams' }">
+                    <li v-if="auth.isStudent.value" class="nav-item" :class="{ active: route.path === '/exams' }">
                         <router-link to="/exams">Мої іспити</router-link>
                     </li>
-                    <li class="nav-item" :class="{ active: route.path === '/transcript' }">
+                    <li v-if="auth.isStudent.value" class="nav-item" :class="{ active: route.path === '/transcript' }">
                         <router-link to="/transcript">Мій атестат</router-link>
                     </li>
                 </ul>
             </div>
             <div class="user-container">
                 <div class="user-greeting">
-                    Вітаємо, студенте!
+                    Вітаємо, {{ auth.fullName}}!
                 </div>
                 <div class="user-avatar">
                     <img src="../../assets/icons/user-avatar-default.svg" alt="Default user avatar">
@@ -25,6 +25,9 @@
 
 <script setup>
 import { useRoute } from 'vue-router'
+import { useAuth } from '../../store/loginInfo'
+
+const auth = useAuth()
 const route = useRoute()
 </script>
 
