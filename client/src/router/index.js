@@ -7,6 +7,7 @@ import ForbiddenView from '../views/ForbiddenView.vue'
 import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
+import MyTranscriptView from '../views/MyTranscriptView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -50,6 +51,15 @@ const router = createRouter({
       {
         requiresAuth: true,  // доступ лише для авторизованих
         title: 'Мої іспити'
+      }
+    },
+    {
+      path: '/transcript',
+      name: 'MyTranscript',
+      component: MyTranscriptView,
+      meta: {
+        requiresAuth: true,
+        title: 'Мій атестат'
       }
     },
     {
