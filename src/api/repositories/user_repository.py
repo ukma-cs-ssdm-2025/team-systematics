@@ -1,7 +1,9 @@
 from sqlalchemy.orm import Session
 from src.models.users import User
 from src.models.roles import Role
-from src.models.userRoles import UserRole
+from src.models.user_roles import UserRole
+from src.models.majors import Major
+from src.models.user_majors import UserMajor
 
 
 class UserRepository:
@@ -19,3 +21,15 @@ class UserRepository:
             .all()
         )
         return [r[0] for r in roles]
+
+    def get_user_major(self, user_id: str) -> str:
+        """
+        Отримує назву спеціальності користувача за його ID.
+        """
+        major = (
+            self.db.query(Major.name)
+            .join(UserMajor, UserMajor.major_id == Major.id)
+            .filter(UserMajor.user_id == user_id)
+            .first()
+        )
+        return major[0] if major else None

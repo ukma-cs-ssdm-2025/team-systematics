@@ -34,7 +34,7 @@ class AuthService:
                 id=str(user.id),
                 email=user.email,
                 full_name=f"{user.first_name} {user.last_name}".strip(),
-                userMajor=major_name,
+                user_major=major_name,
                 roles=roles
             )
         )
