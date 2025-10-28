@@ -1,0 +1,42 @@
+{
+  "courses": [
+    {
+      "id": 1,
+      "course_name": "Процедурне програмування",
+      "rating": 92,
+      "ects_grade": "A",
+      "national_grade": "Відмінно",
+      "pass_status": "Так"
+    },
+    {
+      "id": 2,
+      "course_name": "Теорія ймовірності та математична статистика",
+      "rating": null,
+      "ects_grade": null,
+      "national_grade": null,
+      "pass_status": null
+    },
+    {
+      "id": 3,
+      "course_name": "Методи розробки програмного забезпечення",
+      "rating": null,
+      "ects_grade": null,
+      "national_grade": null,
+      "pass_status": null
+    },
+    {
+      "id": 4,
+      "course_name": "Розробка користувацького інтерфейсу UI/UX",
+      "rating": null,
+      "ects_grade": null,
+      "national_grade": null,
+      "pass_status": null
+    }
+  ],
+  "statistics": {
+    "completed_courses": 1,
+    "total_courses": 4,
+    "a_grades_count": 1,
+    "average_rating": 92
+  }
+}

@@ -23,6 +23,8 @@ class AuthService:
             raise HTTPException(status_code=401, detail="Invalid password")
 
         roles = self.user_repo.get_user_roles(user.id)
+        major_name = self.user_repo.get_user_major(user.id)
+
         token = create_access_token({"sub": str(user.id), "roles": roles})
 
         return LoginResponse(
@@ -32,6 +34,7 @@ class AuthService:
                 id=str(user.id),
                 email=user.email,
                 full_name=f"{user.first_name} {user.last_name}".strip(),
+                user_major=major_name,
                 roles=roles
             )
         )

@@ -2,6 +2,7 @@ from sqlalchemy import Column, String, TIMESTAMP, text
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 from src.api.database import Base
+from sqlalchemy.orm import relationship
 
 class User(Base):
     __tablename__ = "users"
@@ -13,3 +14,10 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     patronymic = Column(String)
+
+    major = relationship(
+        "Major", 
+        secondary="user_majors",
+        back_populates="users",
+        uselist=False
+    )
