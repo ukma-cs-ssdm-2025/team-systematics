@@ -13,3 +13,10 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     patronymic = Column(String)
+
+    major = relationship(
+        "Major", 
+        secondary="user_majors",
+        back_populates="users",
+        uselist=False
+    )
