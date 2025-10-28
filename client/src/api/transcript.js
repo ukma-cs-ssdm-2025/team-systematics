@@ -1,4 +1,4 @@
-import { http } from '../api/http.js'
+import { http } from './http.js'
 import mockTranscript from '../mocks/transcript.json'
 
 // Тимчасово використовуємо заглушку
@@ -10,7 +10,7 @@ export async function getTranscript() {
     }
 
     try {
-        const response = await http.get('/api/users/me/transcript')
+        const response = await http.get('/api/transcript')
         return response.data
     } catch (error) {
         if (error.response && error.response.data && error.response.data.detail) {
