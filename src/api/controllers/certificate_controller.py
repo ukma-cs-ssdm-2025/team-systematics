@@ -1,33 +1,28 @@
 from fastapi import APIRouter, Depends, HTTPException, status
+from sqlalchemy.orm import Session
+from uuid import UUID
+from src.api.schemas.certificate import CertificateResponse
 from src.api.services.certificate_service import CertificateService
-from src.api.schemas.certificate import CertificateResponse, AverageGradeResponse
-from src.api.repositories.certificate_repository import CertificateRepository
-from src.api.dependencies import get_current_user
-
-router = APIRouter()
+from src.utils.auth import get_current_user
+from src.api.database import get_db
+from src.models.users import User
 
 class CertificateController:
-    def __init__(self, certificate_service: CertificateService):
-        self.certificate_service = certificate_service
+    def __init__(self, service: CertificateService):
+        self.service = service
+        self.router = APIRouter(prefix="/transcript", tags=["Certificate"])
 
-    @router.get("/certificate", response_model=CertificateResponse)
-    def get_certificate(self, current_user: str = Depends(get_current_user)):
-        # Перевірка прав доступу
-        if current_user != user_id:
-            raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Access forbidden")
-        
-        # Отримання даних для атестату
-        certificate_data = self.certificate_service.get_certificate(current_user)
-        return certificate_data
-
-    @router.get("/certificate/average-grade", response_model=AverageGradeResponse)
-    def get_average_grade(self, current_user: str = Depends(get_current_user)):
-        # Статистика середнього балу
-        avg_grade_data = self.certificate_service.get_average_grade(current_user)
-        return avg_grade_data
-
-    @router.get("/certificate/sort", response_model=CertificateResponse)
-    def sort_tests(self, column: str, current_user: str = Depends(get_current_user)):
-        # Сортування тестів за колонкою
-        sorted_tests = self.certificate_service.sort_tests(column, current_user)
-        return sorted_tests
+        @self.router.get("", response_model=CertificateResponse, summary="Отримати атестат поточного користувача")
+        async def get_certificate( current_user: User = Depends(get_current_user), db: Session = Depends(get_db)):
+            """
+            Повертає повну інформацію для сторінки "Мій атестат",
+            включаючи список всіх курсів з найкращими оцінками та
+            загальну статистику.
+            """
+            # Перевірка ролі
+            if current_user.role != 'student':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN, 
+                    detail="Доступно лише для студентів"
+                )
+            return self.service.get_certificate_for_user(current_user.id, db)

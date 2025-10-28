@@ -1,17 +1,21 @@
-from sqlalchemy import func
-from src.api.database import Session
-from src.models import Test, Certificate
-from sqlalchemy.orm import Session as SQLSession
+from sqlalchemy.orm import Session
+from uuid import UUID
+from typing import List
+from src.models.exams import Exam
+from src.models.attempts import Attempt
 
 class CertificateRepository:
-    def __init__(self, db: SQLSession):
+    def __init__(self, db: Session):
         self.db = db
 
-    def get_certificate(self, user_id: str):
-        return self.db.query(Certificate).filter(Certificate.user_id == user_id).all()
+    def get_all_exams(self) -> List[Exam]:
+        """
+        Повертає список усіх іспитів.
+        """
+        return self.db.query(Exam).all()
 
-    def get_average_grade(self, user_id: str):
-        return self.db.query(Test.course, func.avg(Test.score)).filter(Test.user_id == user_id).group_by(Test.course).all()
-
-    def sort_tests(self, column: str, user_id: str):
-        return self.db.query(Test).filter(Test.user_id == user_id).order_by(getattr(Test, column)).all()
+    def get_all_attempts_by_user(self, user_id: UUID) -> List[Attempt]:
+        """
+        Завантажує всі спроби для конкретного користувача.
+        """
+        return self.db.query(Attempt).filter(Attempt.user_id == user_id).all()
