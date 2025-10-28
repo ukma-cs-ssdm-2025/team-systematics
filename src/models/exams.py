@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQ
 from sqlalchemy.orm import relationship
 from sqlalchemy.dialects.postgresql import UUID, JSONB
 from src.api.database import Base
-from src.models.matchingOptions import MatchingOption 
+from src.models.matching_options import MatchingOption 
 import enum
 
 class QuestionType(str, enum.Enum):

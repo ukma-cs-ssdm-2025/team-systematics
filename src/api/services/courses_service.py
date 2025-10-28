@@ -3,7 +3,7 @@ from uuid import UUID
 from typing import Optional, Tuple, List
 from src.api.repositories.courses_repository import CoursesRepository
 from src.api.schemas.course import CourseCreate, CourseUpdate
-from src.models.course import Course
+from src.models.courses import Course
 
 class CoursesService:
     def list(self, db: Session, limit: int, offset: int) -> Tuple[List[Course], int]:

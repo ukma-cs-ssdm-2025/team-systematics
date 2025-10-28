@@ -1,7 +1,7 @@
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session
 from uuid import UUID
-from src.models.course import Course, CourseEnrollment
+from src.models.courses import Course, CourseEnrollment
 from src.api.schemas.course import CourseCreate, CourseUpdate
 
 class CoursesRepository:

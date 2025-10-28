@@ -7,7 +7,7 @@ from typing import Optional, Dict, Any, List
 
 from src.models.exams import Exam, Question, Option
 from src.models.attempts import Attempt, AttemptStatus, Answer, AnswerOption
-from src.models.matchingOptions import MatchingOption
+from src.models.matching_options import MatchingOption
 from src.api.schemas.attempts import AnswerUpsert
 
 class AttemptsRepository:
