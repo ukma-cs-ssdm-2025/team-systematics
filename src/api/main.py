@@ -13,8 +13,8 @@ from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
-from src.api.database import engine, SessionLocal
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
+from src.api.database import SessionLocal, engine
 from src.api.controllers.certificate_controller import CertificateController
 from src.api.services.certificate_service import CertificateService
 from src.api.repositories.certificate_repository import CertificateRepository
