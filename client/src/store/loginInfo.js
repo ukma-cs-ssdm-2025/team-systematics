@@ -5,8 +5,7 @@ import { useRouter } from 'vue-router'
 const token = ref(localStorage.getItem('token') || null)
 const userRole = ref(localStorage.getItem('userRole') || null)
 const userFullName = ref(localStorage.getItem('userFullName') || null)
-const userMajor = ref(localStorage.getItem('userMajor')
-  ? JSON.parse(localStorage.getItem('userMajor')) : null)
+const userMajor = ref(localStorage.getItem('userMajor') || null)
 
 let inactivityTimer = null
 
@@ -15,21 +14,18 @@ export function useAuth() {
 
   // Зберігає всі дані користувача після успішного входу
   const login = (data) => {
-    // data = { access_token, token_type, role, full_name, major_id, major_name }
+    // data = { access_token, token_type, role, full_name, major_name }
 
     token.value = data.access_token
     userRole.value = data.role
     userFullName.value = data.full_name
+    userMajor.value = data.major_name
+    console.log(userMajor.value)
 
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('userRole', data.role)
     localStorage.setItem('userFullName', data.full_name)
-
-    if (data.major_id && data.major_name) {
-      const majorInfo = { id: data.major_id, name: data.major_name }
-      userMajor.value = majorInfo
-      localStorage.setItem('userMajor', JSON.stringify(majorInfo))
-    }
+    localStorage.setItem('userMajor', data.major_name)
 
     startInactivityTimer()
   }
