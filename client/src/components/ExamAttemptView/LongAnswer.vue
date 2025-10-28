@@ -15,7 +15,7 @@
                 </p>
                 
                 <div class="points-display">
-                    ({{ questionData.earned_points ?? '--' }} / {{ questionData.points }} б)
+                    ({{ formattedEarnedPoints }} / {{ questionData.points }} б)
                 </div>
             </div>
         </div>
@@ -23,7 +23,8 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+const props = defineProps({
     modelValue: {
         type: String,
         default: ''
@@ -37,6 +38,13 @@ defineProps({
         default: () => ({})
     },
 });
+
+const formattedEarnedPoints = computed(() => {
+    if (typeof props.questionData.earned_points === 'number') {
+        return props.questionData.earned_points.toFixed(0);
+    }
+    return '--' // Повертаємо плейсхолдер, якщо балів немає
+})
 
 defineEmits(['update:modelValue'])
 </script>

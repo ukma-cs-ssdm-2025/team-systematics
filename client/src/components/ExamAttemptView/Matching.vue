@@ -30,7 +30,7 @@
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
                     <span class="review-text">{{ getMatchText(prompt.student_match_id) }}</span>
-                    <span class="review-points">({{ prompt.earned_points_per_match }} б)</span>
+                    <span class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
                 </div>
             </div>
 
@@ -106,6 +106,10 @@ function getReviewClasses(prompt) {
         incorrect: prompt.student_match_id !== prompt.correct_match_id
     }
 }
+
+function formattedPointsPerMatch(prompt) {
+    return prompt.earned_points_per_match.toFixed(0)
+}
 </script>
 
 <style scoped>
@@ -144,6 +148,8 @@ function getReviewClasses(prompt) {
 }
 
 .match-select, .review-item {
+    display: flex;
+    align-items: center;
     width: 100%;
     height: 100%;
     padding: 0 16px;
@@ -158,6 +164,7 @@ function getReviewClasses(prompt) {
     background-position: right 16px center;
     background-repeat: no-repeat;
     background-size: 24px;
+    cursor: not-allowed;
 }
 
 .match-select:hover {
