@@ -13,8 +13,11 @@ from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
-from src.api.database import engine
+from src.api.database import engine, SessionLocal
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
+from src.api.controllers.certificate_controller import CertificateController
+from src.api.services.certificate_service import CertificateService
+from src.api.repositories.certificate_repository import CertificateRepository
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -59,18 +62,23 @@ def create_app() -> FastAPI:
     exams_service = ExamsService()
     attempts_service = AttemptsSvc()
     auth_service = AuthService()
+    certificate_service = CertificateService()
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
     attempts_controller = AttemptsController(attempts_service)
     auth_controller = AuthController(auth_service)
     courses_controller = CoursesController(CoursesService())
+    certificate_controller = CertificateController(certificate_service)
+
+    certificate_repository = CertificateRepository(SessionLocal())
 
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
     app.include_router(exams_controller.router, prefix="/api")
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
+    app.include_router(certificate_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
