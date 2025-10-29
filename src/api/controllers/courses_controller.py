@@ -4,9 +4,11 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status, Query, Header, HTTPException
 from sqlalchemy.orm import Session
 
+from src.models.users import User
 from src.api.schemas.courses import Course, CourseCreate, CourseUpdate, CoursesPage
 from src.api.services.courses_service import CoursesService
 from src.api.database import get_db
+from src.utils.auth import get_current_user
 from .versioning import require_api_version
 
 
@@ -29,8 +31,9 @@ class CoursesController:
             limit: int = Query(10, ge=1, le=100),
             offset: int = Query(0, ge=0),
             db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),  # Додаємо поточного користувача
         ):
-            items, total = self.service.list(db, limit, offset)
+            items, total = self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)  # Передаємо offset
             return {"items": items, "total": total, "limit": limit, "offset": offset}
 
         @self.router.post(
