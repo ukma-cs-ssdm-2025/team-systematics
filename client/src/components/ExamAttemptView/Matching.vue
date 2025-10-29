@@ -29,7 +29,7 @@
                 </div>
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
-                    <span class="review-text">{{ getMatchText(prompt.student_match_id) }}</span>
+                    <span class="review-text">{{ prompt.text }}</span>
                     <span class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
                 </div>
             </div>
@@ -91,13 +91,6 @@ function updateMatch(promptId, selectedMatchId) {
     emit('update:modelValue', newModelValue)
 }
 
-function getMatchText(matchId) {
-    if (!matchId)
-        return 'Відповідь не надано'
-    const match = props.matches.find(m => m.id === matchId)
-    return match ? match.text : 'Невідома відповідь'
-}
-
 function getReviewClasses(prompt) {
     if (!props.isReviewMode)
         return {}
@@ -157,13 +150,19 @@ function formattedPointsPerMatch(prompt) {
     border-radius: 8px;
     background-color: white;
     font-family: inherit;
-    cursor: pointer;
     transition: all 150ms ease;
+}
+
+.match-select {
+    cursor: pointer;
     appearance: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c%2Fsvg%3e");
     background-position: right 16px center;
     background-repeat: no-repeat;
     background-size: 24px;
+}
+
+.review-item {
     cursor: not-allowed;
 }
 
