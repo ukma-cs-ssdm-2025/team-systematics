@@ -84,7 +84,7 @@ def test_sort_tests_by_column(client):
 def test_sort_average_grade(client):
     response = client.get("/transcript", params={"sort_by": "course_name"})
     
-    assert response.status_code == 200
+    assert response.status_code == 200  # Очікуємо успішну відповідь
     data = response.json()
 
     assert "courses" in data
