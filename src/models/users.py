@@ -14,8 +14,7 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     patronymic = Column(String)
-    role = Column(String, nullable=False)
-
+    
     major = relationship(
         "Major", 
         secondary="user_majors",
