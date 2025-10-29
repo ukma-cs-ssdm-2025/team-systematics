@@ -54,6 +54,11 @@
  - [Стратегія Тестування](/docs/testing/testing-strategy.md)
  - [Покриття тестами](/docs/testing/coverage.txt)
 
+ **Валідація**
+ - [Тест план](/docs/validation/test-plan.md)
+ - [Рев'ю іншої команди](/docs/validation/review-log.md)
+
+
  **Відео-звіти у Loom**
  - [Loom](/Loom)
 
