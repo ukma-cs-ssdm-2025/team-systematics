@@ -8,10 +8,10 @@
 ## Наші учасники:
 | Прізвище Ім'я           | GitHub                                                 | Ролі
 | ----------------------- | ------------------------------------------------------ |---------------------|
-| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Debugger            |
-| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | QA Planner          |
-| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | Test Lead           |
-| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | Integration Lead    |
+| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Review Manager      |
+| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | Documentation Lead  |
+| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | Test Planner        |
+| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | QA Analyst          |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
@@ -108,4 +108,14 @@ docker compose up --build
 ### 3. Запустити сервер за посиланням
 ```bash
 http://localhost:3000/
+```
+
+### 4. Запустити тести
+``` bash
+$env:PYTHONPATH = "$PWD"
+pytest tests
+```
+- подивитись покриття
+``` bash
+pytest -q
 ```
