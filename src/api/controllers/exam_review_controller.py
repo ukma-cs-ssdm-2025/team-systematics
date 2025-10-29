@@ -4,7 +4,7 @@ from uuid import UUID
 
 from src.api.database import get_db
 from src.api.services.exam_review_service import ExamReviewService
-from src.api.schemas.exam_review_schema import ExamAttemptReviewResponse
+from src.api.schemas.exam_reviews import ExamAttemptReviewResponse
 
 router = APIRouter(
     prefix="/attempts",

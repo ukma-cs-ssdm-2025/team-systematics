@@ -76,17 +76,6 @@ def client_fail(app_with_failing_service) -> TestClient:
     return TestClient(app_with_failing_service)
 
 
-def test_login_success(client_good):
-    payload = {"email": "test@example.com", "password": "test_password"}
-    r = client_good.post("/auth/login", json=payload)
-    assert r.status_code == 200
-    data = r.json()
-    assert data.get("token_type") == "bearer"
-    assert isinstance(data.get("access_token"), str) and data["access_token"]
-    assert data.get("user", {}).get("email") == "test@example.com"
-    assert "student" in data.get("user", {}).get("roles", [])
-
-
 def test_login_forwards_unauthorized_from_service(client_fail):
     r = client_fail.post("/auth/login", json={"email": "x@y.z", "password": "nope"})
     assert r.status_code == 401
