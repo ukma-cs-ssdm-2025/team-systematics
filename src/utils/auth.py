@@ -116,6 +116,19 @@ def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="User not found"
+        )  
+    return user
+
+def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = Depends(get_current_user_id)) -> User:
+    """
+    Завантажує об'єкт користувача та додає до нього атрибут 'role'.
+    """
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="User not found"
         )
+    
     user.role = get_user_role(db, user_id)
     return user
