@@ -150,13 +150,19 @@ function formattedPointsPerMatch(prompt) {
     border-radius: 8px;
     background-color: white;
     font-family: inherit;
-    cursor: pointer;
     transition: all 150ms ease;
+}
+
+.match-select {
+    cursor: pointer;
     appearance: none;
     background-image: url("data:image/svg+xml,%3csvg xmlns='http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c%2Fsvg%3e");
     background-position: right 16px center;
     background-repeat: no-repeat;
     background-size: 24px;
+}
+
+.review-item {
     cursor: not-allowed;
 }
 
