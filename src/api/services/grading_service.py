@@ -49,7 +49,7 @@ class GradingService:
             elif q_type == QuestionType.short_answer:
                 correct_data_map[question.id]['texts'] = {opt.text.lower() for opt in question.options if opt.is_correct}
             elif q_type == QuestionType.matching:
-                correct_data_map[question.id]['pairs'] = {p.prompt: p.correct_match for p in question.matching_options}
+                 correct_data_map[question.id]['pairs'] = {str(p.id): str(p.id) for p in question.matching_options}
         
         for answer in attempt.answers:
             question = answer.question
@@ -61,7 +61,48 @@ class GradingService:
 
             correct_data = correct_data_map[question.id]
             
-            if question.question_type in (QuestionType.single_choice, QuestionType.multi_choice):
+            if question.question_type == QuestionType.multi_choice:
+                user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.selected_options}
+                correct_option_ids = correct_data.get('options', set())
+                
+                earned_points_for_question = 0.0
+                # Розподіляємо бали лише між правильними відповідями
+                points_per_option = (float(question.points or 0.0) / len(correct_option_ids)) if correct_option_ids else 0.0
+                
+                for opt_id in user_option_ids:
+                    if opt_id in correct_option_ids:
+                        earned_points_for_question += points_per_option
+                
+                result.earned_weight += earned_points_for_question
+                
+                # "Правильним" питання вважається лише при 100% збігу
+                if user_option_ids == correct_option_ids:
+                    result.correct_count += 1
+                else:
+                    result.incorrect_count += 1
+                continue
+
+            if question.question_type == QuestionType.matching:
+                user_pairs = answer.answer_json or {}
+                correct_pairs = correct_data.get('pairs', {})
+                
+                earned_points_for_question = 0.0
+                points_per_match = (float(question.points or 0.0) / len(correct_pairs)) if correct_pairs else 0.0
+                
+                for prompt_id, correct_match_id in correct_pairs.items():
+                    if user_pairs.get(prompt_id) == correct_match_id:
+                        earned_points_for_question += points_per_match
+
+                result.earned_weight += earned_points_for_question
+                
+                # "Правильним" питання вважається лише при 100% збігу
+                if user_pairs == correct_pairs:
+                    result.correct_count += 1
+                else:
+                    result.incorrect_count += 1
+                continue
+
+            if question.question_type == QuestionType.single_choice:
                 user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.selected_options}
                 if user_option_ids == correct_data.get('options', set()):
                     is_correct = True
@@ -70,12 +111,8 @@ class GradingService:
                 user_text = (answer.answer_text or "").lower()
                 if user_text in correct_data.get('texts', set()):
                     is_correct = True
-            
-            elif question.question_type == QuestionType.matching:
-                user_pairs = answer.answer_json or {}
-                if user_pairs == correct_data.get('pairs', {}):
-                    is_correct = True
 
+            # Оновлюємо лічильники для питань "все або нічого"
             if is_correct:
                 result.correct_count += 1
                 result.earned_weight += float(question.points or 0.0)

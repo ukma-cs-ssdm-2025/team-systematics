@@ -199,29 +199,45 @@ class ExamReviewService:
         
     def _build_matching_data(self, base_data, question, student_answer):
         prompts_data = []
-        total_earned_points = 0
+        total_earned_points = 0.0
         
-        match_id_to_text_map = {str(opt.id): opt.correct_match for opt in question.matching_options}
-        all_matches = sorted(list({opt.correct_match for opt in question.matching_options}))
-        matches_data = [MatchingMatch(id=match_text, text=match_text) for match_text in all_matches]
+        # 1. Створюємо мапу правильних пар: ID prompt'а -> ID match'а
+        correct_pairs_map = {str(opt.id): str(opt.id) for opt in question.matching_options}
         
-        points_per_match = (base_data["points"] / len(question.matching_options)) if question.matching_options else 0
+        # 2. Створюємо список унікальних matches для фронтенду
+        matches_data = [
+            MatchingMatch(id=str(opt.id), text=opt.correct_match) 
+            for opt in question.matching_options
+        ]
         
+        # 3. Розраховуємо бали за кожну правильну пару
+        points_per_match = (base_data["points"] / len(question.matching_options)) if question.matching_options else 0.0
+        
+        # 4. Отримуємо відповіді студента
         student_pairs = student_answer.answer_json if student_answer and student_answer.answer_json else {}
 
+        # 5. Ітеруємо по всіх можливих prompts
         for pair in question.matching_options:
-            student_selected_match_id = student_pairs.get(str(pair.id))
-            student_selected_match_text = match_id_to_text_map.get(student_selected_match_id) if student_selected_match_id else None
-            earned_points_per_match = 0
+            prompt_id_str = str(pair.id)
+            correct_match_id_str = correct_pairs_map[prompt_id_str]
+            student_selected_match_id_str = student_pairs.get(prompt_id_str)
+            
+            earned_points_per_match = 0.0
 
-            if student_selected_match_text == pair.correct_match:
+            # ПОРІВНЮЄМО ID, а не текст
+            if student_selected_match_id_str == correct_match_id_str:
                 earned_points_per_match = points_per_match
-                total_earned_points += earned_points_per_match
+                total_earned_points += points_per_match
+
+            student_match_text = None
+            if student_selected_match_id_str:
+                found_match = next((m.text for m in matches_data if m.id == student_selected_match_id_str), None)
+                student_match_text = found_match
 
             prompts_data.append(MatchingPrompt(
-                id=str(pair.id),
+                id=prompt_id_str,
                 text=pair.prompt,
-                student_match_id=student_selected_match_text,
+                student_match_id=student_match_text,
                 correct_match_id=pair.correct_match,
                 earned_points_per_match=earned_points_per_match
             ))
