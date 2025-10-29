@@ -29,7 +29,7 @@
                 </div>
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
-                    <span class="review-text">{{ getMatchText(prompt.student_match_id) }}</span>
+                    <span class="review-text">{{ prompt.text }}</span>
                     <span class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
                 </div>
             </div>
@@ -89,13 +89,6 @@ function updateMatch(promptId, selectedMatchId) {
     const newModelValue = { ...props.modelValue }
     newModelValue[promptId] = selectedMatchId
     emit('update:modelValue', newModelValue)
-}
-
-function getMatchText(matchId) {
-    if (!matchId)
-        return 'Відповідь не надано'
-    const match = props.matches.find(m => m.id === matchId)
-    return match ? match.text : 'Невідома відповідь'
 }
 
 function getReviewClasses(prompt) {
