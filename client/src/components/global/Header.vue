@@ -49,7 +49,6 @@ import { useAuth } from '../../store/loginInfo'
 
 const auth = useAuth()
 const route = useRoute()
-const router = useRouter()
 
 const isDropdownVisible = ref(false)
 const dropdownMenu = ref(null)
