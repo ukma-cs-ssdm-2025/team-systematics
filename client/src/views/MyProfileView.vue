@@ -84,7 +84,6 @@
                     <CButton @click="saveSettings" :disabled="isSaving" class="save-button">
                         {{ isSaving ? 'Збереження...' : 'Зберегти зміни' }}
                     </CButton>
-                    <p v-if="successMessage" class="success-message">{{ successMessage }}</p>
                 </div>
             </div>
         </main>
@@ -97,6 +96,7 @@ import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import * as userModule from '../api/users'
 import defaultAvatar from '../assets/icons/user-avatar-default.svg'
+import { useAuth } from '../store/loginInfo'
 
 const userProfile = ref(null)
 const notificationSettings = ref({
@@ -106,7 +106,6 @@ const notificationSettings = ref({
 const loading = ref(true)
 const error = ref(null)
 const isSaving = ref(false)
-const successMessage = ref('')
 
 const reminderOptions = ref([
     { text: 'За 24 години', value: 24 },
@@ -117,6 +116,8 @@ const reminderOptions = ref([
 const fileInput = ref(null)
 const avatarPreview = ref(null) // URL для миттєвого прев'ю
 const selectedFile = ref(null) // Сам обраний файл
+
+const auth = useAuth()
 
 function triggerFileInput() {
     fileInput.value.click()
@@ -145,7 +146,7 @@ async function saveSettings() {
 
         // Якщо був обраний новий файл, додаємо його завантаження до завдань
         if (selectedFile.value) {
-            const avatarResponse = await uploadAvatar(selectedFile.value)
+            const avatarResponse = await userModule.uploadAvatar(selectedFile.value)
             auth.updateAvatarUrl(avatarResponse.avatar_url)
 
             if (userProfile.value) {
@@ -166,7 +167,6 @@ async function saveSettings() {
         // Виконуємо всі завдання паралельно
         await Promise.all(tasks)
 
-        successMessage.value = 'Налаштування успішно збережено!'
         // Очищуємо прев'ю після успішного збереження
         avatarPreview.value = null
         selectedFile.value = null
