@@ -23,7 +23,7 @@ class UserProfileResponse(BaseModel):
     avatar_url: Optional[HttpUrl] = None
 
 class AvatarUpdateResponse(BaseModel):
-    avatar_url: HttpUr
+    avatar_url: HttpUrl
 
 class NotificationSettingsSchema(BaseModel):
     enabled: bool
