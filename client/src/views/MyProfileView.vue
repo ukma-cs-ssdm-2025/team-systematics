@@ -145,8 +145,14 @@ async function saveSettings() {
 
         // Якщо був обраний новий файл, додаємо його завантаження до завдань
         if (selectedFile.value) {
-            tasks.push(userModule.uploadAvatar(selectedFile.value))
+            const avatarResponse = await uploadAvatar(selectedFile.value)
+            auth.updateAvatarUrl(avatarResponse.avatar_url)
+
+            if (userProfile.value) {
+                userProfile.value.avatar_url = avatarResponse.avatar_url
+            }
         }
+
 
         // Додаємо оновлення налаштувань сповіщень до завдань
         const notificationsPayload = {
