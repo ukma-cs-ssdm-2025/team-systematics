@@ -44,3 +44,27 @@ export async function updateUserNotificationSettings(settings) {
         throw new Error('Не вдалося зберегти налаштування.')
     }
 }
+
+// Завантажує новий аватар користувача на сервер
+export async function uploadAvatar(file) {
+    if (USE_MOCK_DATA) {
+        console.log("MOCK: Uploading avatar:", file.name)
+        return newAvatarMock
+    }
+
+    // Створюємо об'єкт FormData для відправки файлу
+    const formData = new FormData()
+    formData.append('avatar_file', file)
+
+    try {
+        const response = await http.post('/api/users/me/avatar', formData, {
+            headers: {
+                'Content-Type': 'multipart/form-data'
+            }
+        });
+        return response.data
+    } catch (error) {
+        console.error('API Error uploading avatar:', error)
+        throw new Error('Не вдалося завантажити аватар.')
+    }
+}
