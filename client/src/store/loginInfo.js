@@ -6,6 +6,7 @@ const token = ref(localStorage.getItem('token') || null)
 const userRole = ref(localStorage.getItem('userRole') || null)
 const userFullName = ref(localStorage.getItem('userFullName') || null)
 const userMajor = ref(localStorage.getItem('userMajor') || null)
+const avatarUrl = ref(localStorage.getItem('avatarUrl') || null) 
 
 let inactivityTimer = null
 
@@ -18,17 +19,20 @@ export function useAuth() {
 
   // Зберігає всі дані користувача після успішного входу
   const login = (data) => {
-    // data = { access_token, token_type, role, full_name, major_name }
+    // data = { access_token, token_type, role, full_name, major_name, avatar_url }
+    console.log(data)
 
     token.value = data.access_token
     userRole.value = data.role
     userFullName.value = data.full_name
     userMajor.value = data.major_name
+    avatarUrl.value = data.avatar_url
 
     localStorage.setItem('token', data.access_token)
     localStorage.setItem('userRole', data.role)
     localStorage.setItem('userFullName', data.full_name)
     localStorage.setItem('userMajor', data.major_name)
+    localStorage.setItem('avatarURL', data.avatar_url)
 
     startInactivityTimer()
   }

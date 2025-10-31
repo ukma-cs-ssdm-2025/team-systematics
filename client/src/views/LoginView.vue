@@ -133,7 +133,8 @@ const handleLogin = async (e) => {
       token_type: "bearer",
       role: data.user.roles[0],  // Беремо першу роль
       full_name: data.user.full_name,
-      major_name: data.user.user_major
+      major_name: data.user.user_major,
+      avatar_url: data.user.avatar_url,
     }
     login(adaptedData)
     alert('Вхід успішний!')
