@@ -1,5 +1,5 @@
 from pydantic import BaseModel, EmailStr, HttpUrl
-from typing import Optional
+from typing import Optional, List
 from uuid import UUID
 
 class UserBase(BaseModel):
