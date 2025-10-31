@@ -20,7 +20,7 @@
                     <div class="user-avatar" @click="toggleDropdown" tabindex="0" @keydown.enter="toggleDropdown"
                         @keydown.space.prevent="toggleDropdown" role="button" aria-haspopup="true"
                         :aria-expanded="isDropdownVisible">
-                        <img src="../../assets/icons/user-avatar-default.svg" alt="Аватар користувача">
+                        <img :src="auth.avatarUrl.value || defaultAvatar" alt="Аватар користувача">
                     </div>
 
                     <div v-if="isDropdownVisible" class="dropdown-content">
@@ -44,8 +44,9 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import { useAuth } from '../../store/loginInfo'
+import defaultAvatar from '../../assets/icons/user-avatar-default.svg'
 
 const auth = useAuth()
 const route = useRoute()
@@ -132,6 +133,8 @@ onUnmounted(() => {
     width: 40px;
     height: 40px;
     display: block;
+    object-fit: cover;
+    border-radius: 50%;
 }
 
 .dropdown-content {
