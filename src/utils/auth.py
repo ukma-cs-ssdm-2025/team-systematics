@@ -114,7 +114,7 @@ def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_
     user = db.query(User).options(
         joinedload(User.majors)
     ).filter(User.id == user_id).first()
-    
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -126,7 +126,9 @@ def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = De
     """
     Завантажує об'єкт користувача та додає до нього атрибут 'role'.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.majors)
+    ).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
