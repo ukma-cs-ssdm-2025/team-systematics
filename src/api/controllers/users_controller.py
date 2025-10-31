@@ -3,11 +3,11 @@ from sqlalchemy.orm import Session
 from src.models.users import User
 from src.api.database import get_db
 from src.utils.auth import get_current_user
-from src.api.services.users_service import UserService
+from src.api.services.users_service import UsersService
 from src.api.schemas.users import UserProfileResponse, NotificationSettingsSchema, AvatarUpdateResponse
 
 class UsersController:
-    def __init__(self, service: UserService):
+    def __init__(self, service: UsersService):
         self.service = service
         self.router = APIRouter(prefix="/users", tags=["User Profile"])
 
