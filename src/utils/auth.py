@@ -111,7 +111,10 @@ def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_
     завантажує об'єкт користувача, перевіряє наявність ролі та додає
     її як атрибут до об'єкта.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.majors)
+    ).filter(User.id == user_id).first()
+    
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
