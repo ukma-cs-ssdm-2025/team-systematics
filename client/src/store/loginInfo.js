@@ -32,7 +32,7 @@ export function useAuth() {
     localStorage.setItem('userRole', data.role)
     localStorage.setItem('userFullName', data.full_name)
     localStorage.setItem('userMajor', data.major_name)
-    localStorage.setItem('avatarURL', data.avatar_url)
+    localStorage.setItem('avatarUrl', data.avatar_url)
 
     startInactivityTimer()
   }
@@ -78,6 +78,7 @@ export function useAuth() {
     role: userRole,
     fullName: userFullName,
     major: userMajor,
+    avatarUrl: avatarUrl,
     isStudent,
     isTeacher,
     isSupervisor,
