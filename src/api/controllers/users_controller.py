@@ -6,7 +6,7 @@ from src.utils.auth import get_current_user
 from src.api.services.user_service import UserService
 from src.api.schemas.users import UserProfileResponse, NotificationSettingsSchema, AvatarUpdateResponse
 
-class UserController:
+class UsersController:
     def __init__(self, service: UserService):
         self.service = service
         self.router = APIRouter(prefix="/users", tags=["User Profile"])
