@@ -17,7 +17,7 @@
                 </div>
 
                 <div class="user-profile" ref="dropdownMenu">
-                    <div class="user-avatar" @click="toggleDropdown" tabindex="0" @keydown.enter="toggleDropdown"
+                    <div class="user-avatar" @click="toggleDropdown" tabindex="0" @keydown="handleKeyDown"
                         @keydown.space.prevent="toggleDropdown" role="button" aria-haspopup="true"
                         :aria-expanded="isDropdownVisible">
                         <img :src="auth.avatarUrl.value || defaultAvatar" alt="Аватар користувача">
@@ -57,6 +57,13 @@ const dropdownMenu = ref(null)
 // Функція для перемикання видимості меню
 function toggleDropdown() {
     isDropdownVisible.value = !isDropdownVisible.value
+}
+
+function handleKeyDown(event) {
+  if (event.key === 'Enter' || event.key === ' ') {
+    event.preventDefault()
+    toggleDropdown()
+  }
 }
 
 function handleLogout() {
