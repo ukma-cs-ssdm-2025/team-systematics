@@ -48,7 +48,9 @@
                     <div class="notification-toggle-row">
                         <p>Я хочу отримувати сповіщення на свою електронну пошту з нагадуванням про майбутні іспити.</p>
                         <label class="switch">
-                            <input type="checkbox" v-model="notificationSettings.enabled">
+                            <input type="checkbox" v-model="notificationSettings.enabled" tabindex="0"
+                                @keydown.enter.prevent="notificationSettings.enabled = !notificationSettings.enabled"
+                                @keydown.space.prevent="notificationSettings.enabled = !notificationSettings.enabled">
                             <span class="slider round"></span>
                         </label>
                     </div>
@@ -136,6 +138,10 @@ function handleFileChange(event) {
         avatarPreview.value = e.target.result
     }
     reader.readAsDataURL(file)
+}
+
+function toggleNotifications(event) {
+    notificationSettings.value.enabled = !notificationSettings.value.enabled
 }
 
 async function saveSettings() {
@@ -297,6 +303,11 @@ onMounted(async () => {
     transition: .4s;
 }
 
+.switch input:focus-visible + .slider {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
+}
+
 input:checked+.slider {
     background-color: var(--color-violet);
 }
@@ -311,6 +322,11 @@ input:checked+.slider:before {
 
 .slider.round:before {
     border-radius: 50%;
+}
+
+.slider:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
 }
 
 .actions {
