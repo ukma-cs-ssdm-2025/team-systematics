@@ -1,6 +1,7 @@
 from sqlalchemy import Column, String, TIMESTAMP, text, ForeignKey, UniqueConstraint
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID as PG_UUID
+import uuid
+from sqlalchemy.dialects.postgresql import UUID
 from src.api.database import Base
 
 
@@ -22,5 +23,5 @@ class Course(Base):
 class CourseEnrollment(Base):
     __tablename__ = "course_enrollments"
 
-    course_id = Column(PG_UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
-    user_id = Column(PG_UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+    course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
+    user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
