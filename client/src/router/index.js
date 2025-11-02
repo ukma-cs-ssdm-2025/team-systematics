@@ -8,6 +8,7 @@ import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
+import MyProfileView from '../views/MyProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -89,6 +90,15 @@ const router = createRouter({
         title: 'Перегляд відповідей'
       }
     },
+    {
+      path: '/my-profile',
+      name: 'MyProfile',
+      component: MyProfileView,
+      meta: {
+        requiresAuth: true,
+        title: 'Мій профіль'
+      }
+    }
     ]
 })
 

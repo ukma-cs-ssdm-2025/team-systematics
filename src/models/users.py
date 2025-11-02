@@ -1,5 +1,5 @@
 from sqlalchemy import Column, String, TIMESTAMP, text
-from sqlalchemy.dialects.postgresql import UUID
+from sqlalchemy.dialects.postgresql import UUID, JSONB
 import uuid
 from src.api.database import Base
 from sqlalchemy.orm import relationship
@@ -14,6 +14,12 @@ class User(Base):
     first_name = Column(String, nullable=False)
     last_name = Column(String, nullable=False)
     patronymic = Column(String)
+    notification_settings = Column(
+        JSONB, 
+        nullable=False, 
+        server_default=text("'{\"enabled\": false, \"remind_before_hours\": []}'")
+    )
+    avatar_url = Column(String(255), nullable=True)
     
     major = relationship(
         "Major", 
