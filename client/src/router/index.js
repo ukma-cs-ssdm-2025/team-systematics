@@ -9,7 +9,7 @@ import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
 import MyCoursesView from '../views/MyCoursesView.vue'
-import CourseJournalView from '../views/ExamJournalView.vue'
+import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 
 const router = createRouter({
@@ -113,13 +113,13 @@ const router = createRouter({
       }
     },
     {
-      path: '/courses/:courseId/journal',
-      name: 'CourseJournal',
-      component: CourseJournalView,
+      path: '/exams/:examId/journal',
+      name: 'ExamJournal',
+      component: ExamJournalView,
       meta: {
         requiresAuth: true,
         requiresRole: 'teacher',
-        title: 'Журнал курсу'
+        title: 'Журнал іспиту'
       },
     }
   ]
