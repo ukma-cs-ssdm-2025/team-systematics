@@ -8,6 +8,7 @@ import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
+import MyCoursesView from '../views/MyCoursesView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -78,10 +79,10 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         title: 'Результати іспиту'
-       }
+      }
     },
     {
-      path: '/exam/:attemptId/review', 
+      path: '/exam/:attemptId/review',
       name: 'ExamReview',
       component: ExamReviewView,
       meta: {
@@ -89,17 +90,41 @@ const router = createRouter({
         title: 'Перегляд відповідей'
       }
     },
-    ]
+    {
+      path: '/courses',
+      name: 'MyCourses',
+      component: MyCoursesView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Мої курси'
+      },
+    }
+  ]
 })
 
 // Перевіряє доступ до маршрутів перед переходом
 router.beforeEach((to) => {
-  const { token } = useAuth()
+  const auth = useAuth()
+  console.log(auth)
 
-  if (to.meta.requiresAuth && !token.value) {
+  if (to.meta.requiresAuth && !auth.token.value) {
     // Якщо немає токена — перенаправляємо на /unauthorized
     return '/unauthorized'
   }
+
+  // Перевірка на необхідну роль
+  if (to.meta.requiresRole) {
+    let hasAccess = false
+    if (to.meta.requiresRole === 'teacher' && auth.isTeacher.value) {
+      hasAccess = true
+    }
+    
+    if (!hasAccess) {
+      return '/forbidden' 
+    }
+  }
+  return true
 })
 
 router.afterEach((to) => {
