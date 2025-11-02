@@ -7,7 +7,7 @@
 
             <div v-else>
                 <section class="exams-section">
-                    <h2>Журнал іспиту: "{{ examName }}"</h2>
+                    <h2>Журнал іспиту {{ examName }}</h2>
 
                     <table v-if="students.length" class="exams-table">
                         <!-- Єдиний colgroup для фіксованих пропорцій -->
