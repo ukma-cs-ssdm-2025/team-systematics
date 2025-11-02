@@ -63,7 +63,14 @@
                                                         <col style="width: 20%">
                                                         <col style="width: 15%">
                                                     </colgroup>
-
+                                                     <thead class="visually-hidden">
+                                                        <tr>
+                                                            <th>Номер спроби</th>
+                                                            <th>Статус спроби</th>
+                                                            <th>Оцінка за спробу</th>
+                                                            <th>Витрачений час</th>
+                                                        </tr>
+                                                    </thead>
                                                     <tbody>
                                                         <tr
                                                             v-for="attempt in student.attempts"
@@ -227,5 +234,17 @@ onMounted(async () => {
 .fade-enter-from,
 .fade-leave-to {
     opacity: 0;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0, 0, 0, 0);
+    white-space: nowrap;
+    border-width: 0;
 }
 </style>
