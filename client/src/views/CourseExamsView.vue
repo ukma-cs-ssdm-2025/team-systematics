@@ -6,14 +6,13 @@
             <div v-else-if="error" class="status-message error">{{ error }}</div>
 
             <div v-else>
-                <div class="page-header">
-                    <h1>Іспити курсу {{ courseName }}</h1>
-                    <CButton @click="createNewExam" class="create-exam-btn">
-                        + Створити новий іспит
-                    </CButton>
-                </div>
-
                 <section class="exams-section">
+                    <div class="page-header">
+                        <h2>Іспити курсу {{ courseName }}</h2>
+                        <CButton @click="createNewExam" class="create-exam-btn">
+                            + Створити новий іспит
+                        </CButton>
+                    </div>
                     <table v-if="exams.length" class="exams-table">
                         <thead>
                             <tr>
@@ -123,7 +122,7 @@ function editExam(examId) {
 .title-container {
     display: flex;
     align-items: center;
-    gap: 12px; 
+    gap: 12px;
 }
 
 .tooltip {

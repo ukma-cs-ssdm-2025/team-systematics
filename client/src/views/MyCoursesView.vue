@@ -2,34 +2,36 @@
     <div>
         <Header />
         <main class="container">
-            <div class="page-header">
-                <h1>Мої курси</h1>
-                <CButton @click="createNewCourse">+ Створити новий курс</CButton>
-            </div>
+            <section class="content-section">
+                <div class="page-header">
+                    <h2>Мої курси</h2>
+                    <CButton @click="createNewCourse">+ Створити новий курс</CButton>
+                </div>
 
-            <div v-if="loading" class="status-message">Завантаження...</div>
-            <div v-else-if="error" class="status-message error">{{ error }}</div>
+                <div v-if="loading" class="status-message">Завантаження...</div>
+                <div v-else-if="error" class="status-message error">{{ error }}</div>
 
-            <div v-else-if="courses.length > 0" class="courses-grid">
-                <div v-for="course in courses" :key="course.id" class="course-card">
-                    <div class="card-header">
-                        <span class="course-code">{{ course.code }}</span>
-                        <h3>{{ course.name }}</h3>
-                    </div>
-                    <div class="card-stats">
-                        <span>👩‍🎓 {{ course.student_count }} студентів</span>
-                        <span>📝 {{ course.exam_count }} іспитів</span>
-                    </div>
-                    <div class="card-actions">
-                        <CButton @click="goToExams(course.id)">Керувати</CButton>
+                <div v-else-if="courses.length > 0" class="courses-grid">
+                    <div v-for="course in courses" :key="course.id" class="course-card">
+                        <div class="card-header">
+                            <span class="course-code">{{ course.code }}</span>
+                            <h3>{{ course.name }}</h3>
+                        </div>
+                        <div class="card-stats">
+                            <span>👩‍🎓 {{ course.student_count }} студентів</span>
+                            <span>📝 {{ course.exam_count }} іспитів</span>
+                        </div>
+                        <div class="card-actions">
+                            <CButton @click="goToExams(course.id)">Керувати</CButton>
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            <div v-else class="empty-state">
-                <h2>У вас ще немає створених курсів</h2>
-                <CButton @click="createNewCourse">+ Створити свій перший курс</CButton>
-            </div>
+                <div v-else class="empty-state">
+                    <h2>У вас ще немає створених курсів</h2>
+                    <CButton @click="createNewCourse">+ Створити свій перший курс</CButton>
+                </div>
+            </section>
         </main>
     </div>
 </template>
@@ -71,7 +73,6 @@ function createNewCourse() {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 40px;
 }
 
 .courses-grid {
