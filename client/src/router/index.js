@@ -122,8 +122,8 @@ const router = createRouter({
         requiresRole: 'teacher',
         title: 'Журнал іспиту'
       },
-    }
-  ]
+    },
+    {
       path: '/my-profile',
       name: 'MyProfile',
       component: MyProfileView,
@@ -131,7 +131,7 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Мій профіль'
       }
-    }
+    },
     ]
 })
 
