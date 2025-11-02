@@ -8,15 +8,17 @@
       "status": "Завершено",
       "questions_count": 25,
       "students_completed": "28 / 30",
-      "average_grade": 85
+      "average_grade": 85,
+      "pending_reviews": 5
     },
     {
       "id": "exam-uuid-456",
       "title": "Фінальний іспит",
-      "status": "Заплановано",
+      "status": "Завершено",
       "questions_count": 50,
-      "students_completed": "0 / 30",
-      "average_grade": null
+      "students_completed": "15 / 30",
+      "average_grade": 72,
+      "pending_reviews": 0
     },
     {
       "id": "exam-uuid-789",
@@ -24,7 +26,8 @@
       "status": "Чернетка",
       "questions_count": 10,
       "students_completed": "0 / 30",
-      "average_grade": null
+      "average_grade": null,
+      "pending_reviews": 0
     }
   ]
 }
