@@ -10,7 +10,7 @@
                         <router-link to="/transcript">Мій атестат</router-link>
                     </li>
                     <li v-if="auth.isTeacher.value" class="nav-item" :class="{ active: route.path === '/courses' }">
-                        <router-link to="/teacher/courses">Мої курси</router-link>
+                        <router-link to="/courses">Мої курси</router-link>
                     </li>
                 </ul>
             </div>
