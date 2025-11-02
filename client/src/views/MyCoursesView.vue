@@ -22,7 +22,6 @@
                     </div>
                     <div class="card-actions">
                         <CButton @click="goToExams(course.id)">Керувати</CButton>
-                        <CButton @click="goToJournal(course.id)" variant="secondary">Журнал</CButton>
                     </div>
                 </div>
             </div>
@@ -60,10 +59,6 @@ onMounted(async () => {
 
 function goToExams(courseId) {
     router.push(`/courses/${courseId}/exams`)
-}
-
-function goToJournal(courseId) {
-    router.push(`/courses/${courseId}/journal`)
 }
 
 function createNewCourse() {
