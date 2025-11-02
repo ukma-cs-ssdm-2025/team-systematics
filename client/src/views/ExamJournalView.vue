@@ -149,6 +149,7 @@ onMounted(async () => {
         const response = await getExamJournal(examId)
         students.value = response.students
         examName.value = response.exam_name
+        document.title = `Журнал іспиту ${examName.value} | Systematics`
         maxAttempts.value = response.max_attempts
     } catch (err) {
         error.value = err.message || 'Сталася невідома помилка.'
