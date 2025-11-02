@@ -11,6 +11,7 @@ import MyTranscriptView from '../views/MyTranscriptView.vue'
 import MyCoursesView from '../views/MyCoursesView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
+import MyProfileView from '../views/MyProfileView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -123,6 +124,15 @@ const router = createRouter({
       },
     }
   ]
+      path: '/my-profile',
+      name: 'MyProfile',
+      component: MyProfileView,
+      meta: {
+        requiresAuth: true,
+        title: 'Мій профіль'
+      }
+    }
+    ]
 })
 
 // Перевіряє доступ до маршрутів перед переходом
