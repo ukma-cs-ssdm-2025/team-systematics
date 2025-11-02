@@ -18,7 +18,6 @@
 
                 <div class="user-profile" ref="dropdownMenu">
                     <div class="user-avatar" @click="toggleDropdown" tabindex="0" @keydown="handleKeyDown"
-                        @keydown.space.prevent="toggleDropdown" role="button" aria-haspopup="true"
                         :aria-expanded="isDropdownVisible">
                         <img :src="auth.avatarUrl.value || defaultAvatar" alt="Аватар користувача">
                     </div>
