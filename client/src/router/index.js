@@ -9,6 +9,8 @@ import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
 import MyCoursesView from '../views/MyCoursesView.vue'
+import CourseJournalView from '../views/ExamJournalView.vue'
+import CourseExamsView from '../views/CourseExamsView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -98,6 +100,26 @@ const router = createRouter({
         requiresAuth: true,
         requiresRole: 'teacher',
         title: 'Мої курси'
+      },
+    },
+    {
+      path: '/courses/:courseId/exams',
+      name: 'CourseExams',
+      component: CourseExamsView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Іспити курсу'
+      }
+    },
+    {
+      path: '/courses/:courseId/journal',
+      name: 'CourseJournal',
+      component: CourseJournalView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Журнал курсу'
       },
     }
   ]
