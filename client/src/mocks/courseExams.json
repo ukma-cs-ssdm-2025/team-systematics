@@ -1,0 +1,30 @@
+{
+  "course_id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+  "course_name": "Математичний аналіз",
+  "exams": [
+    {
+      "id": "exam-uuid-123",
+      "title": "Модульний контроль №1",
+      "status": "Завершено",
+      "questions_count": 25,
+      "students_completed": "28 / 30",
+      "average_grade": 85
+    },
+    {
+      "id": "exam-uuid-456",
+      "title": "Фінальний іспит",
+      "status": "Заплановано",
+      "questions_count": 50,
+      "students_completed": "0 / 30",
+      "average_grade": null
+    },
+    {
+      "id": "exam-uuid-789",
+      "title": "Додатковий тест по границях",
+      "status": "Чернетка",
+      "questions_count": 10,
+      "students_completed": "0 / 30",
+      "average_grade": null
+    }
+  ]
+}
