@@ -1,12 +1,11 @@
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta
 from jose import jwt
 from src.core.config import JWT_SECRET, JWT_ALGORITHM, JWT_EXPIRATION_MINUTES
 from typing import Iterable, Optional
 
 def create_access_token(data: dict):
     to_encode = data.copy()
-    # Replace API Call
-    expire = datetime.now(timezone.utc) + timedelta(minutes=JWT_EXPIRATION_MINUTES)
+    expire = datetime.utcnow() + timedelta(minutes=JWT_EXPIRATION_MINUTES)
     to_encode.update({"exp": expire})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
@@ -51,14 +50,14 @@ def has_roles(
     default, or raise ValueError when strict=True.
     """
 
-    def _normalize(items: Iterable[str] | None) -> Set[str]:
+    def _normalize(items: Iterable[str] | None) -> set[str]:
         """Return set of canonical roles, ignoring empty or unknown ones."""
         if not items:
             return set()
-        roles = { _canonical_role(r) for r in items if r and not r.isspace() }
+        roles = { _canonical_role(r.strip().casefold()) for r in items if r and r.strip() }
         return {r for r in roles if r}
 
-    def _find_unknown(items: Iterable[str] | None) -> List[str]:
+    def _find_unknown(items: Iterable[str] | None) -> list[str]:
         """Return list of roles that cannot be canonicalized."""
         if not items:
             return []
@@ -67,7 +66,7 @@ def has_roles(
             if r and not r.isspace() and not _canonical_role(r)
         ]
 
-    def _normalize_and_validate(items: Iterable[str] | None) -> Set[str]:
+    def _normalize_and_validate(items: Iterable[str] | None) -> set[str]:
         roles = _normalize(items)
         if strict:
             unknown = _find_unknown(items)
