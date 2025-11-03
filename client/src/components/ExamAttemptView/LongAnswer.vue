@@ -71,6 +71,7 @@ defineEmits(['update:modelValue'])
     line-height: 1.5;
 }
 
+// Consolidate Duplicate Code
 .review-display {
 -  cursor: not-allowed;
 -}
