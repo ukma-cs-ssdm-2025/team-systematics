@@ -17,10 +17,11 @@
                 </div>
 
                 <div class="user-profile" ref="dropdownMenu">
-                    <div class="user-avatar" @click="toggleDropdown" tabindex="0" @keydown="handleKeyDown"
-                        :aria-expanded="isDropdownVisible">
+                    <button type="button" class="user-avatar" @click="toggleDropdown" tabindex="0"
+                        @keydown="handleKeyDown" :aria-expanded="isDropdownVisible"
+                        aria-label="Відкрити меню користувача">
                         <img :src="auth.avatarUrl.value || defaultAvatar" alt="Аватар користувача">
-                    </div>
+                    </button>
 
                     <div v-if="isDropdownVisible" class="dropdown-content">
                         <ul>
@@ -59,10 +60,10 @@ function toggleDropdown() {
 }
 
 function handleKeyDown(event) {
-  if (event.key === 'Enter' || event.key === ' ') {
-    event.preventDefault()
-    toggleDropdown()
-  }
+    if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault()
+        toggleDropdown()
+    }
 }
 
 function handleLogout() {
@@ -131,6 +132,7 @@ onUnmounted(() => {
 }
 
 .user-avatar {
+    border: none;
     cursor: pointer;
     border-radius: 50%;
 }
@@ -162,7 +164,8 @@ onUnmounted(() => {
     padding: 0;
 }
 
-.dropdown-content li, a {
+.dropdown-content li,
+a {
     width: 100%;
     color: var(--color-white);
     padding: 12px 20px;
