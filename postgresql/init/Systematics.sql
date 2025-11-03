@@ -20,95 +20,58 @@ SET xmloption = content;
 SET client_min_messages = warning;
 SET row_security = off;
 
+-- ---------------------------------------------------------------------------
+-- Introduce Constant / Consolidate Duplicate Code
+\set ATTEMPT_STATUS_ENUM  '''in_progress'',''submitted'',''completed'''
+\set QUESTION_TYPE_ENUM   '''single_choice'',''multi_choice'',''short_answer'',''long_answer'',''matching'''
+-- ---------------------------------------------------------------------------
+
 --
 -- TOC entry 2 (class 3079 OID 16598)
 -- Name: uuid-ossp; Type: EXTENSION; Schema: -; Owner: -
 --
-
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
-
 
 --
 -- TOC entry 5085 (class 0 OID 0)
--- Dependencies: 2
--- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
+-- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner:
 --
-
 COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UUIDs)';
-
 
 --
 -- TOC entry 904 (class 1247 OID 16610)
 -- Name: attempt_status_enum; Type: TYPE; Schema: public; Owner: postgres
 --
-
-CREATE TYPE public.attempt_status_enum AS ENUM (
-    'in_progress',
-    'submitted',
-    'completed'
-);
-
-
+CREATE TYPE public.attempt_status_enum AS ENUM ( :ATTEMPT_STATUS_ENUM );
 ALTER TYPE public.attempt_status_enum OWNER TO postgres;
 
 --
 -- TOC entry 937 (class 1247 OID 16830)
 -- Name: attemptstatus; Type: TYPE; Schema: public; Owner: postgres
 --
-
-CREATE TYPE public.attemptstatus AS ENUM (
-    'in_progress',
-    'submitted',
-    'completed'
-);
-
-
+CREATE TYPE public.attemptstatus AS ENUM ( :ATTEMPT_STATUS_ENUM );
 ALTER TYPE public.attemptstatus OWNER TO postgres;
 
 --
 -- TOC entry 907 (class 1247 OID 16618)
 -- Name: question_type_enum; Type: TYPE; Schema: public; Owner: postgres
 --
-
-CREATE TYPE public.question_type_enum AS ENUM (
-    'single_choice',
-    'multi_choice',
-    'short_answer',
-    'long_answer',
-    'matching'
-);
-
-
+CREATE TYPE public.question_type_enum AS ENUM ( :QUESTION_TYPE_ENUM );
 ALTER TYPE public.question_type_enum OWNER TO postgres;
 
 --
 -- TOC entry 934 (class 1247 OID 16819)
 -- Name: question_type_enum_weights; Type: TYPE; Schema: public; Owner: postgres
 --
-
-CREATE TYPE public.question_type_enum_weights AS ENUM (
-    'single_choice',
-    'multi_choice',
-    'short_answer',
-    'long_answer',
-    'matching'
-);
-
-
+CREATE TYPE public.question_type_enum_weights AS ENUM ( :QUESTION_TYPE_ENUM );
 ALTER TYPE public.question_type_enum_weights OWNER TO postgres;
 
 --
 -- TOC entry 922 (class 1247 OID 16737)
 -- Name: questiontype; Type: TYPE; Schema: public; Owner: postgres
 --
-
-CREATE TYPE public.questiontype AS ENUM (
-    'single_choice',
-    'multi_choice',
-    'short_answer',
-    'long_answer',
-    'matching'
-);
+CREATE TYPE public.questiontype AS ENUM ( :QUESTION_TYPE_ENUM );
+ALTER TYPE public.questiontype OWNER TO postgres;
 
 
 ALTER TYPE public.questiontype OWNER TO postgres;
