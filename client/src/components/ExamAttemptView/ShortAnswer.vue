@@ -60,8 +60,8 @@ const emit = defineEmits(['update:modelValue'])
 function handleInput(event) {
     let value = event.target.value
     if (props.inputType === 'number') {
-        const parsedValue = parseFloat(value)
-        if (value.trim() !== '' && !isNaN(parsedValue)) {
+        const parsedValue = Number.parseFloat(value)
+        if (value.trim() !== '' && !Number.isNaN(parsedValue)) {
             value = parsedValue
         }
     }
