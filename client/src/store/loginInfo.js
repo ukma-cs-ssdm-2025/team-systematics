@@ -66,7 +66,7 @@ export function useAuth() {
     }, timeoutDuration)
 
     // Скидаємо таймер при активності користувача
-    window.onmousemove = window.onkeydown = () => {
+    globalThis.onmousemove = globalThis.onkeydown = () => {
       clearTimeout(inactivityTimer)
       inactivityTimer = setTimeout(() => {
         console.log('Сесію завершено через 25 хвилин бездіяльності.')
