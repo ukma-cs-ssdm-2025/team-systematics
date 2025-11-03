@@ -155,8 +155,7 @@ class ExamReviewService:
         for opt in question.options:
             is_selected = opt.id in selected_option_ids
             earned_points_per_option = 0
-            if is_selected:
-                if opt.is_correct:
+            if is_selected and opt.is_correct:
                     earned_points_per_option = points_per_correct_option
                     total_earned_points += points_per_correct_option
 

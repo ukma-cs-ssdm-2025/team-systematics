@@ -20,7 +20,7 @@ class AttemptsRepository:
         if not isinstance(duration_minutes, int) or duration_minutes <= 0:
             raise ValueError(f"Invalid duration_minutes: {duration_minutes}")
             
-        started_at = datetime.utcnow()
+        started_at = datetime.now(timezone.utc)
         due_at = started_at + timedelta(minutes=duration_minutes)
         print(f"Creating attempt: started_at={started_at.isoformat()}, due_at={due_at.isoformat()}, duration={duration_minutes}")
         new_attempt = Attempt(
