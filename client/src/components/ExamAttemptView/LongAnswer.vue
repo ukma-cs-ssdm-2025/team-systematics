@@ -72,7 +72,13 @@ defineEmits(['update:modelValue'])
 }
 
 .review-display {
-    cursor: not-allowed;
+-  cursor: not-allowed;
+-}
+-
+-.review-display {
+-  position: relative;
++  cursor: not-allowed;
++  position: relative;
 }
 
 .textarea-input:hover {
@@ -82,10 +88,6 @@ defineEmits(['update:modelValue'])
 .textarea-input:focus-visible {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
-}
-
-.review-display {
-    position: relative;
 }
 
 .points-display {
