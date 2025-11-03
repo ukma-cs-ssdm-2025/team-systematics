@@ -85,7 +85,7 @@ export async function saveAnswer(attemptId, questionId, answer, questionType) {
         return response.data
 
    } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти відповідь. Спробуйте ще раз.')
@@ -114,7 +114,7 @@ export async function submitExamAttempt(attemptId) {
         return response.data
 
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти спробу. Спробуйте ще раз.')
@@ -130,7 +130,7 @@ export async function getExamAttemptResults(attemptId) {
         const response = await http.get(`/api/attempts/${attemptId}/results`)
         return response.data
      } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати результати іспиту. Спробуйте ще раз.')
@@ -148,7 +148,7 @@ export async function getExamAttemptReview(attemptId) {
         const response = await http.get(`/api/attempts/${attemptId}/review`)
         return response.data
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати огляд іспиту. Спробуйте ще раз')

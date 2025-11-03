@@ -13,7 +13,7 @@ export async function getTranscript() {
         const response = await http.get('/api/transcript')
         return response.data
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Помилка завантаження атестату: не вдалося зв’язатися з сервером.')
