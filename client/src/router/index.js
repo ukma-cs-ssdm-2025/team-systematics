@@ -136,16 +136,14 @@ const router = createRouter({
 })
 
 // Перевіряє доступ до маршрутів перед переходом
-router.beforeEach((to) => {
+router.beforeEach((to, from, next) => {
   const auth = useAuth()
-  console.log(auth)
 
   if (to.meta.requiresAuth && !auth.token.value) {
-    // Якщо немає токена — перенаправляємо на /unauthorized
-    return '/unauthorized'
+    next({ path: '/unauthorized' })
+    return
   }
 
-  // Перевірка на необхідну роль
   if (to.meta.requiresRole) {
     let hasAccess = false
     if (to.meta.requiresRole === 'teacher' && auth.isTeacher.value) {
@@ -153,10 +151,11 @@ router.beforeEach((to) => {
     }
     
     if (!hasAccess) {
-      return '/forbidden' 
+      next({ path: '/forbidden' })
+      return
     }
   }
-  return true
+  next() 
 })
 
 router.afterEach((to) => {
