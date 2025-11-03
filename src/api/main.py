@@ -69,6 +69,10 @@ def create_app() -> FastAPI:
     auth_service = AuthService()
     users_service = UsersService()
 
+    # Introduce Parameter / Dependency Injection
+    transcript_repository = TranscriptRepository(SessionLocal())
+    transcript_service = TranscriptService(transcript_repository)
+
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
     attempts_controller = AttemptsController(attempts_service, exam_review_service)
@@ -76,10 +80,6 @@ def create_app() -> FastAPI:
     courses_controller = CoursesController(CoursesService())
     transcript_controller = TranscriptController(transcript_service)
     users_controller = UsersController(users_service)
-
-    # Introduce Parameter / Dependency Injection
-    transcript_repository = TranscriptRepository(SessionLocal())
-    transcript_service = TranscriptService(transcript_repository)
 
     #Ініціалізуємо конфігурацію cloudinary
     configure_cloudinary()
