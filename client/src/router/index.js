@@ -160,11 +160,14 @@ router.beforeEach((to, from, next) => {
 
 router.afterEach((to) => {
   const defaultTitle = 'Онлайн-платформа іспитів | Systematics'
+  const rawTitle = to.meta.title
 
-  // Встановлюємо title сторінки
-  document.title = to.meta.title
-    ? `${to.meta.title} | Systematics`
-    : defaultTitle;
-});
+  const pageTitle =
+    typeof rawTitle === 'string'
+      ? `${rawTitle} | Systematics`
+      : defaultTitle
+
+  document.title = pageTitle
+})
 
 export default router
