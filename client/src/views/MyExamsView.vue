@@ -71,7 +71,8 @@
                 </section>
 
                 <div class="page-end-deco">
-                    <img src="../assets/icons/graduate-hat.svg" alt="Decorative image of a graduate hat">
+                // Simplify naming / remove redundancy
+                    <img src="../assets/icons/graduate-hat.svg" alt="Decorative graduate hat">
                     <div class="page-end-text">Наразі це все!</div>
                 </div>
             </div>
