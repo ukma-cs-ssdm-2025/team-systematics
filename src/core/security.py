@@ -50,14 +50,14 @@ def has_roles(
     default, or raise ValueError when strict=True.
     """
 
-    def _normalize(items: Iterable[str] | None) -> Set[str]:
+    def _normalize(items: Iterable[str] | None) -> set[str]:
         """Return set of canonical roles, ignoring empty or unknown ones."""
         if not items:
             return set()
-        roles = { _canonical_role(r) for r in items if r and not r.isspace() }
+        roles = { _canonical_role(r.strip().casefold()) for r in items if r and r.strip() }
         return {r for r in roles if r}
 
-    def _find_unknown(items: Iterable[str] | None) -> List[str]:
+    def _find_unknown(items: Iterable[str] | None) -> list[str]:
         """Return list of roles that cannot be canonicalized."""
         if not items:
             return []
@@ -66,7 +66,7 @@ def has_roles(
             if r and not r.isspace() and not _canonical_role(r)
         ]
 
-    def _normalize_and_validate(items: Iterable[str] | None) -> Set[str]:
+    def _normalize_and_validate(items: Iterable[str] | None) -> set[str]:
         roles = _normalize(items)
         if strict:
             unknown = _find_unknown(items)
