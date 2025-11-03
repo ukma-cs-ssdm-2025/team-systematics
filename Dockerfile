@@ -32,9 +32,9 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy Python source code from the src directory into the container.
-COPY --chown=app:app --chmod=0555 src/ /app/src/
+COPY --chown=root:root --chmod=0555 src/ /app/src/
 
-COPY --from=builder --chown=app:app --chmod=0555 /app/client/dist /app/client/dist
+COPY --from=builder --chown=root:root --chmod=0555 /app/client/dist /app/client/dist
 
 # запустити від non-root
 USER app
