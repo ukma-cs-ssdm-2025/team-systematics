@@ -69,6 +69,8 @@ def create_app() -> FastAPI:
     auth_service = AuthService()
     transcript_service = TranscriptService()
     users_service = UsersService()
+    # Introduce Parameter / Dependency Injection
+    transcript_service = TranscriptService(transcript_repository)
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
