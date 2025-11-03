@@ -27,3 +27,9 @@ class User(Base):
         back_populates="users",
         uselist=False
     )
+
+    courses = relationship(
+        "Course",
+        secondary="course_enrollments",
+        back_populates="students"
+    )

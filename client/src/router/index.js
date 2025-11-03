@@ -8,6 +8,9 @@ import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
+import MyCoursesView from '../views/MyCoursesView.vue'
+import ExamJournalView from '../views/ExamJournalView.vue'
+import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
 
 const router = createRouter({
@@ -79,16 +82,46 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         title: 'Результати іспиту'
-       }
+      }
     },
     {
-      path: '/exam/:attemptId/review', 
+      path: '/exam/:attemptId/review',
       name: 'ExamReview',
       component: ExamReviewView,
       meta: {
         requiresAuth: true,
         title: 'Перегляд відповідей'
       }
+    },
+    {
+      path: '/courses',
+      name: 'MyCourses',
+      component: MyCoursesView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Мої курси'
+      },
+    },
+    {
+      path: '/courses/:courseId/exams',
+      name: 'CourseExams',
+      component: CourseExamsView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Іспити курсу'
+      }
+    },
+    {
+      path: '/exams/:examId/journal',
+      name: 'ExamJournal',
+      component: ExamJournalView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Журнал іспиту'
+      },
     },
     {
       path: '/my-profile',
@@ -98,27 +131,43 @@ const router = createRouter({
         requiresAuth: true,
         title: 'Мій профіль'
       }
-    }
+    },
     ]
 })
 
 // Перевіряє доступ до маршрутів перед переходом
-router.beforeEach((to) => {
-  const { token } = useAuth()
+router.beforeEach((to, from, next) => {
+  const auth = useAuth()
 
-  if (to.meta.requiresAuth && !token.value) {
-    // Якщо немає токена — перенаправляємо на /unauthorized
-    return '/unauthorized'
+  if (to.meta.requiresAuth && !auth.token.value) {
+    next({ path: '/unauthorized' })
+    return
   }
+
+  if (to.meta.requiresRole) {
+    let hasAccess = false
+    if (to.meta.requiresRole === 'teacher' && auth.isTeacher.value) {
+      hasAccess = true
+    }
+    
+    if (!hasAccess) {
+      next({ path: '/forbidden' })
+      return
+    }
+  }
+  next() 
 })
 
 router.afterEach((to) => {
   const defaultTitle = 'Онлайн-платформа іспитів | Systematics'
+  const rawTitle = to.meta.title
 
-  // Встановлюємо title сторінки
-  document.title = to.meta.title
-    ? `${to.meta.title} | Systematics`
-    : defaultTitle;
-});
+  const pageTitle =
+    typeof rawTitle === 'string'
+      ? `${rawTitle} | Systematics`
+      : defaultTitle
+
+  document.title = pageTitle
+})
 
 export default router
