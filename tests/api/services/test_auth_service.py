@@ -6,6 +6,11 @@ import src.api.services.auth_service as svc_module
 from src.api.services.auth_service import AuthService
 from src.api.schemas.auth import LoginRequest
 
+# Introduce Constant / Replace Magic Literal
+TEST_PW = "pw"
+BAD_PW  = "bad"
+GHOST_EMAIL = "ghost@example.com"
+DUMMY_HASH = "<stored-hash>"
 
 class StubUser:
     """Minimal user object to satisfy AuthService fields."""
@@ -38,7 +43,7 @@ def test_login_user_not_found(monkeypatch):
     monkeypatch.setattr(svc_module, "UserRepository", make_fake_repo(user_to_return=None))
 
     svc = AuthService()
-    req = LoginRequest(email="ghost@example.com", password="pw")
+    req = LoginRequest(email=GHOST_EMAIL, password=TEST_PW)
 
     with pytest.raises(HTTPException) as ei:
         svc.login(db=None, request=req)
@@ -51,7 +56,7 @@ def test_login_invalid_password(monkeypatch):
     user = StubUser(
         id=uuid4(),
         email="u@example.com",
-        hashed_password="<stored-hash>",
+        hashed_password=DUMMY_HASH,
         first_name="Test",
         last_name="User",
     )
@@ -61,6 +66,6 @@ def test_login_invalid_password(monkeypatch):
 
     svc = AuthService()
     with pytest.raises(HTTPException) as ei:
-        svc.login(db=None, request=LoginRequest(email=user.email, password="bad"))
+        svc.login(db=None, request=LoginRequest(email=user.email, password=BAD_PW))
     assert ei.value.status_code == 401
     assert "Invalid password" in str(ei.value.detail)
