@@ -25,11 +25,15 @@
                     <table class="results-table">
                         <thead>
                             <tr>
-                                <th class="left"><span class="pill">Назва дисципліни</span></th>
-                                <th class="right"><span class="pill">Рейтинг</span></th>
-                                <th class="left"><span class="pill">Оцінка ECTS</span></th>
-                                <th class="left"><span class="pill">Національна шкала</span></th>
-                                <th class="left"><span class="pill">Поріг виконано</span></th>
+                                <th class="left"><span class="pill" @click="sortBy('course_name')">Назва
+                                        дисципліни</span></th>
+                                <th class="right"><span class="pill" @click="sortBy('rating')">Рейтинг</span></th>
+                                <th class="left"><span class="pill" @click="sortBy('ects_grade')">Оцінка ECTS</span>
+                                </th>
+                                <th class="left"><span class="pill" @click="sortBy('national_grade')">Національна
+                                        шкала</span></th>
+                                <th class="left"><span class="pill" @click="sortBy('pass_status')">Поріг виконано</span>
+                                </th>
                             </tr>
                         </thead>
                         <tbody>
@@ -60,7 +64,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive} from 'vue'
 import Header from '../components/global/Header.vue'
 import { useAuth } from '../store/loginInfo.js'
 import { getTranscript } from '../api/transcript.js'
@@ -71,15 +75,35 @@ const error = ref(null)
 
 const { fullName, major } = useAuth()
 
-onMounted(async () => {
+const sortState = reactive({
+    key: null, // Поле, за яким сортуємо
+    order: 'asc' // Напрямок сортування
+})
+
+async function fetchTranscriptData() {
+    loading.value = true
     try {
-        const data = await getTranscript()
+        const data = await getTranscript(sortState.key, sortState.order)
         transcriptData.value = data
     } catch (err) {
         error.value = err.message || "Не вдалося завантажити дані."
     } finally {
         loading.value = false
     }
-})
+}
+
+function sortBy(key) {
+    // Якщо клікнули на ту саму колонку, змінюємо напрямок
+    if (sortState.key === key) {
+        sortState.order = sortState.order === 'asc' ? 'desc' : 'asc'
+    } else {
+        // Якщо клікнули на нову колонку, встановлюємо її і скидаємо напрямок
+        sortState.key = key
+        sortState.order = 'asc'
+    }
+    fetchTranscriptData()
+}
+
+onMounted(fetchTranscriptData)
 
 </script>
