@@ -37,7 +37,6 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- ЗМІНЕНО: Тепер просто відображаємо готові дані -->
                             <tr v-for="course in transcriptData.courses" :key="course.id">
                                 <td class="left">{{ course.course_name }}</td>
                                 <td class="right">{{ course.rating !== null && course.rating !== undefined ?
