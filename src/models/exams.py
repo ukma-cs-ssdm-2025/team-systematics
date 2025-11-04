@@ -39,6 +39,7 @@ class Exam(Base):
     
     questions = relationship("Question", back_populates="exam", cascade="all, delete-orphan")
     attempts = relationship("Attempt", back_populates="exam")
+    courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -55,6 +56,7 @@ class Question(Base):
                                     foreign_keys=[MatchingOption.question_id], 
                                     primaryjoin="Question.id == MatchingOption.question_id",
                                     cascade="all, delete-orphan")
+
 
 class Option(Base):
     __tablename__ = "options"

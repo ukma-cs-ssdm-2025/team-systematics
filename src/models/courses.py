@@ -9,13 +9,20 @@ class Course(Base):
     __tablename__ = "courses"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
-    title = Column(String, nullable=False, unique=True)
+    name = Column(String, nullable=False, unique=True)
     description = Column(String, nullable=True)
-    created_at = Column(TIMESTAMP, server_default=text("CURRENT_TIMESTAMP"))
+    code = Column(String, nullable=False)
+    owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
 
     students = relationship(
         "User",
         secondary="course_enrollments",
+        back_populates="courses"
+    )
+
+    exams = relationship(
+        "Exam",
+        secondary="course_exams",
         back_populates="courses"
     )
 

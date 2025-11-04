@@ -8,7 +8,7 @@ import UnauthorizedView from '../views/UnauthorizedView.vue'
 import ExamResultsView from '../views/ExamResultsView.vue'
 import ExamReviewView from '../views/ExamReviewView.vue'
 import MyTranscriptView from '../views/MyTranscriptView.vue'
-import MyCoursesView from '../views/MyCoursesView.vue'
+import CoursesCatalogueView from '../views/CoursesCatalogueView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
@@ -54,6 +54,7 @@ const router = createRouter({
       meta:
       {
         requiresAuth: true,  // доступ лише для авторизованих
+        requiresRole: 'student',
         title: 'Мої іспити'
       }
     },
@@ -63,6 +64,7 @@ const router = createRouter({
       component: MyTranscriptView,
       meta: {
         requiresAuth: true,
+        requiresRole: 'student',
         title: 'Мій атестат'
       }
     },
@@ -72,6 +74,7 @@ const router = createRouter({
       component: ExamAttemptView,
       meta: {
         requiresAuth: true,
+        requiresRole: 'student',
         title: 'Проходження іспиту'
       }
     },
@@ -94,14 +97,24 @@ const router = createRouter({
       }
     },
     {
-      path: '/courses',
-      name: 'MyCourses',
-      component: MyCoursesView,
+      path: '/courses/my',
+      name: 'MyCoursesCatalogue',
+      component: CoursesCatalogueView,
       meta: {
         requiresAuth: true,
         requiresRole: 'teacher',
         title: 'Мої курси'
-      },
+      }
+    },
+    {
+      path: '/courses',
+      name: 'CoursesCatalogue',
+      component: CoursesCatalogueView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'student',
+        title: 'Каталог курсів'
+      }
     },
     {
       path: '/courses/:courseId/exams',
@@ -132,7 +145,7 @@ const router = createRouter({
         title: 'Мій профіль'
       }
     },
-    ]
+  ]
 })
 
 // Перевіряє доступ до маршрутів перед переходом
@@ -149,13 +162,16 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresRole === 'teacher' && auth.isTeacher.value) {
       hasAccess = true
     }
-    
+    if (to.meta.requiresRole === 'student' && auth.isStudent.value) {
+      hasAccess = true
+    }
+
     if (!hasAccess) {
       next({ path: '/forbidden' })
       return
     }
   }
-  next() 
+  next()
 })
 
 router.afterEach((to) => {
