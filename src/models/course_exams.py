@@ -10,7 +10,7 @@ class CourseExam(Base):
         ForeignKey("exams.id", ondelete="CASCADE"), 
         primary_key=True
     )
-s
+    
     course_id = Column(
         UUID(as_uuid=True), 
         ForeignKey("courses.id", ondelete="CASCADE"), 
