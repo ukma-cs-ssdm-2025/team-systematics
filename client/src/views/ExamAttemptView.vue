@@ -127,7 +127,7 @@
             const savedIndex = localStorage.getItem(localStorageKey)
             if (savedIndex) {
                 // Перетворюємо рядок з localStorage назад в число
-                const parsedIndex = parseInt(savedIndex, 10)
+                const parsedIndex = Number.parseInt(savedIndex, 10)
                 // Перевіряємо, чи індекс валідний (на випадок зміни кількості питань)
                 if (parsedIndex < questionsList.value.length) {
                     currentQuestionIndex.value = parsedIndex

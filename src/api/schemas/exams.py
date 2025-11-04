@@ -4,6 +4,8 @@ from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, conint, constr, validator
 
+DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
+
 def end_at_must_be_after_start_at(cls, v, values):
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
 
@@ -40,7 +42,7 @@ class ExamCreate(BaseModel):
     )
     end_at: datetime = Field(
         ...,
-        example="2027-10-08T10:00:00Z",
+        example=DEFAULT_END_AT_EXAMPLE,
         description="End datetime (UTC)"
     )
     duration_minutes: int = Field(
@@ -126,7 +128,7 @@ class Exam(BaseModel):
     )
     end_at: datetime = Field(
         ...,
-        example="2027-10-08T10:00:00Z"
+        example=DEFAULT_END_AT_EXAMPLE
     )
     duration_minutes: int = Field(
         ...,
@@ -162,7 +164,7 @@ class ExamsPage(BaseModel):
                 "title": "Вступ до Docker",
                 "instructions": "Іспит складається з 20 теоретичних питань.",
                 "start_at": "2024-10-08T10:00:00Z",
-                "end_at": "2027-10-08T10:00:00Z",
+                "end_at": DEFAULT_END_AT_EXAMPLE,
                 "max_attempts": 3,
                 "duration_minutes": 120,
                 "pass_threshold": 75,

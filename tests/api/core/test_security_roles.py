@@ -29,6 +29,6 @@ def test_strict_mode_raises_on_unknown():
         has_roles(["student", "mystery"], ["student"], strict=True)
 
 def test_generators_are_supported():
-    user_iter = (r for r in ["student", "admin"])
-    req_iter = (r for r in ["admin"])
+    user_iter = iter(["student", "admin"])
+    req_iter = iter(["admin"])
     assert has_roles(user_iter, req_iter) is True
