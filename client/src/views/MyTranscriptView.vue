@@ -40,7 +40,8 @@
                             <!-- ЗМІНЕНО: Тепер просто відображаємо готові дані -->
                             <tr v-for="course in transcriptData.courses" :key="course.id">
                                 <td class="left">{{ course.course_name }}</td>
-                                <td class="right">{{ course.rating || '--' }}</td>
+                                <td class="right">{{ course.rating !== null && course.rating !== undefined ?
+                                    course.rating : '--' }}</td>
                                 <td class="left">{{ course.ects_grade || '--' }}</td>
                                 <td class="left">{{ course.national_grade || '--' }}</td>
                                 <td class="left">{{ course.pass_status || '--' }}</td>
@@ -64,7 +65,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, reactive} from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import Header from '../components/global/Header.vue'
 import { useAuth } from '../store/loginInfo.js'
 import { getTranscript } from '../api/transcript.js'
