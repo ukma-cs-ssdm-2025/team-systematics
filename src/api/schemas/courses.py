@@ -35,6 +35,7 @@ class Course(BaseModel):
     description: Optional[str] = None
     student_count: int = Field(..., examples=[35])
     exam_count: int = Field(..., examples=[3])
+    is_enrolled: bool = False
 
     class Config:
         from_attributes = True
