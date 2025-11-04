@@ -20,6 +20,12 @@ class Course(Base):
         back_populates="courses"
     )
 
+    exams = relationship(
+        "Exam",
+        secondary="course_exams",
+        back_populates="courses"
+    )
+
 
 class CourseEnrollment(Base):
     __tablename__ = "course_enrollments"
