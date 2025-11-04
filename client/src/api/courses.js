@@ -11,7 +11,7 @@ export async function getCourses() {
         return coursesMock
     }
     try {
-        const response = await http.get('/api/courses')
+        const response = await http.get('/api/courses/me')
         return response.data
     } catch (error) {
         console.error('API Error fetching teacher courses:', error)
