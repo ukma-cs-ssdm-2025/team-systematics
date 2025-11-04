@@ -4,13 +4,17 @@ import mockTranscript from '../mocks/transcript.json'
 // Тимчасово використовуємо заглушку
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
-export async function getTranscript() {
+export async function getTranscript(sortBy, order) {
     if (USE_MOCK_DATA) {
         return mockTranscript
     }
 
     try {
-        const response = await http.get('/api/transcript')
+        // шукаємо параметри сортування
+        const params = new URLSearchParams()
+        if (sortBy) params.append('sort_by', sortBy)
+        if (order) params.append('order', order)
+        const response = await http.get(`/api/transcript?${params.toString()}`)
         return response.data
     } catch (error) {
         if (error.response?.data?.detail) {
