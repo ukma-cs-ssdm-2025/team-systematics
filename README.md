@@ -8,10 +8,10 @@
 ## Наші учасники:
 | Прізвище Ім'я           | GitHub                                                 | Ролі
 | ----------------------- | ------------------------------------------------------ |---------------------|
-| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Review Manager      |
-| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | Documentation Lead  |
-| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | Test Planner        |
-| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | QA Analyst          |
+| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Release Manager     |
+| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | Code Analyst        |
+| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | QA Engineer         |
+| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | Refactoring Lead    |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
