@@ -6,7 +6,7 @@ import courseExamsMock from '../mocks/courseExams.json'
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
 // Отримує список курсів, які викладає поточний користувач.
-export async function getCourses() {
+export async function getMyCourses() {
     if (USE_MOCK_DATA) {
         return coursesMock
     }
@@ -15,7 +15,20 @@ export async function getCourses() {
         return response.data
     } catch (error) {
         console.error('API Error fetching teacher courses:', error)
-        throw new Error('Не вдалося завантажити список курсів.')
+        throw new Error('Не вдалося завантажити список курсів викладача.')
+    }
+}
+
+export async function getAllCourses() {
+    if (USE_MOCK_DATA) {
+        return coursesMock
+    }
+    try {
+        const response = await http.get('/api/courses')
+        return response.data
+    } catch (error) {
+        console.error('API Error fetching teacher courses:', error)
+        throw new Error('Не вдалося завантажити список усіх курсів.')
     }
 }
 
