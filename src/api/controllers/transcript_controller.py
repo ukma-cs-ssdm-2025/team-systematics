@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from uuid import UUID
 from src.api.schemas.transcript import TranscriptResponse
@@ -13,7 +13,12 @@ class TranscriptController:
         self.router = APIRouter(prefix="/transcript", tags=["Transcript"])
 
         @self.router.get("", response_model=TranscriptResponse, summary="Отримати атестат поточного користувача")
-        async def get_transcript( current_user: User = Depends(get_current_user_with_role), db: Session = Depends(get_db)):
+        async def get_transcript(
+            current_user: User = Depends(get_current_user_with_role),
+            db: Session = Depends(get_db),
+            sort_by: str | None = Query(None, description="Поле для сортування (course_name, rating, ects_grade, national_grade, pass_status)"),
+            sort_order: str = Query('asc', description="Порядок сортування: 'asc' або 'desc'")
+        ):
             """
             Повертає повну інформацію для сторінки "Мій атестат",
             включаючи список всіх курсів з найкращими оцінками та
@@ -26,4 +31,4 @@ class TranscriptController:
                     status_code=status.HTTP_403_FORBIDDEN, 
                     detail="Доступно лише для студентів"
                 )
-            return self.service.get_transcript_for_user(current_user.id, db)
+            return self.service.get_transcript_for_user(current_user.id, db, sort_by=sort_by, sort_order=sort_order)

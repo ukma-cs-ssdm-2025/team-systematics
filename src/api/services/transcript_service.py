@@ -22,7 +22,7 @@ class TranscriptService:
         else: # 1-34
             return ("F", "Незадовільно")
 
-    def get_transcript_for_user(self, user_id: UUID, db: Session) -> TranscriptResponse:
+    def get_transcript_for_user(self, user_id: UUID, db: Session, sort_by: str | None = None, sort_order: str = 'asc') -> TranscriptResponse:
         repository = TranscriptRepository(db)
         
         all_exams = repository.get_all_exams()
@@ -70,6 +70,34 @@ class TranscriptService:
                     course_name=exam.title,
                     rating=None, ects_grade=None, national_grade=None, pass_status=None
                 ))
+
+        # Apply server-side sorting if requested
+        if sort_by:
+            # allowed sort keys map directly to CourseResult fields
+            allowed = {"course_name", "rating", "ects_grade", "national_grade", "pass_status"}
+            if sort_by not in allowed:
+                # ignore unknown sort field (could also raise)
+                sort_by = None
+
+        if sort_by:
+            reverse = True if str(sort_order).lower() in ('desc', 'descending', '-1') else False
+
+            def sort_key_fn(item: CourseResult):
+                val = getattr(item, sort_by, None)
+                # Normalize Nones to a value that sorts to the end
+                if val is None:
+                    # put None as greater than any other value when ascending
+                    return (1, '')
+                # For numeric values (rating), return numeric
+                if sort_by == 'rating':
+                    try:
+                        return (0, float(val))
+                    except Exception:
+                        return (0, 0.0)
+                # For strings, case-insensitive
+                return (0, str(val).lower())
+
+            course_results.sort(key=sort_key_fn, reverse=reverse)
 
         # Рахуємо точний середній рейтинг
         raw_average_rating = (total_raw_rating_sum / completed_courses_count) if completed_courses_count > 0 else 0.0
