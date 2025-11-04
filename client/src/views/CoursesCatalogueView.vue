@@ -23,7 +23,15 @@
                         </div>
                         <div class="card-actions">
                             <CButton v-if="auth.isTeacher.value" @click="goToExams(course.id)">Керувати</CButton>
-                            <CButton v-if="auth.isStudent.value" @click="enrollToCourse(course.id)">Записати мене</CButton>
+                            <CButton 
+                                v-if="auth.isStudent.value" 
+                                @click="handleEnroll(course)" 
+                                :disabled="course.is_enrolled || isEnrolling[course.id]"
+                            >
+                                <span v-if="isEnrolling[course.id]">Запис...</span>
+                                <span v-else-if="course.is_enrolled">✔ Ви записані</span>
+                                <span v-else>Записатися</span>
+                            </CButton>
                         </div>
                     </div>
                 </div>
@@ -49,6 +57,7 @@ const router = useRouter()
 const courses = ref([])
 const loading = ref(true)
 const error = ref(null)
+const isEnrolling = ref({})
 
 const auth = useAuth()
 const header = computed(() => {
@@ -77,6 +86,19 @@ onMounted(async () => {
 
 function goToExams(courseId) {
     router.push(`/courses/${courseId}/exams`)
+}
+
+async function handleEnroll(course) {
+    isEnrolling.value[course.id] = true
+    try {
+        await enrollInCourse(course.id);
+        alert('Ви успішно записалися на курс!')
+        course.is_enrolled = true
+    } catch (err) {
+        alert(err.message || 'Не вдалося записатися на курс.');
+    } finally {
+        isEnrolling.value[course.id] = false
+    }
 }
 
 function createNewCourse() {
