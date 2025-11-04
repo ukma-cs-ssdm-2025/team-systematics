@@ -36,3 +36,9 @@ class MyCourse(BaseModel):
 
     class Config:
         from_attributes = True
+
+class MyCoursesPage(BaseModel):
+    items: List[MyCourse]
+    total: int
+    limit: int
+    offset: int
