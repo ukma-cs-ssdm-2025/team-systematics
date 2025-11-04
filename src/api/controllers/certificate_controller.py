@@ -1,3 +1,4 @@
+from typing import Optional, Literal, Callable
 from fastapi import APIRouter, Depends, HTTPException, status, Query
 from sqlalchemy.orm import Session
 from src.api.schemas.certificate import CertificateGpaResponse, CourseGpa
@@ -12,37 +13,57 @@ class CertificateController:
         self.service = transcript_service
         self.router = APIRouter(prefix="/certificate", tags=["Certificate"])
 
-        @self.router.get("/gpa", response_model=CertificateGpaResponse, summary="Отримати GPA по курсах для поточного користувача")
+        @self.router.get(
+            "/gpa",
+            response_model=CertificateGpaResponse,
+            summary="Отримати GPA по курсах для поточного користувача",
+        )
         async def get_gpa(
             current_user: User = Depends(get_current_user_with_role),
             db: Session = Depends(get_db),
-            sort_by: str | None = Query(None, description="Поле для сортування: 'course' або 'gpa'"),
-            sort_order: str = Query('asc', description="Порядок сортування: 'asc' або 'desc'"),
+            sort_by: Optional[Literal["course", "gpa"]] = Query(
+                None, description="Поле для сортування: 'course' або 'gpa'"
+            ),
+            sort_order: Literal["asc", "desc"] = Query(
+                "asc", description="Порядок сортування: 'asc' або 'desc'"
+            ),
         ):
-            if current_user.role != 'student':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступно лише для студентів")
+            self._ensure_student(current_user)
 
-            # Reuse transcript generation (it already computes per-course ratings)
             transcript = self.service.get_transcript_for_user(current_user.id, db)
-
-            courses = [CourseGpa(id=c.id, course_name=c.course_name, gpa=c.rating) for c in transcript.courses]
-
-            # Apply server-side sorting if requested
-            if sort_by:
-                sort_by = str(sort_by).lower()
-                if sort_by not in ('course', 'gpa'):
-                    sort_by = None
+            courses = [CourseGpa(id=c.id, course_name=c.course_name, gpa=c.rating)
+                       for c in transcript.courses]
 
             if sort_by:
-                reverse = True if str(sort_order).lower() in ('desc', 'descending') else False
-                if sort_by == 'course':
-                    courses.sort(key=lambda x: (x.course_name or '').lower(), reverse=reverse)
-                else:  # gpa
-                    # Place None values at the end when ascending
-                    def _key(x: CourseGpa):
-                        if x.gpa is None:
-                            return (1, 0.0)
-                        return (0, float(x.gpa))
-                    courses.sort(key=_key, reverse=reverse)
+                self._sort_courses(courses, sort_by, sort_order)
 
             return CertificateGpaResponse(courses=courses)
+
+    @staticmethod
+    def _ensure_student(user: User) -> None:
+        if user.role != "student":
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Доступно лише для студентів",
+            )
+
+    @staticmethod
+    def _sort_courses(
+        courses: list[CourseGpa],
+        sort_by: Literal["course", "gpa"],
+        sort_order: Literal["asc", "desc"],
+    ) -> None:
+        reverse = sort_order == "desc"
+
+        def course_key(x: CourseGpa):
+            return (x.course_name or "").lower()
+
+        def gpa_key(x: CourseGpa):
+            # None завжди в кінці при 'asc' і на початку при 'desc' — керує reverse
+            return (x.gpa is None, float(x.gpa or 0.0))
+
+        key_map: dict[str, Callable[[CourseGpa], tuple | str | float]] = {
+            "course": course_key,
+            "gpa": gpa_key,
+        }
+        courses.sort(key=key_map[sort_by], reverse=reverse)
