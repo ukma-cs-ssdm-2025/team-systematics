@@ -71,15 +71,9 @@ defineEmits(['update:modelValue'])
     line-height: 1.5;
 }
 
-// Consolidate Duplicate Code
 .review-display {
--  cursor: not-allowed;
--}
--
--.review-display {
--  position: relative;
-+  cursor: not-allowed;
-+  position: relative;
+    position: relative;
+    cursor: not-allowed;
 }
 
 .textarea-input:hover {
