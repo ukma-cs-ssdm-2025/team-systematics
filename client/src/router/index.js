@@ -54,6 +54,7 @@ const router = createRouter({
       meta:
       {
         requiresAuth: true,  // доступ лише для авторизованих
+        requiresRole: 'student',
         title: 'Мої іспити'
       }
     },
@@ -63,6 +64,7 @@ const router = createRouter({
       component: MyTranscriptView,
       meta: {
         requiresAuth: true,
+        requiresRole: 'student',
         title: 'Мій атестат'
       }
     },
@@ -72,6 +74,7 @@ const router = createRouter({
       component: ExamAttemptView,
       meta: {
         requiresAuth: true,
+        requiresRole: 'student',
         title: 'Проходження іспиту'
       }
     },
