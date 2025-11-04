@@ -20,7 +20,6 @@ from src.models import users, roles, user_roles, exams, courses, majors, user_ma
 from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
-from src.api.repositories.transcript_repository import TranscriptRepository
 from src.core.cloudinary import configure_cloudinary
 
 def create_app() -> FastAPI:
@@ -68,10 +67,7 @@ def create_app() -> FastAPI:
     exam_review_service = ExamReviewService()
     auth_service = AuthService()
     users_service = UsersService()
-
-    # Introduce Parameter / Dependency Injection
-    transcript_repository = TranscriptRepository(SessionLocal())
-    transcript_service = TranscriptService(transcript_repository)
+    transcript_service = TranscriptService()
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
