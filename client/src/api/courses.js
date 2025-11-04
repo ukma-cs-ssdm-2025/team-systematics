@@ -66,7 +66,7 @@ export async function enrollInCourse(courseId) {
         return courseExamsMock
     }
     try {
-        const response = await http.get(`/api/courses/${courseId}/enroll`)
+        const response = await http.post(`/api/courses/${courseId}/enroll`)
         return response.data
     } catch (error) {
         console.error(`API Error enrolling student in course ${courseId}:`, error)

@@ -50,7 +50,7 @@ import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
-import { getMyCourses, getAllCourses } from '../api/courses.js'
+import { getMyCourses, getAllCourses, enrollInCourse } from '../api/courses.js'
 import { useAuth } from '../store/loginInfo.js'
 
 const router = useRouter()
@@ -91,11 +91,10 @@ function goToExams(courseId) {
 async function handleEnroll(course) {
     isEnrolling.value[course.id] = true
     try {
-        await enrollInCourse(course.id);
-        alert('Ви успішно записалися на курс!')
+        await enrollInCourse(course.id)
         course.is_enrolled = true
     } catch (err) {
-        alert(err.message || 'Не вдалося записатися на курс.');
+        alert(err.message || 'Не вдалося записатися на курс.')
     } finally {
         isEnrolling.value[course.id] = false
     }
