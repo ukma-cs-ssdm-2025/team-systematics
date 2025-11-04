@@ -59,3 +59,17 @@ export async function getCourseExams(courseId) {
         throw new Error('Не вдалося завантажити список іспитів.')
     }
 }
+
+// Записати студента на конкретний курс.
+export async function enrollInCourse(courseId) {
+    if (USE_MOCK_DATA) {
+        return courseExamsMock
+    }
+    try {
+        const response = await http.get(`/api/courses/${courseId}/enroll`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error enrolling student in course ${courseId}:`, error)
+        throw new Error('Не вдалося записати студента на курс.')
+    }
+}
