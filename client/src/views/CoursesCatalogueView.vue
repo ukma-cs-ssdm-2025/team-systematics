@@ -4,8 +4,8 @@
         <main class="container">
             <section class="content-section">
                 <div class="page-header">
-                    <h2>Мої курси</h2>
-                    <CButton @click="createNewCourse">+ Створити новий курс</CButton>
+                    <h2> {{ header }}</h2>
+                    <CButton v-if="auth.isTeacher.value" @click="createNewCourse">+ Створити новий курс</CButton>
                 </div>
 
                 <div v-if="loading" class="status-message">Завантаження...</div>
@@ -22,7 +22,8 @@
                             <span>📝 {{ course.exam_count }} іспитів</span>
                         </div>
                         <div class="card-actions">
-                            <CButton @click="goToExams(course.id)">Керувати</CButton>
+                            <CButton v-if="auth.isTeacher.value" @click="goToExams(course.id)">Керувати</CButton>
+                            <CButton v-if="auth.isStudent.value" @click="enrollToCourse(course.id)">Записати мене</CButton>
                         </div>
                     </div>
                 </div>
@@ -37,21 +38,36 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
-import { getCourses } from '../api/courses.js'
+import { getMyCourses, getAllCourses } from '../api/courses.js'
+import { useAuth } from '../store/loginInfo.js'
 
 const router = useRouter()
 const courses = ref([])
 const loading = ref(true)
 const error = ref(null)
 
+const auth = useAuth()
+const header = computed(() => {
+    return auth.isTeacher.value ? 'Мої курси' : 'Каталог курсів'
+})
+
+console.log(auth.isTeacher.value)
+
 onMounted(async () => {
     try {
-        const response = await getCourses()
-        courses.value = response.items
+        if (auth.isTeacher.value) {
+            console.log("HERE")
+            const response = await getMyCourses()    
+            courses.value = response.items
+        }
+        else if (auth.isStudent.value) {
+            const response = await getAllCourses()
+            courses.value = response.items
+        }
     } catch (err) {
         error.value = err.message
     } finally {
