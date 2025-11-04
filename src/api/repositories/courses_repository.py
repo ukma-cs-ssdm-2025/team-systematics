@@ -1,5 +1,5 @@
 from typing import List, Tuple, Optional
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func
 from uuid import UUID
 from fastapi import Query
@@ -11,11 +11,10 @@ class CoursesRepository:
     def __init__(self, db: Session):
         self.db = db
     
-    def _build_courses_with_stats_query(self) -> Query:
+    def _build_courses_with_stats_query(self, current_user_id: Optional[UUID] = None) -> Query:
         """
-        Створює та повертає базовий об'єкт Query для отримання курсів
-        з підрахованою статистикою (кількість студентів та іспитів).
-        Цей метод не застосовує жодних фільтрів.
+        Створює базовий запит для отримання курсів зі статистикою.
+        Якщо передано current_user_id, додає поле is_enrolled.
         """
         student_count_subquery = (
             self.db.query(
@@ -31,7 +30,7 @@ class CoursesRepository:
             ).group_by(CourseExam.course_id).subquery()
         )
 
-        return self.db.query(
+        query = self.db.query(
             Course,
             student_count_subquery.c.student_count,
             exam_count_subquery.c.exam_count
@@ -40,24 +39,39 @@ class CoursesRepository:
         ).outerjoin(
             exam_count_subquery, Course.id == exam_count_subquery.c.course_id
         )
+
+        # Перевіряємо, чи записаний вже студент на обраний курс
+        if current_user_id:
+            user_enrollment = aliased(CourseEnrollment)
+            query = query.outerjoin(
+                user_enrollment,
+                (user_enrollment.course_id == Course.id) & (user_enrollment.user_id == current_user_id)
+            ).add_columns(
+                (user_enrollment.user_id != None).label("is_enrolled")
+            )
+        else:
+            query = query.add_columns(case([(None, False)], else_=False).label("is_enrolled"))
+            
+        return query
     
     def _format_course_results(self, results: List) -> List[dict]:
         """Форматує результати запиту у список словників для відповіді API."""
         items = []
-        for course, student_count, exam_count in results:
+        for course, student_count, exam_count, is_enrolled in results:
             items.append({
                 "id": course.id,
                 "name": course.name,
                 "code": course.code,
                 "description": course.description,
                 "student_count": student_count or 0,
-                "exam_count": exam_count or 0
+                "exam_count": exam_count or 0,
+                "is_enrolled": is_enrolled or False
             })
         return items
 
-    def list(self, limit: int, offset: int) -> Tuple[List[dict], int]:
+    def list(self, current_user_id: UUID, limit: int, offset: int) -> Tuple[List[dict], int]:
         """Повертає загальний список усіх курсів зі статистикою."""
-        query = self._build_courses_with_stats_query()
+        query = self._build_courses_with_stats_query(current_user_id=current_user_id)
         total = query.count()
         results = query.order_by(Course.name).limit(limit).offset(offset).all()
         items = self._format_course_results(results)
