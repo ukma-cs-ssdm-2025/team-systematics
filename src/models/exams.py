@@ -55,6 +55,8 @@ class Question(Base):
                                     foreign_keys=[MatchingOption.question_id], 
                                     primaryjoin="Question.id == MatchingOption.question_id",
                                     cascade="all, delete-orphan")
+    courses = relationship("Course", secondary="course_exams", back_populates="exams")
+
 
 class Option(Base):
     __tablename__ = "options"
