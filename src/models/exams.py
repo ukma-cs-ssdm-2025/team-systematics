@@ -35,6 +35,7 @@ class Exam(Base):
     duration_minutes = Column(Integer, nullable=False, default=60)
     max_attempts = Column(Integer, default=1)
     pass_threshold = Column(Integer, default=60)
+    published = Column(Boolean, default=False)
     
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("User")
