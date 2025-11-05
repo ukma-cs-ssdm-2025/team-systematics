@@ -1,39 +1,55 @@
-from fastapi import FastAPI
-from fastapi.middleware.cors import CORSMiddleware
 import os
+import asyncio  # <-- Додано для фонових завдань
+from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
-from fastapi import Request
+
+from src.api.database import engine  # <-- Імпорт 'engine' перенесено нагору
 from src.api.errors.app_errors import install_exception_handlers
+
+# Сервіси
 from src.api.services.exams_service import ExamsService
 from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
 from src.api.services.exam_review_service import ExamReviewService
 from src.api.services.courses_service import CoursesService
+from src.api.services.transcript_service import TranscriptService
+
+# Контролери
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
-from src.models import users, roles, user_roles, exams, courses, majors, user_majors
-from src.models import exam_email_notifications
-import asyncio
-from fastapi import BackgroundTasks
-from src.api.background.exam_email_scheduler import run_exam_email_scheduler
-from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
-from src.api.services.transcript_service import TranscriptService
-from src.api.repositories.transcript_repository import TranscriptRepository
+
+# Моделі
+# Ми імпортуємо 'users' для виклику Base.metadata.create_all()
+# SQLAlchemy автоматично знайде всі інші моделі (roles, exams, etc.),
+# якщо вони також успадковують той самий Base.
+from src.models import (
+    users,
+    roles,
+    user_roles,
+    exams,
+    courses,
+    majors,
+    user_majors,
+    exam_email_notifications,
+)
+
+# Фоновий планувальник
+from src.api.background.exam_email_scheduler import run_exam_email_scheduler
+
+# === ВИПРАВЛЕННЯ 1: Створюємо 'set' для зберігання активних фонових завдань ===
+background_tasks = set()
+
 
 def create_app() -> FastAPI:
-    # Створюємо всі таблиці з усіх моделей при старті
+    # === ВИПРАВЛЕННЯ 2: Створюємо всі таблиці ОДНИМ ВИКЛИКОМ ===
+    # Це припускає, що всі ваші моделі (users, roles, exams...)
+    # успадковують той самий 'Base' з вашої SQLAlchemy-конфігурації.
     users.Base.metadata.create_all(bind=engine)
-    roles.Base.metadata.create_all(bind=engine)
-    user_roles.Base.metadata.create_all(bind=engine)
-    exams.Base.metadata.create_all(bind=engine)
-    courses.Base.metadata.create_all(bind=engine)
-    majors.Base.metadata.create_all(bind=engine)
-    user_majors.Base.metadata.create_all(bind=engine)
-    exam_email_notifications.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
@@ -84,8 +100,8 @@ def create_app() -> FastAPI:
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
     app.include_router(transcript_controller.router, prefix="/api")
-    
-    # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
+
+    # Роздача статичних файлів (фронтенд)
     current_file_path = os.path.dirname(os.path.abspath(__file__))
     build_dir = os.path.join(current_file_path, "../../client/dist")
 
@@ -101,10 +117,17 @@ def create_app() -> FastAPI:
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
 
+    # === ВИПРАВЛЕННЯ 1 (застосування): Зберігаємо завдання у 'set' ===
     @app.on_event("startup")
     async def _start_scheduler():
-        asyncio.create_task(run_exam_email_scheduler())
+        task = asyncio.create_task(run_exam_email_scheduler())
+        # Додаємо завдання у 'set', щоб зберегти на нього "сильне" посилання
+        background_tasks.add(task)
+        # Додаємо "зворотний виклик", який видалить завдання з 'set'
+        # після його завершення (щоб уникнути витоку пам'яті)
+        task.add_done_callback(background_tasks.discard)
 
     return app
+
 
 app = create_app()
