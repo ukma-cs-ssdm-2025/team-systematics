@@ -78,8 +78,6 @@ def create_app() -> FastAPI:
     courses_controller = CoursesController(CoursesService())
     transcript_controller = TranscriptController(transcript_service)
 
-    transcript_repository = TranscriptRepository(SessionLocal())
-
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
     app.include_router(exams_controller.router, prefix="/api")
