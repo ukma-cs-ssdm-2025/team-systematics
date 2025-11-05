@@ -24,11 +24,39 @@ def _get_student_emails(db: Session):
     )
     return [row[0] for row in q.all() if row[0]]
 
+# === НОВА ВИНЕСЕНА ФУНКЦІЯ ===
+def _process_upcoming_exams(db: Session, upcoming_exams: list[Exam]):
+    """
+    Обробляє список майбутніх іспитів, надсилає нагадування
+    та позначає їх як оброблені.
+    """
+    emails = _get_student_emails(db)
+    
+    for exam in upcoming_exams:
+        already_notified = db.query(ExamEmailNotification).filter(
+            ExamEmailNotification.exam_id == exam.id
+        ).first()
+        
+        if already_notified:
+            continue
+
+        if emails:
+            send_email(
+                subject="Exam reminder",
+                body="Hello World!", # В ідеалі тут має бути: body=f"Нагадування: Іспит '{exam.title}' скоро почнеться."
+                recipients=emails,
+            )
+        # Позначаємо іспит як оброблений, навіть якщо не було студентів (щоб не надсилати повторно)
+        db.add(ExamEmailNotification(exam_id=exam.id))
+    
+    # Виконуємо всі зміни в базі даних один раз наприкінці
+    db.commit()
 
 async def run_exam_email_scheduler():
     while True:
+        db: Session | None = None  # Визначаємо db тут для безпечного закриття у finally
         try:
-            db: Session = SessionLocal()
+            db = SessionLocal()
             now = datetime.now(timezone.utc)
             window_start = now + timedelta(minutes=30)
             window_end = now + timedelta(minutes=31)
@@ -40,27 +68,16 @@ async def run_exam_email_scheduler():
             )
 
             if upcoming:
-                emails = _get_student_emails(db)
-                for exam in upcoming:
-                    already = db.query(ExamEmailNotification).filter(ExamEmailNotification.exam_id == exam.id).first()
-                    if already:
-                        continue
-                    if emails:
-                        send_email(
-                            subject="Exam reminder",
-                            body="Hello World!",
-                            recipients=emails,
-                        )
-                    db.add(ExamEmailNotification(exam_id=exam.id))
-                db.commit()
+                # Вся складна логіка тепер тут:
+                _process_upcoming_exams(db, upcoming)
+
         except Exception:
             # Best-effort scheduler; avoid crashing on errors
+            # У реальному коді тут варто додати логування помилки
             pass
         finally:
-            try:
+            # Безпечно закриваємо сесію, лише якщо вона була успішно створена
+            if db:
                 db.close()
-            except Exception:
-                pass
+                
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)
-
-
