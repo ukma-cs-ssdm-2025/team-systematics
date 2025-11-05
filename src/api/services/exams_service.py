@@ -37,6 +37,45 @@ class ExamsService:
             raise NotFoundError("Exam not found")
         return exam
 
+    # --- Question & Option operations for teachers ---
+    def create_question(self, db: Session, exam_id: UUID, payload) -> object:
+        repo = ExamsRepository(db)
+        # verify exam exists
+        exam = repo.get(exam_id)
+        if not exam:
+            raise NotFoundError("Exam not found")
+        return repo.create_question(exam_id, payload)
+
+    def update_question(self, db: Session, question_id: UUID, patch: dict) -> object:
+        repo = ExamsRepository(db)
+        updated = repo.update_question(question_id, patch)
+        if not updated:
+            raise NotFoundError("Question not found")
+        return updated
+
+    def delete_question(self, db: Session, question_id: UUID) -> None:
+        repo = ExamsRepository(db)
+        ok = repo.delete_question(question_id)
+        if not ok:
+            raise NotFoundError("Question not found")
+
+    def create_option(self, db: Session, question_id: UUID, payload) -> object:
+        repo = ExamsRepository(db)
+        return repo.create_option(question_id, payload)
+
+    def update_option(self, db: Session, option_id: UUID, patch: dict) -> object:
+        repo = ExamsRepository(db)
+        updated = repo.update_option(option_id, patch)
+        if not updated:
+            raise NotFoundError("Option not found")
+        return updated
+
+    def delete_option(self, db: Session, option_id: UUID) -> None:
+        repo = ExamsRepository(db)
+        ok = repo.delete_option(option_id)
+        if not ok:
+            raise NotFoundError("Option not found")
+
     def create(self, db: Session, payload: ExamCreate) -> Exam:
         repo = ExamsRepository(db)
         return repo.create(payload)
