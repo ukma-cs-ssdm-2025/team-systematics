@@ -43,3 +43,32 @@ class ExamsController:
         @self.router.post("/{exam_id}/attempts", response_model=Attempt, status_code=status.HTTP_201_CREATED, summary="Start an attempt for exam")
         async def start_attempt(user_id: UUID = Depends(get_current_user_id), exam_id: UUID = Path(...), db: Session = Depends(get_db)):
             return self.service.start_attempt(db, exam_id, user_id)
+
+        # --- Question endpoints (teachers can manage questions before publishing) ---
+        @self.router.post("/{exam_id}/questions", status_code=status.HTTP_201_CREATED, summary="Create question for exam")
+        async def create_question(exam_id: UUID, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            # Optional: check that current_user is owner/teacher - left to service/repo to enforce
+            return self.service.create_question(db, exam_id, payload)
+
+        @self.router.patch("/{exam_id}/questions/{question_id}", summary="Update question")
+        async def update_question(exam_id: UUID, question_id: UUID, patch: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            return self.service.update_question(db, question_id, patch)
+
+        @self.router.delete("/{exam_id}/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete question")
+        async def delete_question(exam_id: UUID, question_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            self.service.delete_question(db, question_id)
+            return None
+
+        # Option endpoints
+        @self.router.post("/{exam_id}/questions/{question_id}/options", status_code=status.HTTP_201_CREATED, summary="Create option for question")
+        async def create_option(exam_id: UUID, question_id: UUID, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            return self.service.create_option(db, question_id, payload)
+
+        @self.router.patch("/{exam_id}/questions/{question_id}/options/{option_id}", summary="Update option")
+        async def update_option(exam_id: UUID, question_id: UUID, option_id: UUID, patch: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            return self.service.update_option(db, option_id, patch)
+
+        @self.router.delete("/{exam_id}/questions/{question_id}/options/{option_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete option")
+        async def delete_option(exam_id: UUID, question_id: UUID, option_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            self.service.delete_option(db, option_id)
+            return None
