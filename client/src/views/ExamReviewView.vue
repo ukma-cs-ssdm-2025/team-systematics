@@ -42,7 +42,7 @@ onMounted(async () => {
     try {
         const data = await getExamAttemptReview(attemptId)
         reviewData.value = data
-    } catch (err) {
+    } catch {
         error.value = "Не вдалося завантажити дані для перегляду."
     } finally {
         loading.value = false

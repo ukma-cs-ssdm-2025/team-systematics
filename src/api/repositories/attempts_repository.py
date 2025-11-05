@@ -116,18 +116,36 @@ class AttemptsRepository:
         self.db.refresh(attempt)
         return attempt
 
+    def _get_options_by_question(self, question_ids: List[UUID]) -> Dict[UUID, List[Dict[str, Any]]]:
+        """Завантажує та групує опції для заданих питань."""
+        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
+        if not question_ids:
+            return opts_by_q
+        
+        options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
+        for o in options:
+            opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
+        return opts_by_q
+
+    def _get_matching_data_by_question(self, question_ids: List[UUID]) -> Dict[UUID, Dict[str, List[Dict[str, Any]]]]:
+        """Завантажує та групує дані 'matching' для заданих питань."""
+        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
+        if not question_ids:
+            return match_by_q
+            
+        matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
+        for m in matching_rows:
+            q_id = m.question_id
+            if q_id not in match_by_q:
+                match_by_q[q_id] = {'prompts': [], 'matches': []}
+            match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
+            match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+        return match_by_q
+
+
     def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         """Збирає та форматує всю інформацію для сторінки складання іспиту.
-
-        Цей метод агрегує дані про спробу, іспит, відсортовані питання,
-        варіанти відповідей, дані для питань на відповідність та збережені
-        відповіді користувача в один зручний для фронтенду об'єкт.
-
-        Args:
-            attempt_id: ID спроби для якої потрібно отримати деталі.
-
-        Returns:
-            Словник з повною інформацією або `None`, якщо спробу не знайдено.
+        ... (ваш docstring) ...
         """
         attempt = self.get_attempt(attempt_id)
         if not attempt or not attempt.exam:
@@ -140,22 +158,9 @@ class AttemptsRepository:
         ).order_by(Question.position).all()
         question_ids = [q.id for q in questions]
 
-        # 2. Оптимізація: завантажуємо всі опції та дані для 'matching' одним запитом
-        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
-        if question_ids:
-            options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
-            for o in options:
-                opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
-
-        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
-        if question_ids:
-            matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
-            for m in matching_rows:
-                q_id = m.question_id
-                if q_id not in match_by_q:
-                    match_by_q[q_id] = {'prompts': [], 'matches': []}
-                match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
-                match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+        # 2. Оптимізація: завантажуємо всі опції та дані 'matching' через нові методи
+        opts_by_q = self._get_options_by_question(question_ids)
+        match_by_q = self._get_matching_data_by_question(question_ids)
 
         # 3. Формуємо фінальний список питань для фронтенду
         questions_out: List[Dict[str, Any]] = []

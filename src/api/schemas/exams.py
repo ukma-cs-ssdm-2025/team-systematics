@@ -4,6 +4,8 @@ from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, conint, constr, validator
 
+DURATION_MINUTES_DESC = "Duration of the exam in minutes"
+
 def end_at_must_be_after_start_at(cls, v, values):
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
 
@@ -45,7 +47,7 @@ class ExamCreate(BaseModel):
     )
     duration_minutes: int = Field(
         60,
-        description="Duration of the exam in minutes",
+        description=DURATION_MINUTES_DESC,
         example=120
     )
     max_attempts: conint(ge=1, le=10) = Field(
@@ -90,7 +92,7 @@ class ExamUpdate(BaseModel):
     )
     duration_minutes: Optional[int] = Field(
         None,
-        description="Duration of the exam in minutes",
+        description=DURATION_MINUTES_DESC,
         example=120
     )
     max_attempts: Optional[conint(ge=1, le=10)] = Field(
@@ -131,7 +133,7 @@ class Exam(BaseModel):
     duration_minutes: int = Field(
         ...,
         example=60,
-        description="Duration of the exam in minutes"
+        description=DURATION_MINUTES_DESC
     )
     max_attempts: int = Field(
         ...,

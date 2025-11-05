@@ -10,7 +10,7 @@ function pad(num) {
 }
 
 export function formatDuration(totalSeconds) {
-  if (typeof totalSeconds !== 'number' || isNaN(totalSeconds) || totalSeconds < 0) {
+  if (typeof totalSeconds !== 'number' || Number.isNaN(totalSeconds) || totalSeconds < 0) {
     totalSeconds = 0
   }
 
