@@ -38,7 +38,7 @@ COMMENT ON EXTENSION "uuid-ossp" IS 'generate universally unique identifiers (UU
 
 
 --
--- TOC entry 906 (class 1247 OID 16610)
+-- TOC entry 904 (class 1247 OID 16610)
 -- Name: attempt_status_enum; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -52,7 +52,7 @@ CREATE TYPE public.attempt_status_enum AS ENUM (
 ALTER TYPE public.attempt_status_enum OWNER TO postgres;
 
 --
--- TOC entry 939 (class 1247 OID 16830)
+-- TOC entry 937 (class 1247 OID 16830)
 -- Name: attemptstatus; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -66,7 +66,7 @@ CREATE TYPE public.attemptstatus AS ENUM (
 ALTER TYPE public.attemptstatus OWNER TO postgres;
 
 --
--- TOC entry 909 (class 1247 OID 16618)
+-- TOC entry 907 (class 1247 OID 16618)
 -- Name: question_type_enum; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -82,7 +82,7 @@ CREATE TYPE public.question_type_enum AS ENUM (
 ALTER TYPE public.question_type_enum OWNER TO postgres;
 
 --
--- TOC entry 936 (class 1247 OID 16819)
+-- TOC entry 934 (class 1247 OID 16819)
 -- Name: question_type_enum_weights; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -98,7 +98,7 @@ CREATE TYPE public.question_type_enum_weights AS ENUM (
 ALTER TYPE public.question_type_enum_weights OWNER TO postgres;
 
 --
--- TOC entry 924 (class 1247 OID 16737)
+-- TOC entry 922 (class 1247 OID 16737)
 -- Name: questiontype; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -114,7 +114,7 @@ CREATE TYPE public.questiontype AS ENUM (
 ALTER TYPE public.questiontype OWNER TO postgres;
 
 --
--- TOC entry 251 (class 1255 OID 16734)
+-- TOC entry 249 (class 1255 OID 16734)
 -- Name: reorder_questions_on_delete(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -136,7 +136,7 @@ $$;
 ALTER FUNCTION public.reorder_questions_on_delete() OWNER TO postgres;
 
 --
--- TOC entry 250 (class 1255 OID 16732)
+-- TOC entry 248 (class 1255 OID 16732)
 -- Name: set_question_position_on_insert(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
@@ -160,7 +160,7 @@ $$;
 ALTER FUNCTION public.set_question_position_on_insert() OWNER TO postgres;
 
 --
--- TOC entry 249 (class 1255 OID 16730)
+-- TOC entry 247 (class 1255 OID 16730)
 -- Name: update_exam_question_count_trigger(); Type: FUNCTION; Schema: public; Owner: postgres
 --
 
