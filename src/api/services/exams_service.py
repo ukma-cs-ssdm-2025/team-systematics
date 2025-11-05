@@ -7,6 +7,8 @@ from src.api.schemas.attempts import AttemptStartRequest, Attempt
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 
+EXAM_NOT_FOUND_MESSAGE = "Exam not found"
+
 class ExamsService:
     def list(self, db: Session, user_id: UUID, limit: int, offset: int):
         """
@@ -34,7 +36,7 @@ class ExamsService:
         repo = ExamsRepository(db)
         exam = repo.get(exam_id)
         if not exam:
-            raise NotFoundError("Exam not found")
+            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         return exam
 
     # --- Question & Option operations for teachers ---
@@ -43,7 +45,7 @@ class ExamsService:
         # verify exam exists
         exam = repo.get(exam_id)
         if not exam:
-            raise NotFoundError("Exam not found")
+            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         return repo.create_question(exam_id, payload)
 
     def update_question(self, db: Session, question_id: UUID, patch: dict) -> object:
@@ -100,14 +102,13 @@ class ExamsService:
         attempts_repo = AttemptsRepository(db)
         
         if not exam:
-            raise NotFoundError("Exam not found")
+            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
 
         user_attempts_count = attempts_repo.get_user_attempt_count(
             user_id=user_id,
             exam_id=exam_id
         )
-
-       # Перевіряємо, чи не перевищено ліміт спроб
+        # Перевіряємо, чи не перевищено ліміт спроб
         if user_attempts_count >= exam.max_attempts:
             raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
 
@@ -116,3 +117,4 @@ class ExamsService:
             user_id=user_id,
             duration_minutes=exam.duration_minutes
         )
+    
