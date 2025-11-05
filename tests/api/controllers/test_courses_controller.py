@@ -74,7 +74,6 @@ def mock_course():
 # Тест для створення курсу
 def test_create_course(client, mock_course):
     response = client.post("/courses", json=mock_course)
-#    assert response.status_code == 422
 
     print(response.json())
     
@@ -87,8 +86,3 @@ def test_create_course(client, mock_course):
 def test_get_course(client):
     course_id = 1 
     response = client.get(f"/courses/{course_id}")
-#    assert response.status_code == 200
-    data = response.json()
-
-#    assert "title" in data
-#    assert data["title"] == "Test Course Title"
