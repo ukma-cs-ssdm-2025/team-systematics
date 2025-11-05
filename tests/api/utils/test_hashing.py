@@ -6,42 +6,51 @@ from src.utils.hashing import (
     truncate_utf8,
 )
 
+# Introduce Constant / Replace Magic Literal
+TEST_PASS = "test_password" 
+CORRECT_PASS = "correct_password"
+WRONG_PASS = "WRONG"
+SAME_PASS = "same_password"
+UNICODE_PASS = "парольЄвро€"
+ANY_PASS = "anything"
+SHORT_PASS = "pwd"
+
 
 def test_roundtrip_ok():
     """Hashing a password and verifying the same password should return True."""
-    pwd = "test_password"
-    h = get_password_hash(pwd)
+    plain = TEST_PASS
+    h = get_password_hash(plain)
     assert isinstance(h, str) and len(h) > 0
-    assert verify_password(pwd, h) is True
+    assert verify_password(plain, h) is True
 
 
 def test_wrong_password_returns_false():
     """Verifying with a wrong password should return False."""
-    pwd = "correct_password"
-    h = get_password_hash(pwd)
-    assert verify_password("WRONG", h) is False
+    plain = CORRECT_PASS
+    h = get_password_hash(plain)
+    assert verify_password(WRONG_PASS, h) is False
 
 
 def test_salt_variation_same_password_produces_different_hashes():
     """Bcrypt uses random salt -> two hashes of the same password should differ."""
-    pwd = "same_password"
-    h1 = get_password_hash(pwd)
-    h2 = get_password_hash(pwd)
+    plain = SAME_PASS
+    h1 = get_password_hash(plain)
+    h2 = get_password_hash(plain)
     assert h1 != h2
-    assert verify_password(pwd, h1) is True
-    assert verify_password(pwd, h2) is True
+    assert verify_password(plain, h1) is True
+    assert verify_password(plain, h2) is True
 
 
 def test_unicode_password_roundtrip():
     """Unicode passwords are supported and verify correctly."""
-    pwd = "парольЄвро€"
-    h = get_password_hash(pwd)
-    assert verify_password(pwd, h) is True
+    plain = UNICODE_PASS
+    h = get_password_hash(plain)
+    assert verify_password(plain, h) is True
 
 
 def test_invalid_hash_returns_false():
     """verify_password should not crash on invalid hash strings; returns False."""
-    pwd = "anything"
+    plain = ANY_PASS
     invalid_hashes = [
         "not-a-bcrypt-hash",
         "",  # empty
@@ -49,7 +58,7 @@ def test_invalid_hash_returns_false():
         "2b$12$no-dollar-prefix",  # missing '$' prefix
     ]
     for ih in invalid_hashes:
-        assert verify_password(pwd, ih) is False
+        assert verify_password(plain, ih) is False
 
 
 def test_bcrypt_format_sanity():
@@ -58,7 +67,7 @@ def test_bcrypt_format_sanity():
     Typical form: $2b$12$<22-char-salt><31-char-hash>
     Don't overfit length, but ensure a plausible prefix and overall structure.
     """
-    h = get_password_hash("pwd")
+    h = get_password_hash(SHORT_PASS)
     assert h.startswith(("$2b$", "$2a$", "$2y$"))
     # Contains cost and payload sections separated by '$'
     parts = h.split("$")

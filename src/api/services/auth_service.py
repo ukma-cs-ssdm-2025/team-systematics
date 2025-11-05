@@ -35,6 +35,7 @@ class AuthService:
                 email=user.email,
                 full_name=f"{user.first_name} {user.last_name}".strip(),
                 user_major=major_name,
-                roles=roles
+                roles=roles,
+                avatar_url=user.avatar_url,
             )
         )

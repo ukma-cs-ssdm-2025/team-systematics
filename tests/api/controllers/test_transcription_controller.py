@@ -60,18 +60,6 @@ def test_get_transcript_success(client, mock_transcript_service, student_user):
     assert call_args[0] == student_user.id
     assert isinstance(call_args[1], MagicMock)
 
-# def test_sort_tests_by_column(client, mock_transcript_service, student_user):
-#     response = client.get("/transcript/sort", params={"column": "course_name"})
-    
-#     assert response.status_code == 200
-    
-#     mock_transcript_service.sort_tests.assert_called_once()
-#     call_args, call_kwargs = mock_transcript_service.sort_tests.call_args
-    
-#     assert call_args[0] == "course_name"
-#     assert call_args[1] == student_user.id
-#     assert isinstance(call_args[2], MagicMock)
-
 def test_access_control_teacher_forbidden(client, mock_transcript_service, teacher_user):
     client.app.dependency_overrides[get_current_user_with_role] = lambda: teacher_user
     

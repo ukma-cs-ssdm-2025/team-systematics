@@ -1,0 +1,33 @@
+{
+  "items": [
+    {
+      "id": "1b9d6bcd-bbfd-4b2d-9b5d-ab8dfbbd4bed",
+      "name": "Математичний аналіз",
+      "code": "MA-101",
+      "student_count": 28,
+      "exam_count": 2
+    },
+    {
+      "id": "c2a7d4b1-6a2e-4b7c-8d3f-5e8a9b2c3d1f",
+      "name": "Основи програмування",
+      "code": "CS-101",
+      "student_count": 35,
+      "exam_count": 3
+    },
+    {
+      "id": "f7e1b3a2-9c8d-4f6a-8b1e-2c9d8e7f6a5b",
+      "name": "Алгоритми та структури даних",
+      "code": "CS-201",
+      "student_count": 32,
+      "exam_count": 2
+    },
+    {
+      "id": "a9b8c7d6-5e4f-3a2b-1c0d-9e8f7a6b5c4d",
+      "name": "Бази даних та SQL",
+      "code": "DB-301",
+      "student_count": 25,
+      "exam_count": 1
+    }
+  ],
+  "total": 4
+}
