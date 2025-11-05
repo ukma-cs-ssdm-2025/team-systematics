@@ -48,7 +48,7 @@ class AttemptsRepository:
             Answer.question_id == payload.question_id,
         ).first()
 
-        current_time = datetime.utcnow()
+        current_time = datetime.now(timezone.utc)
 
         if not answer:
             answer = Answer(
