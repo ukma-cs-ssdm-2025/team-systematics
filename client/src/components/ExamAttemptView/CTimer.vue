@@ -40,7 +40,7 @@ const formattedTime = computed(() => {
     // Якщо часу залишилося менше години
     if (totalSeconds < 3600) {
         const minutes = Math.floor(totalSeconds / 60)
-        const seconds = totalSeconds % 60
+        const seconds = Math.floor(totalSeconds % 60) // Виправлено: додано Math.floor
 
         return `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
     }
@@ -48,7 +48,7 @@ const formattedTime = computed(() => {
     else {
         const hours = Math.floor(totalSeconds / 3600)
         const minutes = Math.floor((totalSeconds % 3600) / 60)
-        const seconds = totalSeconds % 60
+        const seconds = Math.floor(totalSeconds % 60) // Виправлено: додано Math.floor
 
         return `${String(hours).padStart(2, '0')}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
     }
@@ -64,6 +64,10 @@ function startTimer() {
     const endTimeMs = startTimeMs + durationMs
 
     const updateRemainingTime = () => {
+<<<<<<< Updated upstream
+=======
+        // === ВИПРАВЛЕНО ===
+>>>>>>> Stashed changes
         const nowMs = Date.now()
         const secondsLeft = Math.round((endTimeMs - nowMs) / 1000)
         remainingSeconds.value = Math.max(0, secondsLeft)
