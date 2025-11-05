@@ -6,8 +6,8 @@ from src.api.schemas.courses import CourseCreate, CourseUpdate
 from src.models.courses import Course
 
 class CoursesService:
-    def list(self, db: Session, limit: int, offset: int) -> Tuple[List[Course], int]:
-        return CoursesRepository(db).list(limit, offset)
+    def list(self, db: Session, current_user_id: UUID, limit: int, offset: int) -> Tuple[List[Course], int]:
+        return CoursesRepository(db).list(current_user_id, limit, offset)
 
     def get(self, db: Session, course_id: UUID) -> Optional[Course]:
         return CoursesRepository(db).get(course_id)
@@ -24,5 +24,5 @@ class CoursesService:
     def enroll(self, db: Session, user_id, course_id: UUID) -> None:
         return CoursesRepository(db).enroll(user_id, course_id)
 
-    def list_my(self, db: Session, user_id, limit: int, offset: int):
-        return CoursesRepository(db).list_my(user_id, limit, offset)
+    def list_my_courses(self, db: Session, user_id, limit: int, offset: int):
+        return CoursesRepository(db).list_my_courses(user_id, limit, offset)

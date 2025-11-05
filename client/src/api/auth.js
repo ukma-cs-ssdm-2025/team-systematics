@@ -9,7 +9,7 @@ export async function loginUser(email, password) {
         return response.data
 
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
 

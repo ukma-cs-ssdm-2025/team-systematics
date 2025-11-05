@@ -1,8 +1,18 @@
 <template>
-    <button class="custom-button">
+    <button class="custom-button" :disabled="disabled">
         <slot></slot>
     </button>
 </template>
+
+<script setup>
+defineProps({
+    disabled: {
+        type: Boolean,
+        default: false
+    }
+})
+
+</script>
 
 <style scoped>
 .custom-button {
@@ -28,5 +38,11 @@
 .custom-button:focus-visible {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
+}
+
+.custom-button:disabled {
+  background-color: var(--color-gray);
+  color: var(--color-dark-gray);
+  cursor: not-allowed;
 }
 </style>

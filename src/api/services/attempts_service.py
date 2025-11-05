@@ -13,12 +13,15 @@ from src.models.attempts import Attempt, AttemptStatus, Answer
 from src.models.exams import Exam, Question
 from src.api.errors.app_errors import NotFoundError, ConflictError
 
+# Introduce Constant / Replace Magic Literal
+ATTEMPT_NOT_FOUND_MSG = "Attempt not found"
+
 class AttemptsService:
     def add_answer(self, db: Session, attempt_id: UUID, payload: AnswerUpsert) -> AnswerSchema:
         repo = AttemptsRepository(db)
         att = repo.get_attempt(attempt_id)
         if not att:
-            raise NotFoundError("Attempt not found")
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         if att.status != "in_progress":
             raise ConflictError("Attempt is locked or submitted")
         return repo.upsert_answer(attempt_id, payload)
@@ -38,7 +41,7 @@ class AttemptsService:
         ).one_or_none()
 
         if not attempt:
-            raise NotFoundError("Attempt not found")
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         if attempt.status != AttemptStatus.in_progress:
             raise ConflictError("Attempt is already submitted")
 
@@ -78,7 +81,7 @@ class AttemptsService:
         att = repo.get_attempt_with_details(attempt_id)
         print(f"Спроба з функції отримання результатів: {att}")
         if not att:
-            raise NotFoundError("Attempt not found")
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         return att
 
     def get_attempt_result(self, db: Session, attempt_id: UUID) -> AttemptResultResponse:
@@ -88,7 +91,7 @@ class AttemptsService:
         repo = AttemptsRepository(db)
         data = repo.get_attempt_result_raw(attempt_id)
         if not data:
-            raise NotFoundError("Attempt not found")
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
 
         status = data["attempt_status"]
         if data["pending_count"] == 0 and status == "submitted":

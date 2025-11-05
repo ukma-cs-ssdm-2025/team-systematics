@@ -1,0 +1,46 @@
+{
+  "exam_id": "exam-uuid-123",
+  "exam_name": "Модульний контроль №1",
+  "max_attempts": 3,
+  "students": [
+    {
+      "id": "2d47491e-d1e2-412d-bb81-3d8ff0174bf1",
+      "full_name": "Шевченко Тарас Григорович",
+      "attempts_count": 2,
+      "max_grade": 88,
+      "overall_status": "Потребує перевірки",
+      "attempts": [
+        {
+          "id": "attempt-uuid-2b",
+          "attempt_number": 2,
+          "grade": 88,
+          "time_spent_minutes": 55,
+          "status": "Потребує перевірки"
+        },
+        {
+          "id": "attempt-uuid-2a",
+          "attempt_number": 1,
+          "grade": 65,
+          "time_spent_minutes": 58,
+          "status": "Оцінено"
+        }
+      ]
+    },
+    {
+      "id": "bed7d3a1-8461-41fa-9610-03db8bc58a85",
+      "full_name": "Франко Іван Якович",
+      "attempts_count": 1,
+      "max_grade": 95,
+      "overall_status": "Оцінено",
+      "attempts": [
+        {
+          "id": "attempt-uuid-1b",
+          "attempt_number": 1,
+          "grade": 95,
+          "time_spent_minutes": 42,
+          "status": "Оцінено"
+        }
+      ]
+    }
+  ]
+}

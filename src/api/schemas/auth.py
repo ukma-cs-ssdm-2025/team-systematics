@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, EmailStr, HttpUrl
 from typing import List, Optional
 from uuid import UUID
 
@@ -14,8 +14,9 @@ class UserResponse(BaseModel):
     # Замість first_name та last_name використаємо одне поле,
     # як у вашій моделі user.py
     full_name: str 
-    user_major: str
+    user_major: Optional[str] = None
     roles: List[str] = [] # Ролі, якщо ви їх реалізуєте
+    avatar_url: Optional[HttpUrl] = None
 
 class LoginResponse(BaseModel):
     """Повна відповідь, що надсилається клієнту після успішного входу."""

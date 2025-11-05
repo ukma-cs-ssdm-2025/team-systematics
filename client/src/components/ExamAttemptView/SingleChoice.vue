@@ -66,7 +66,8 @@ defineEmits(['update:modelValue'])
 const uniqueGroupName = computed(() => `group-${Math.random()}`)
 
 // Функція для генерації літер A, B, C...
-const letter = (index) => String.fromCharCode(65 + index)
+// Replace Magic Number / Introduce Constant
+const letter = (index) => String.fromCodePoint(65 + index)
 
 function isChecked(option) {
     if (props.isReviewMode) {

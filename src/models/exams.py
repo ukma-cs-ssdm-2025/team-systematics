@@ -6,6 +6,8 @@ from src.api.database import Base
 from src.models.matching_options import MatchingOption 
 import enum
 
+CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
+
 class QuestionType(str, enum.Enum):
     single_choice = "single_choice"
     multi_choice = "multi_choice"
@@ -37,8 +39,9 @@ class Exam(Base):
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("User")
     
-    questions = relationship("Question", back_populates="exam", cascade="all, delete-orphan")
+    questions = relationship("Question", back_populates="exam", cascade=CASCADE_ALL_DELETE_ORPHAN)
     attempts = relationship("Attempt", back_populates="exam")
+    courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -50,11 +53,12 @@ class Question(Base):
     position = Column(Integer, default=0)
     
     exam = relationship("Exam", back_populates="questions")
-    options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
+    options = relationship("Option", back_populates="question", cascade=CASCADE_ALL_DELETE_ORPHAN)
     matching_options = relationship("MatchingOption", 
                                     foreign_keys=[MatchingOption.question_id], 
                                     primaryjoin="Question.id == MatchingOption.question_id",
-                                    cascade="all, delete-orphan")
+                                    cascade=CASCADE_ALL_DELETE_ORPHAN)
+
 
 class Option(Base):
     __tablename__ = "options"
