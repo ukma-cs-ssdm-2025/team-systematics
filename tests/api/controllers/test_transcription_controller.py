@@ -1,15 +1,20 @@
 from unittest.mock import MagicMock
+
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
+
 from uuid import uuid4
 
 from src.models.users import User
+
 from src.api.controllers.transcript_controller import TranscriptController
+
 from src.api.services.transcript_service import TranscriptService
 from src.api.schemas.transcript import TranscriptResponse, Statistics, CourseResult
 from src.api.database import get_db
 from src.utils.auth import get_current_user_with_role
+
 
 @pytest.fixture
 def mock_transcript_service():
@@ -20,6 +25,7 @@ def student_user():
     user = User(id=uuid4(), email="student@example.com")
     user.role = "student"
     return user
+
 
 @pytest.fixture
 def teacher_user():
@@ -42,6 +48,7 @@ def client(mock_transcript_service, student_user):
 
     return TestClient(app)
 
+
 def test_get_transcript_success(client, mock_transcript_service, student_user):
     mock_response = TranscriptResponse(
         courses=[CourseResult(id=uuid4(), course_name="Test Course", rating=95, ects_grade="A", national_grade="Відмінно", pass_status="Так")],
@@ -55,22 +62,9 @@ def test_get_transcript_success(client, mock_transcript_service, student_user):
     assert response.json() == mock_response.model_dump(mode='json')
     
     mock_transcript_service.get_transcript_for_user.assert_called_once()
-
     call_args, _ = mock_transcript_service.get_transcript_for_user.call_args
     assert call_args[0] == student_user.id
     assert isinstance(call_args[1], MagicMock)
-
-# def test_sort_tests_by_column(client, mock_transcript_service, student_user):
-#     response = client.get("/transcript/sort", params={"column": "course_name"})
-    
-#     assert response.status_code == 200
-    
-#     mock_transcript_service.sort_tests.assert_called_once()
-#     call_args, call_kwargs = mock_transcript_service.sort_tests.call_args
-    
-#     assert call_args[0] == "course_name"
-#     assert call_args[1] == student_user.id
-#     assert isinstance(call_args[2], MagicMock)
 
 def test_access_control_teacher_forbidden(client, mock_transcript_service, teacher_user):
     client.app.dependency_overrides[get_current_user_with_role] = lambda: teacher_user
@@ -81,5 +75,5 @@ def test_access_control_teacher_forbidden(client, mock_transcript_service, teach
     assert response.json()["detail"] == "Доступно лише для студентів"
     
     mock_transcript_service.get_transcript_for_user.assert_not_called()
-
+    
     del client.app.dependency_overrides[get_current_user_with_role]
