@@ -97,11 +97,11 @@
 
 ## 3. Скриншоти з SonarCloud
 
-### До рефакторингу (Main Branch)
+### До рефакторингу
 
 ![SonarCloud до змін](screen_before.jpg)
 
-### Після рефакторингу (Overall Code)
+### Після рефакторингу
 
 ![SonarCloud після змін](screen_after.jpg)
 
