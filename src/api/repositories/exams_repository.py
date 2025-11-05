@@ -3,6 +3,7 @@ from sqlalchemy import and_, func
 from uuid import UUID
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
+from src.models.exams import Question, Option
 from src.models.attempts import Attempt
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
@@ -54,6 +55,70 @@ class ExamsRepository:
         self.db.commit()
         self.db.refresh(new_exam)
         return new_exam
+
+    # --- Question & Option management ---
+    def create_question(self, exam_id: UUID, payload) -> Question:
+        q = Question(**{k: v for k, v in payload.items() if k != 'options'})
+        q.exam_id = exam_id
+        self.db.add(q)
+        # ensure q.id is populated before creating options
+        self.db.flush()
+        # add options if provided
+        options = payload.get('options') or []
+        for opt in options:
+            o = Option(question_id=q.id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
+            self.db.add(o)
+
+        self.db.commit()
+        # refresh q and return
+        self.db.refresh(q)
+        return q
+
+    def update_question(self, question_id: UUID, patch: dict) -> Optional[Question]:
+        q = self.db.query(Question).filter(Question.id == question_id).first()
+        if not q:
+            return None
+        for k, v in patch.items():
+            if k == 'options':
+                # options should be managed via option endpoints
+                continue
+            setattr(q, k, v)
+        self.db.commit()
+        self.db.refresh(q)
+        return q
+
+    def delete_question(self, question_id: UUID) -> bool:
+        q = self.db.query(Question).filter(Question.id == question_id).first()
+        if not q:
+            return False
+        self.db.delete(q)
+        self.db.commit()
+        return True
+
+    def create_option(self, question_id: UUID, payload) -> Option:
+        o = Option(question_id=question_id, text=payload.get('text'), is_correct=payload.get('is_correct', False))
+        self.db.add(o)
+        self.db.commit()
+        self.db.refresh(o)
+        return o
+
+    def update_option(self, option_id: UUID, patch: dict) -> Optional[Option]:
+        o = self.db.query(Option).filter(Option.id == option_id).first()
+        if not o:
+            return None
+        for k, v in patch.items():
+            setattr(o, k, v)
+        self.db.commit()
+        self.db.refresh(o)
+        return o
+
+    def delete_option(self, option_id: UUID) -> bool:
+        o = self.db.query(Option).filter(Option.id == option_id).first()
+        if not o:
+            return False
+        self.db.delete(o)
+        self.db.commit()
+        return True
 
     # ВИПРАВЛЕНО: Замінено 'Exam | None' на 'Optional[Exam]'
     def update(self, exam_id: UUID, patch: ExamUpdate) -> Optional[Exam]:
