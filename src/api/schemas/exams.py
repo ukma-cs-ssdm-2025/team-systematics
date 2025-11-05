@@ -107,6 +107,7 @@ class ExamUpdate(BaseModel):
         description="Passing threshold in percent",
         example=80
     )
+    published: Optional[bool] = Field(None, description="Publish exam (true/false)")
 
     # Attach the same validator to this model
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
@@ -149,6 +150,7 @@ class Exam(BaseModel):
         ...,
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
+    published: bool = Field(False, description="Whether exam is published")
     question_count: int = Field(
         0,
         description="Number of available questions",
