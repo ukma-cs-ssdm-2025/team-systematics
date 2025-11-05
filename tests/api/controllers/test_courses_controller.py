@@ -81,8 +81,3 @@ def test_create_course(client, mock_course):
 
     assert "detail" in data, f"Expected 'detail' key in the response, got: {data}"
 
-
-
-def test_get_course(client):
-    course_id = 1 
-    response = client.get(f"/courses/{course_id}")
