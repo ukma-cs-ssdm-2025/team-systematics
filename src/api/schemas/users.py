@@ -1,5 +1,5 @@
-from pydantic import BaseModel, EmailStr
-from typing import Optional
+from pydantic import BaseModel, EmailStr, HttpUrl
+from typing import Optional, List
 from uuid import UUID
 
 class UserBase(BaseModel):
@@ -15,3 +15,16 @@ class UserSchema(UserBase):
 
     class Config:
         orm_mode = True
+
+class UserProfileResponse(BaseModel):
+    full_name: str
+    email: EmailStr
+    major_name: str
+    avatar_url: Optional[HttpUrl] = None
+
+class AvatarUpdateResponse(BaseModel):
+    avatar_url: HttpUrl
+
+class NotificationSettingsSchema(BaseModel):
+    enabled: bool
+    remind_before_hours: List[int]

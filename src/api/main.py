@@ -10,10 +10,12 @@ from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
 from src.api.services.exam_review_service import ExamReviewService
 from src.api.services.courses_service import CoursesService
+from src.api.services.users_service import UsersService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
+from src.api.controllers.users_controller import UsersController
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
 from src.models import exam_email_notifications
 import asyncio
@@ -22,7 +24,7 @@ from src.api.background.exam_email_scheduler import run_exam_email_scheduler
 from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
-from src.api.repositories.transcript_repository import TranscriptRepository
+from src.core.cloudinary import configure_cloudinary
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -69,6 +71,7 @@ def create_app() -> FastAPI:
     attempts_service = AttemptsSvc()
     exam_review_service = ExamReviewService()
     auth_service = AuthService()
+    users_service = UsersService()
     transcript_service = TranscriptService()
 
     # Ініціалізуємо контролери
@@ -77,8 +80,10 @@ def create_app() -> FastAPI:
     auth_controller = AuthController(auth_service)
     courses_controller = CoursesController(CoursesService())
     transcript_controller = TranscriptController(transcript_service)
+    users_controller = UsersController(users_service)
 
-    transcript_repository = TranscriptRepository(SessionLocal())
+    #Ініціалізуємо конфігурацію cloudinary
+    configure_cloudinary()
 
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
@@ -86,6 +91,7 @@ def create_app() -> FastAPI:
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
     app.include_router(transcript_controller.router, prefix="/api")
+    app.include_router(users_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))

@@ -12,6 +12,10 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    env:
+      PYTHONPATH: ${{ github.workspace }}
+      DATABASE_URL: "sqlite:///:memory:"
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4

@@ -16,11 +16,11 @@ export async function startExamAttempt(examId) {
         const response = await http.post(`/api/exams/${examId}/attempts`)
         return response.data
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
-            throw new Error(error.response.data.detail)
-        }
-        throw new Error('Не вдалося розпочати іспит. Спробуйте ще раз.')
-    }
+        // Simplify Conditional method
+        const detail = error?.response?.data?.detail;
+        if (detail) throw new Error(detail);
+     throw new Error(error?.message ?? 'Request failed');
+      }
 }
 
 /* Завантажуємо деталі спроби іспиту за її ID
@@ -31,12 +31,13 @@ export async function getExamAttemptDetails(attemptId) {
         const startTimeKey = `exam_start_time_${attemptId}`
         let savedStartedAt = localStorage.getItem(startTimeKey)
 
-        if (!savedStartedAt) {
-            console.log("MOCK: Не знайдено збережений час початку. Генеруємо новий.")
-            savedStartedAt = new Date().toISOString()
-            localStorage.setItem(startTimeKey, savedStartedAt)
-        } else {
-            console.log("MOCK: Знайдено збережений час початку:", savedStartedAt)
+        // Extract Method
+        if (savedStartedAt) {
+        console.log("MOCK: Знайдено збережений час початку:", savedStartedAt)
+            } else {
+        console.log("MOCK: Не знайдено збережений час початку. Генеруємо новий.")
+        savedStartedAt = new Date().toISOString()
+        localStorage.setItem(startTimeKey, savedStartedAt)
         }
 
         return {
@@ -48,12 +49,13 @@ export async function getExamAttemptDetails(attemptId) {
     try {
         const response = await http.get(`/api/attempts/${attemptId}`)
         return response.data
+        // Simplify Conditional method
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
-            throw new Error(error.response.data.detail)
-        }
-        throw new Error('Не вдалося завантажити дані іспиту. Спробуйте ще раз.')
+        throw new Error(
+            error?.response?.data?.detail ?? 'Не вдалося завантажити дані іспиту. Спробуйте ще раз.'
+        );
     }
+
 }
 
 // Зберігаємо відповідь користувача на сервері
@@ -83,7 +85,7 @@ export async function saveAnswer(attemptId, questionId, answer, questionType) {
         return response.data
 
    } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти відповідь. Спробуйте ще раз.')
@@ -112,7 +114,7 @@ export async function submitExamAttempt(attemptId) {
         return response.data
 
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося зберегти спробу. Спробуйте ще раз.')
@@ -128,7 +130,7 @@ export async function getExamAttemptResults(attemptId) {
         const response = await http.get(`/api/attempts/${attemptId}/results`)
         return response.data
      } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати результати іспиту. Спробуйте ще раз.')
@@ -146,7 +148,7 @@ export async function getExamAttemptReview(attemptId) {
         const response = await http.get(`/api/attempts/${attemptId}/review`)
         return response.data
     } catch (error) {
-        if (error.response && error.response.data && error.response.data.detail) {
+        if (error.response?.data?.detail) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати огляд іспиту. Спробуйте ще раз')

@@ -1,6 +1,7 @@
-from sqlalchemy.orm import Session
 from collections import defaultdict
-from src.models.attempts import Attempt
+from typing import Dict, Any, Tuple
+from sqlalchemy.orm import Session
+from src.models.attempts import Attempt, Answer
 from src.models.exams import Exam, Question, QuestionType, QuestionTypeWeight
 
 class GradingResult:
@@ -13,109 +14,96 @@ class GradingResult:
         self.total_answers_given = 0
 
 class GradingService:
-    def _ensure_question_points_are_set(self, db: Session, exam: Exam):
-        """
-        Перевіряє і заповнює бали для питань в іспиті, якщо їх немає,
-        для статично створених питань у базі даних.
-        """
+    def _ensure_question_points_are_set(self, db: Session, exam: Exam) -> None:
         questions_to_update = [q for q in exam.questions if q.points is None]
         if not questions_to_update:
             return
-
-        weights_map = {w.question_type: w.weight for w in db.query(QuestionTypeWeight).all()}
-
-        for question in questions_to_update:
-            weight = weights_map.get(question.question_type, 1) # 1 - вага за замовчуванням
-            question.points = weight
-        
+        weights = {w.question_type: w.weight for w in db.query(QuestionTypeWeight).all()}
+        for q in questions_to_update:
+            q.points = weights.get(q.question_type, 1)  # 1 — вага за замовчуванням
         db.flush()
 
+    def _build_correct_data(self, exam: Exam) -> Dict[Any, Dict[str, Any]]:
+        data: Dict[Any, Dict[str, Any]] = defaultdict(dict)
+        for q in exam.questions:
+            qt = q.question_type
+            if qt in (QuestionType.single_choice, QuestionType.multi_choice):
+                data[q.id]["options"] = {opt.id for opt in q.options if getattr(opt, "is_correct", False)}
+            elif qt == QuestionType.short_answer:
+                data[q.id]["texts"] = {opt.text.lower() for opt in q.options if getattr(opt, "is_correct", False)}
+            elif qt == QuestionType.matching:
+                data[q.id]["pairs"] = {str(p.id): str(p.id) for p in q.matching_options}
+        return data
+
+    @staticmethod
+    def _points(q: Question) -> float:
+        return float(q.points or 0.0)
+
+    def _grade_long_answer(self, result: GradingResult, *_):
+        """
+        Довга відповідь оцінюється вручну: відмічаємо як pending.
+        """
+        result.pending_count += 1
+        return 0.0, None  # потребує ручної перевірки
+
+    def _grade_single_choice(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:
+        user_ids = {opt.selected_option_id for opt in a.selected_options}
+        return (self._points(q), True) if user_ids == correct.get("options", set()) else (0.0, False)
+
+    def _grade_short_answer(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:
+        user_text = (a.answer_text or "").lower()
+        return (self._points(q), True) if user_text in correct.get("texts", set()) else (0.0, False)
+
+    def _grade_multi_choice(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:
+        user_ids = {o.selected_option_id for o in a.selected_options}
+        correct_ids = correct.get("options", set())
+        if not correct_ids:
+            return 0.0, False
+        per_opt = self._points(q) / len(correct_ids)
+        earned = sum(per_opt for oid in user_ids if oid in correct_ids)
+        is_full = (user_ids == correct_ids)  # повністю правильним — лише при 100% збігу
+        return earned, is_full
+
+    def _grade_matching(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:
+        user_pairs = a.answer_json or {}
+        correct_map = correct.get("pairs", {})
+        if not correct_map:
+            return 0.0, False
+        per_match = self._points(q) / len(correct_map)
+        earned = sum(per_match for k, v in correct_map.items() if user_pairs.get(k) == v)
+        is_full = (user_pairs == correct_map)
+        return earned, is_full
+
     def calculate_score(self, db: Session, attempt: Attempt) -> GradingResult:
-        """
-        Обчислює результати для спроби, не змінюючи її в базі даних.
-        Повертає об'єкт GradingResult зі всією статистикою.
-        """
         self._ensure_question_points_are_set(db, attempt.exam)
 
         result = GradingResult()
         result.total_answers_given = len(attempt.answers)
-        
-        # зручно зберігаємо усі правильні відповді
-        correct_data_map = defaultdict(dict)
-        for question in attempt.exam.questions:
-            q_type = question.question_type
-            if q_type in (QuestionType.single_choice, QuestionType.multi_choice):
-                correct_data_map[question.id]['options'] = {opt.id for opt in question.options if opt.is_correct}
-            elif q_type == QuestionType.short_answer:
-                correct_data_map[question.id]['texts'] = {opt.text.lower() for opt in question.options if opt.is_correct}
-            elif q_type == QuestionType.matching:
-                 correct_data_map[question.id]['pairs'] = {str(p.id): str(p.id) for p in question.matching_options}
-        
-        for answer in attempt.answers:
-            question = answer.question
-            is_correct = False
+        correct_data = self._build_correct_data(attempt.exam)
 
-            if question.question_type == QuestionType.long_answer:
-                result.pending_count += 1
-                continue # Пропускаємо оцінювання
+        handlers = {
+            QuestionType.long_answer:   lambda q, a: self._grade_long_answer(result, q, a),
+            QuestionType.single_choice: lambda q, a: self._grade_single_choice(q, a, correct_data[q.id]),
+            QuestionType.short_answer:  lambda q, a: self._grade_short_answer(q, a, correct_data[q.id]),
+            QuestionType.multi_choice:  lambda q, a: self._grade_multi_choice(q, a, correct_data[q.id]),
+            QuestionType.matching:      lambda q, a: self._grade_matching(q, a, correct_data[q.id]),
+        }
 
-            correct_data = correct_data_map[question.id]
-            
-            if question.question_type == QuestionType.multi_choice:
-                user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.selected_options}
-                correct_option_ids = correct_data.get('options', set())
-                
-                earned_points_for_question = 0.0
-                # Розподіляємо бали лише між правильними відповідями
-                points_per_option = (float(question.points or 0.0) / len(correct_option_ids)) if correct_option_ids else 0.0
-                
-                for opt_id in user_option_ids:
-                    if opt_id in correct_option_ids:
-                        earned_points_for_question += points_per_option
-                
-                result.earned_weight += earned_points_for_question
-                
-                # "Правильним" питання вважається лише при 100% збігу
-                if user_option_ids == correct_option_ids:
-                    result.correct_count += 1
-                else:
-                    result.incorrect_count += 1
+        for ans in attempt.answers:
+            q = ans.question
+            handler = handlers.get(q.question_type)
+            if handler is None:
+                result.incorrect_count += 1
                 continue
 
-            if question.question_type == QuestionType.matching:
-                user_pairs = answer.answer_json or {}
-                correct_pairs = correct_data.get('pairs', {})
-                
-                earned_points_for_question = 0.0
-                points_per_match = (float(question.points or 0.0) / len(correct_pairs)) if correct_pairs else 0.0
-                
-                for prompt_id, correct_match_id in correct_pairs.items():
-                    if user_pairs.get(prompt_id) == correct_match_id:
-                        earned_points_for_question += points_per_match
+            earned, is_correct = handler(q, ans)
 
-                result.earned_weight += earned_points_for_question
-                
-                # "Правильним" питання вважається лише при 100% збігу
-                if user_pairs == correct_pairs:
-                    result.correct_count += 1
-                else:
-                    result.incorrect_count += 1
+            if is_correct is None:
                 continue
 
-            if question.question_type == QuestionType.single_choice:
-                user_option_ids = {ans_opt.selected_option_id for ans_opt in answer.selected_options}
-                if user_option_ids == correct_data.get('options', set()):
-                    is_correct = True
-            
-            elif question.question_type == QuestionType.short_answer:
-                user_text = (answer.answer_text or "").lower()
-                if user_text in correct_data.get('texts', set()):
-                    is_correct = True
-
-            # Оновлюємо лічильники для питань "все або нічого"
+            result.earned_weight += earned
             if is_correct:
                 result.correct_count += 1
-                result.earned_weight += float(question.points or 0.0)
             else:
                 result.incorrect_count += 1
 

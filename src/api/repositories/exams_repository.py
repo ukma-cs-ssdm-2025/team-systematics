@@ -4,31 +4,43 @@ from uuid import UUID
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
 from src.models.attempts import Attempt
+from src.models.courses import Course, CourseEnrollment
+from src.models.course_exams import CourseExam
 from src.api.schemas.exams import ExamCreate, ExamUpdate
 
 class ExamsRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def list(self, user_id: UUID, limit: int, offset: int) -> Tuple[List[Exam], int]:
+    def list(self, user_id: UUID, limit: int, offset: int) -> Tuple[List[Tuple[Exam, int]], int]:
         """
-        Повертає персоналізований список іспитів для конкретного користувача.
+        Повертає персоналізований список іспитів для конкретного користувача
+        на основі курсів, на які він записаний
         """
-        # Підраховуємо кількість спроб іспиту
         attempt_count_subquery = self.db.query(
-            func.count(Attempt.id)
+            Attempt.exam_id,
+            func.count(Attempt.id).label("user_attempts_count")
         ).filter(
-            Attempt.exam_id == Exam.id,
             Attempt.user_id == user_id
-        ).correlate(Exam).scalar_subquery().label("user_attempts_count")
+        ).group_by(Attempt.exam_id).subquery()
 
         query = self.db.query(
             Exam,
-            attempt_count_subquery
-        ).order_by(Exam.end_at.desc())
+            func.coalesce(attempt_count_subquery.c.user_attempts_count, 0).label("user_attempts_count")
+        ).join(
+            CourseExam, CourseExam.exam_id == Exam.id
+        ).join(
+            Course, Course.id == CourseExam.course_id
+        ).join(
+            CourseEnrollment, CourseEnrollment.course_id == Course.id
+        ).filter(
+            CourseEnrollment.user_id == user_id
+        ).outerjoin(
+            attempt_count_subquery, Exam.id == attempt_count_subquery.c.exam_id
+        )
 
         total = query.count()
-        items = query.offset(offset).limit(limit).all()
+        items = query.order_by(Exam.end_at.desc()).limit(limit).offset(offset).all()
         
         return items, total
 

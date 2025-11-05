@@ -118,7 +118,7 @@ import CButton from '../components/global/CButton.vue'
 
 const email = ref('')
 const password = ref('')
-const { login } = useAuth()
+const auth = useAuth()
 const router = useRouter()
     
 // Відправляє дані на бекенд і зберігає токен
@@ -133,11 +133,22 @@ const handleLogin = async (e) => {
       token_type: "bearer",
       role: data.user.roles[0],  // Беремо першу роль
       full_name: data.user.full_name,
-      major_name: data.user.user_major
+      major_name: data.user.user_major,
+      avatar_url: data.user.avatar_url,
     }
-    login(adaptedData)
-    alert('Вхід успішний!')
-    router.push('/exams')
+    auth.login(adaptedData)
+
+    console.log(auth.role)
+
+    if (auth.role.value === 'student') {
+        router.push('/exams')
+    } else if (auth.role.value === 'teacher') {
+        router.push('/courses/my')
+    } else {
+        // Якщо роль невідома або відсутня
+        router.push('/forbidden')
+    }
+
   } catch (err) {
     console.error(err)
     alert(err.message)
