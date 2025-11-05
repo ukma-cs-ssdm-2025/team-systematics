@@ -99,11 +99,11 @@
 
 ### До рефакторингу (Main Branch)
 
-![SonarCloud до змін](image_fc3869.png)
+![SonarCloud до змін](screen_before.jpg)
 
 ### Після рефакторингу (Overall Code)
 
-![SonarCloud після змін](image_fc38aa.png)
+![SonarCloud після змін](screen_after.jpg)
 
 ## 4. Результати регресійного тестування
 
