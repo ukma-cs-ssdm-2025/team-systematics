@@ -32,7 +32,7 @@
                         <p
                             v-if="isReviewMode && (option.is_correct || option.is_selected)"
                             class="option-points">
-                                ({{ formattedPointsPerOption(option) }} б)
+                                ({{ formattedPointsPerMatch(option) }} б)
                         </p>
                     </div>
                 </label>
@@ -101,8 +101,11 @@ function getOptionClasses(option) {
     }
 }
 
-function formattedPointsPerOption(option) {
-    return option.earned_points_per_option.toFixed(0)
+function formattedPointsPerMatch(prompt) {
+    if (typeof prompt?.earned_points_per_match === 'number') {
+        return prompt.earned_points_per_match.toFixed(0)
+    }
+    return '0'
 }
 
 </script>
