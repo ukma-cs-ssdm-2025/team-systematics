@@ -41,7 +41,7 @@ export async function createNewCourse(payload) {
         const response = await http.post('/api/courses', payload)
         return response.data
     } catch (error) {
-        console.error(`API Error fetching students for course ${courseId}:`, error)
+        console.error(`API Error fetching students for course:`, error)
         throw new Error('Не вдалося створити новий курс.')
     }
 }
