@@ -1,4 +1,3 @@
-<!-- views/CreateCourseView.vue -->
 <template>
     <div>
         <Header />
