@@ -48,11 +48,12 @@
                             />
                         </div>
 
-                        <div v-if="success" class="status-message success">Курс успішно створено!</div>
-
                         <CButton type="submit" :disabled="loading" class="submit-button">
                             {{ loading ? 'Створення...' : 'Створити курс' }}
                         </CButton>
+
+                        <div v-if="success" class="status-message success">Курс успішно створено!</div>
+                        <div v-if="error" class="status-message error"> {{ error }}</div>
                     </form>
                 </div>
             </section>
@@ -127,7 +128,11 @@ async function handleCreateCourse() {
         router.push('/courses/me')
 
     } catch (err) {
-        error.value = err.message || 'Не вдалося створити курс. Перевірте введені дані.'
+        if (err.response && err.response.data && err.response.data.error && typeof err.response.data.error.message === 'string') {
+            error.value = err.response.data.error.message;
+        } else {
+            error.value = 'Не вдалося створити курс. Перевірте з\'єднання з сервером.'
+        }
     } finally {
         loading.value = false
     }
@@ -140,7 +145,7 @@ async function handleCreateCourse() {
     max-width: 800px;
 }
 
-.form-group, .validation-error {
+.form-group, .validation-error, .submit-button {
     margin-bottom: 20px;
 }
 
@@ -149,13 +154,6 @@ async function handleCreateCourse() {
     margin-bottom: 12px;
     font-weight: bold;
     color: var(--color-dark-gray);
-}
-
-.status-message {
-  padding: 12px;
-  margin-bottom: 20px;
-  border-radius: 8px;
-  text-align: center;
 }
 
 .error, .validation-error {
