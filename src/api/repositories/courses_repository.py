@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, or_
+from sqlalchemy import func, or_, literal
 from uuid import UUID
 from fastapi import Query
 from src.models.courses import Course, CourseEnrollment
