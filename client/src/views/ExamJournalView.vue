@@ -150,9 +150,9 @@ function getStatusClass(status) {
     switch (status) {
         case 'not_started':
             return 'not-started'
-        case 'completed':
-            return 'pending'
         case 'submitted':
+            return 'pending'
+        case 'completed':
             return 'evaluated'
         default:
             return 'not-started'
@@ -165,9 +165,9 @@ function statusLabel(status) {
     switch (status) {
         case 'not_started':
             return 'Не розпочато'
-        case 'completed':
-            return 'Потребує перевірки'
         case 'submitted':
+            return 'Потребує перевірки'
+        case 'completed':
             return 'Оцінено'
         default:
             return 'Не розпочато'
