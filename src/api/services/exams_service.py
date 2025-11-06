@@ -2,8 +2,10 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
+from src.api.repositories.courses_repository import CoursesRepository
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamInList
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from .courses_service import CoursesService
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 
@@ -116,5 +118,36 @@ class ExamsService:
             exam_id=exam_id,
             user_id=user_id,
             duration_minutes=exam.duration_minutes
+        )
+    
+    def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
+        course_repo = CoursesRepository(db)
+        course = course_repo.get(course_id)
+        if not course:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
+        
+        total_students = course_repo.get_student_count(course_id)
+
+        exams_repo = ExamsRepository(db)
+        exam_stats = exams_repo.get_exams_stats_for_course(course_id)
+
+        exams_list = []
+        for exam, q_count, s_completed, avg_grade, p_reviews in exam_stats:
+            exams_list.append(
+                ExamInList(
+                    id=exam.id,
+                    title=exam.title,
+                    status=exam.status,
+                    questions_count=q_count or 0,
+                    students_completed=f"{s_completed or 0} / {total_students}",
+                    average_grade=avg_grade if avg_grade else None,
+                    pending_reviews=p_reviews or 0
+                )
+            )
+
+        return CourseExamsPage(
+            course_id=course.id,
+            course_name=course.name,
+            exams=exams_list
         )
     

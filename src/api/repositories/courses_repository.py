@@ -131,10 +131,7 @@ class CoursesRepository:
             self.db.delete(entity)
             self.db.commit()
 
-
-
     def enroll(self, user_id, course_id: UUID) -> None:
-        # idempotent: do nothing if already enrolled
         exists = (
             self.db.query(CourseEnrollment)
             .filter(CourseEnrollment.user_id == user_id, CourseEnrollment.course_id == course_id)
@@ -144,3 +141,7 @@ class CoursesRepository:
             return
         self.db.add(CourseEnrollment(user_id=user_id, course_id=course_id))
         self.db.commit()
+
+    def get_student_count(self, course_id: UUID) -> int:
+        """Підраховує кількість студентів, записаних на курс."""
+        return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0
