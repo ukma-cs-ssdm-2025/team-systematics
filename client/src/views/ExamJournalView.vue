@@ -10,7 +10,6 @@
                     <h2>Журнал іспиту {{ examName }}</h2>
 
                     <table v-if="students.length" class="exams-table">
-                        <!-- Єдиний colgroup для фіксованих пропорцій -->
                         <colgroup>
                             <col style="width: 5%">
                             <col style="width: 40%">
@@ -113,7 +112,7 @@ import Header from '../components/global/Header.vue'
 import { getExamJournal } from '../api/exams.js'
 
 const router = useRouter()
-const examId = useRoute().params.id
+const examId = useRoute().params.examId
 const students = ref([])
 const examName = ref('')
 const maxAttempts = ref(0)
