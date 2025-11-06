@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from src.models.users import User
-from src.api.schemas.courses import Course, CourseCreate, CourseUpdate, CoursesPage
+from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpdate, CoursesPage
 from src.api.services.courses_service import CoursesService
 from src.api.database import get_db
 from src.utils.auth import get_current_user_with_role, get_current_user
@@ -67,7 +67,7 @@ class CoursesController:
 
         @self.router.post(
             "",
-            response_model=Course,
+            response_model=CourseBase,
             status_code=status.HTTP_201_CREATED,
             summary="Створити новий курс (лише для викладача)",
         )

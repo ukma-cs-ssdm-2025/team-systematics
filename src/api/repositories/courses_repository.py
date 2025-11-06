@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, literal
+from sqlalchemy import func, or_
 from uuid import UUID
 from fastapi import Query
 from src.models.courses import Course, CourseEnrollment
@@ -11,6 +11,19 @@ class CoursesRepository:
     def __init__(self, db: Session):
         self.db = db
     
+    def get_by_code_or_name(self, code: str, name: str) -> Optional[Course]:
+        """
+        Знаходить курс за кодом або назвою, ігноруючи регістр.
+        Використовується для перевірки на унікальність.
+        """
+        return self.db.query(Course).filter(
+            or_(
+                func.lower(Course.code) == func.lower(code),
+                func.lower(Course.name) == func.lower(name)
+            )
+        ).first()
+
+
     def _build_courses_with_stats_query(self, current_user_id: Optional[UUID] = None) -> Query:
         """
         Створює базовий запит для отримання курсів зі статистикою.
