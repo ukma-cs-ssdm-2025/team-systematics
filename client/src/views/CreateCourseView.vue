@@ -125,7 +125,7 @@ async function handleCreateCourse() {
         
         await createNewCourse(payload)
         success.value = true
-        router.push('/courses/me')
+        router.push('/courses/my')
 
     } catch (err) {
         if (err.response && err.response.data && err.response.data.error && typeof err.response.data.error.message === 'string') {
