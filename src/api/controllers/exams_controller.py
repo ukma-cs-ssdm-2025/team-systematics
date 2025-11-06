@@ -1,18 +1,23 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Query, Path, status, Depends
 from uuid import UUID
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage
+from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
-from src.utils.auth import get_current_user_id, get_current_user 
+from src.utils.auth import get_current_user_id, get_current_user, get_current_user_with_role 
 from src.api.services.exams_service import ExamsService
+from src.api.services.journal_service import JournalService
 from .versioning import require_api_version
 from src.api.database import get_db
 
 class ExamsController:
     def __init__(self, service: ExamsService) -> None:
         self.service = service
+        self.journal_service = JournalService()
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
+
+        # --- CRUD-Ендпойнти ---
 
         @self.router.get("", summary="List exams")
         async def list_exams(
@@ -40,14 +45,15 @@ class ExamsController:
             self.service.delete(db, exam_id)
             return None
 
+        # --- Керування спробами іспиту ---
+
         @self.router.post("/{exam_id}/attempts", response_model=Attempt, status_code=status.HTTP_201_CREATED, summary="Start an attempt for exam")
         async def start_attempt(user_id: UUID = Depends(get_current_user_id), exam_id: UUID = Path(...), db: Session = Depends(get_db)):
             return self.service.start_attempt(db, exam_id, user_id)
 
-        # --- Question endpoints (teachers can manage questions before publishing) ---
+        # --- Ендпойнти для питань іспиту ---
         @self.router.post("/{exam_id}/questions", status_code=status.HTTP_201_CREATED, summary="Create question for exam")
         async def create_question(exam_id: UUID, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-            # Optional: check that current_user is owner/teacher - left to service/repo to enforce
             return self.service.create_question(db, exam_id, payload)
 
         @self.router.patch("/{exam_id}/questions/{question_id}", summary="Update question")
@@ -59,7 +65,7 @@ class ExamsController:
             self.service.delete_question(db, question_id)
             return None
 
-        # Option endpoints
+        # --- Ендпойнти для варіантів відповіді на питання ---
         @self.router.post("/{exam_id}/questions/{question_id}/options", status_code=status.HTTP_201_CREATED, summary="Create option for question")
         async def create_option(exam_id: UUID, question_id: UUID, payload: dict, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
             return self.service.create_option(db, question_id, payload)
@@ -72,3 +78,38 @@ class ExamsController:
         async def delete_option(exam_id: UUID, question_id: UUID, option_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
             self.service.delete_option(db, option_id)
             return None
+
+        # --- Ендпойнти для журналу іспиту ---
+        @self.router.get(
+            "",
+            response_model=CourseExamsPage,
+            summary="Список іспитів для курсу (лише для викладача)",
+        )
+        async def list_course_exams(
+            course_id: UUID = Query(..., description="ID курсу для фільтрації іспитів"),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для викладачів",
+                )
+            return self.service.get_exams_for_course(db, course_id)
+        
+        @self.router.get(
+            "/{exam_id}/journal",
+            response_model=ExamJournalResponse,
+            summary="Отримати журнал іспиту для перевірки (лише для викладача)",
+        )
+        async def get_exam_journal(
+            exam_id: UUID,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для викладачів",
+                )
+            return self.journal_service.get_journal_for_exam(db, exam_id)

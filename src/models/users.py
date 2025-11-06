@@ -33,3 +33,5 @@ class User(Base):
         secondary="course_enrollments",
         back_populates="students"
     )
+
+    attempts = relationship("Attempt", back_populates="user")
