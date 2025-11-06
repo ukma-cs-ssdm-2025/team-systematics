@@ -43,7 +43,7 @@
                                 <td class="left">{{ statusLabel(exam) }}</td>
                                 <td class="right">{{ exam.questions_count }}</td>
                                 <td class="right">{{ exam.students_completed }}</td>
-                                <td class="right">{{ exam.average_grade || '--' }}</td>
+                                <td class="right">{{ formatAverageGrade(exam.average_grade)     }}</td>
                                 <td class="right actions-cell">
 
                                     <button @click="goToExamJournal(exam.id)" class="icon-button"
@@ -97,6 +97,11 @@ function statusLabel(exam) {
         default:
             return 'Не вказано'
     }
+}
+
+function formatAverageGrade(grade) {
+    if (!grade) return '--'
+    return Math.ceil(grade)
 }
 
 onMounted(async () => {
