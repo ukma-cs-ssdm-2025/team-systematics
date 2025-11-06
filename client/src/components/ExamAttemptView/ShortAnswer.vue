@@ -73,7 +73,13 @@ const isCorrect = computed(() => {
 })
 
 const formattedPoints = computed(() => {
-    return props.questionData.earned_points.toFixed(0)
+    // 1. Використовуємо опціональний ланцюжок (?.) на випадок відсутності questionData
+    // 2. Перевіряємо, що earned_points є числом
+    if (typeof props.questionData?.earned_points === 'number') {
+        return props.questionData.earned_points.toFixed(0)
+    }
+    // 3. Повертаємо безпечне значення за замовчуванням
+    return '0';
 })
 
 </script>
