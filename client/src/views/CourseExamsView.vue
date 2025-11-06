@@ -75,7 +75,7 @@ import { getCourseExams } from '../api/courses.js'
 
 const route = useRoute()
 const router = useRouter()
-const courseId = route.params.id
+const courseId = route.params.courseId
 
 const exams = ref([])
 const courseName = ref('')
