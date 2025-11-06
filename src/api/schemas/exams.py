@@ -3,6 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from datetime import datetime
 from pydantic import BaseModel, Field, conint, constr, validator
+from src.models.exams import ExamStatusEnum
 
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
 DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретичних питань."
@@ -69,7 +70,6 @@ class ExamCreate(BaseModel):
     )
 
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
-
 
 class ExamUpdate(BaseModel):
     title: Optional[constr(min_length=3, max_length=100)] = Field(
@@ -187,3 +187,20 @@ class ExamsPage(BaseModel):
 class ExamsResponse(BaseModel):
     future: List[ExamSchema]
     completed: List[ExamSchema]
+
+class ExamInList(BaseModel):
+    id: UUID
+    title: str
+    status: ExamStatusEnum
+    questions_count: int = Field(0)
+    students_completed: str
+    average_grade: Optional[float] = None
+    pending_reviews: int = Field(0)
+
+    class Config:
+        from_attributes = True
+
+class CourseExamsPage(BaseModel):
+    course_id: UUID
+    course_name: str
+    exams: List[ExamInList]
