@@ -40,7 +40,7 @@
                                         </CTooltip>
                                     </div>
                                 </td>
-                                <td class="left">{{ exam.status }}</td>
+                                <td class="left">{{ statusLabel(exam) }}</td>
                                 <td class="right">{{ exam.questions_count }}</td>
                                 <td class="right">{{ exam.students_completed }}</td>
                                 <td class="right">{{ exam.average_grade || '--' }}</td>
@@ -82,6 +82,23 @@ const courseName = ref('')
 const loading = ref(true)
 const error = ref(null)
 
+function statusLabel(exam) {
+    if (!exam || !exam.status) return 'Не вказано'
+
+    switch (exam.status) {
+        case 'draft':
+            return 'Чернетка'
+        case 'published':
+            return 'Опубліковано'
+        case 'open':
+            return 'Відкрито'
+        case 'closed':
+            return 'Закрито'
+        default:
+            return 'Не вказано'
+    }
+}
+
 onMounted(async () => {
     try {
         const response = await getCourseExams(courseId)
@@ -113,10 +130,6 @@ function editExam(examId) {
     display: flex;
     justify-content: space-between;
     align-items: center;
-}
-
-.exam-title {
-    font-weight: bold;
 }
 
 .title-container {
