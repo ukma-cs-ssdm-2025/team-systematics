@@ -4,7 +4,7 @@ from uuid import UUID
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
 from src.models.exams import Question, Option
-from src.models.attempts import Attempt
+from src.models.attempts import Attempt, AttemptStatus
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.exams import ExamCreate, ExamUpdate
@@ -167,7 +167,7 @@ class ExamsRepository:
                 Attempt.exam_id,
                 func.count(case((Attempt.earned_points != None, Attempt.id))).label("students_completed"),
                 func.avg(Attempt.earned_points).label("average_grade"),
-                func.count(case(((Attempt.submitted_at != None) & (Attempt.earned_points == None), Attempt.id))).label("pending_reviews")
+                func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
             )
             .group_by(Attempt.exam_id)
             .subquery()
