@@ -51,7 +51,7 @@ export async function getExamJournal(examId) {
     }
     try {
         // Ендпоінт тепер прив'язаний до іспиту
-        const response = await http.get(`/api/teacher/exams/${examId}/journal`)
+        const response = await http.get(`/api/exams/${examId}/journal`)
         return response.data
     } catch (error) {
         console.error(`API Error fetching exam journal for ${examId}:`, error)
