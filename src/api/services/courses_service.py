@@ -12,8 +12,8 @@ class CoursesService:
     def get(self, db: Session, course_id: UUID) -> Optional[Course]:
         return CoursesRepository(db).get(course_id)
 
-    def create(self, db: Session, payload: CourseCreate) -> Course:
-        return CoursesRepository(db).create(payload)
+    def create(self, db: Session, payload: CourseCreate, owner_id: UUID) -> Course:
+        return CoursesRepository(db).create(payload, owner_id=owner_id)
 
     def update(self, db: Session, course_id: UUID, patch: CourseUpdate) -> Optional[Course]:
         return CoursesRepository(db).update(course_id, patch)

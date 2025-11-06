@@ -90,8 +90,12 @@ class CoursesRepository:
     def get(self, course_id: UUID) -> Optional[Course]:
         return self.db.query(Course).filter(Course.id == course_id).first()
 
-    def create(self, payload: CourseCreate) -> Course:
-        entity = Course(**payload.model_dump())
+    def create(self, payload: CourseCreate, owner_id: UUID) -> Course:
+        course_data = payload.model_dump()
+        course_data['owner_id'] = owner_id
+        
+        entity = Course(**course_data)
+        
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
