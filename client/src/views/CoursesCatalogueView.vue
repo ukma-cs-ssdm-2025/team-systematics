@@ -64,12 +64,9 @@ const header = computed(() => {
     return auth.isTeacher.value ? 'Мої курси' : 'Каталог курсів'
 })
 
-console.log(auth.isTeacher.value)
-
 onMounted(async () => {
     try {
         if (auth.isTeacher.value) {
-            console.log("HERE")
             const response = await getMyCourses()    
             courses.value = response.items
         }

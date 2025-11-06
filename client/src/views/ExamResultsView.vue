@@ -91,7 +91,6 @@ onMounted(async () => {
     try {
         const data = await getExamAttemptResults(attemptId)
         results.value = data
-        console.log(data)
         document.title = `Результати ${data.exam_title} | Systematics`
     } catch (err) {
         error.value = "Не вдалося завантажити результати."
