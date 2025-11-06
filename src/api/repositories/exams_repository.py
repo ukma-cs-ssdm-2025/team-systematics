@@ -1,10 +1,10 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func
+from sqlalchemy import and_, func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
 from src.models.exams import Exam
 from src.models.exams import Question, Option
-from src.models.attempts import Attempt
+from src.models.attempts import Attempt, AttemptStatus
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.exams import ExamCreate, ExamUpdate
@@ -142,3 +142,51 @@ class ExamsRepository:
         self.db.delete(exam)
         self.db.commit()
         return True
+
+    def get_exams_stats_for_course(self, course_id: UUID) -> List[Tuple]:
+        """
+        Отримує список іспитів для курсу разом з розрахованою статистикою:
+        - Кількість питань
+        - Кількість завершених спроб
+        - Середній бал
+        - Кількість робіт, що очікують на перевірку
+        """
+        # Підзапит для підрахунку питань
+        questions_count_sq = (
+            self.db.query(
+                Question.exam_id,
+                func.count(Question.id).label("questions_count")
+            )
+            .group_by(Question.exam_id)
+            .subquery()
+        )
+
+        # Підзапит для статистики по спробах (attempts)
+        attempt_stats_sq = (
+            self.db.query(
+                Attempt.exam_id,
+                func.count(case((Attempt.earned_points != None, Attempt.id))).label("students_completed"),
+                func.avg(Attempt.earned_points).label("average_grade"),
+                func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
+            )
+            .group_by(Attempt.exam_id)
+            .subquery()
+        )
+
+        # Основний запит
+        results = (
+            self.db.query(
+                Exam,
+                questions_count_sq.c.questions_count,
+                attempt_stats_sq.c.students_completed,
+                attempt_stats_sq.c.average_grade,
+                attempt_stats_sq.c.pending_reviews
+            )
+            .join(Exam.courses)
+            .filter(Course.id == course_id)
+            .outerjoin(questions_count_sq, Exam.id == questions_count_sq.c.exam_id)
+            .outerjoin(attempt_stats_sq, Exam.id == attempt_stats_sq.c.exam_id)
+            .order_by(Exam.start_at.desc())
+            .all()
+        )
+        return results

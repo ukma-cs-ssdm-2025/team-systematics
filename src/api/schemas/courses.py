@@ -15,9 +15,10 @@ class CourseBase(BaseModel):
         examples=["Основи диференціального та інтегрального числення."]
     )
     code: str = Field(
-        ..., 
-        max_length=20, 
-        examples=["MA-101"]
+        ...,
+        min_length=5, 
+        max_length=5, 
+        examples=["MA101"]
     )
 
 class CourseCreate(CourseBase):

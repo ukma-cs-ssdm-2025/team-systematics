@@ -5,8 +5,10 @@ from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 
 from src.models.users import User
-from src.api.schemas.courses import Course, CourseCreate, CourseUpdate, CoursesPage
+from src.api.schemas.exams import CourseExamsPage
+from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpdate, CoursesPage
 from src.api.services.courses_service import CoursesService
+from src.api.services.exams_service import ExamsService 
 from src.api.database import get_db
 from src.utils.auth import get_current_user_with_role, get_current_user
 from .versioning import require_api_version
@@ -14,6 +16,7 @@ from .versioning import require_api_version
 class CoursesController:
     def __init__(self, service: CoursesService) -> None:
         self.service = service
+        self.exams_service = ExamsService()
         self.router = APIRouter(
             prefix="/courses",
             tags=["Courses"],
@@ -43,7 +46,6 @@ class CoursesController:
                     status_code=status.HTTP_403_FORBIDDEN,
                     detail="Цей функціонал доступний лише для викладачів",
                 )
-            # Припускаємо, що сервіс має метод list_my_courses або list_teaching
             items, total = self.service.list_my_courses(db, current_user.id, limit, offset) 
             return {"items": items, "total": total, "limit": limit, "offset": offset}
 
@@ -67,7 +69,7 @@ class CoursesController:
 
         @self.router.post(
             "",
-            response_model=Course,
+            response_model=CourseBase,
             status_code=status.HTTP_201_CREATED,
             summary="Створити новий курс (лише для викладача)",
         )
@@ -123,3 +125,26 @@ class CoursesController:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Записуватись на курси можуть лише студенти")
             self.service.enroll(db, current_user.id, course_id)
             return None
+        
+        @self.router.get(
+            "/{course_id}/exams",
+            response_model=CourseExamsPage,
+            summary="Список іспитів для курсу (лише для викладача)",
+        )
+        async def list_course_exams(
+            course_id: UUID,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            """
+            Отримує список всіх іспитів, пов'язаних з конкретним курсом,
+            разом з розширеною статистикою по кожному іспиту.
+            Лише для вчителів.
+            """
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для викладачів",
+                )
+            
+            return self.exams_service.get_exams_for_course(db, course_id=course_id)

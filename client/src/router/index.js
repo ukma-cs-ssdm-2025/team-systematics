@@ -12,6 +12,7 @@ import CoursesCatalogueView from '../views/CoursesCatalogueView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
+import CreateCourseView from '../views/CreateCourseView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -104,6 +105,16 @@ const router = createRouter({
         requiresAuth: true,
         requiresRole: 'teacher',
         title: 'Мої курси'
+      }
+    },
+    {
+      path: '/courses/create',
+      name: 'CreateNewCourse',
+      component: CreateCourseView,
+         meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Створити новий курс'
       }
     },
     {
