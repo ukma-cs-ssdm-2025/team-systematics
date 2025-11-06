@@ -32,7 +32,7 @@
                         <p
                             v-if="isReviewMode && (option.is_correct || option.is_selected)"
                             class="option-points">
-                                ({{ formattedPointsPerOption(option) }} б)
+                                ({{ formattedPointsPerMatch(option) }} б)
                         </p>
                     </div>
                 </label>
