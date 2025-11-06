@@ -26,7 +26,7 @@ class Attempt(Base):
     incorrect_answers = Column(Integer, nullable=True)
     pending_count = Column(Integer, nullable=True)
     
-    user = relationship("User")
+    user = relationship("User", back_populates="attempts") 
     exam = relationship("Exam", back_populates="attempts")
     answers = relationship("Answer", back_populates="attempt", cascade="all, delete-orphan")
 
