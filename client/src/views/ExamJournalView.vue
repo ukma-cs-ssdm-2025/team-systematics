@@ -30,20 +30,19 @@
 
                         <tbody>
                             <template v-for="student in students" :key="student.id">
-                                <tr class="main-row" @click="toggleDetails(student.id)">
+                                <tr class="main-row" :class="{ 'is-expandable': student.attempts.length > 0 }"
+                                    @click="toggleDetails(student)">
                                     <td class="toggle-column">
-                                        <button
-                                            class="toggle-button"
+                                        <button class="toggle-button" v-if="student.attempts.length > 0"
                                             :class="{ 'is-open': isExpanded(student.id) }"
-                                            aria-label="Розгорнути деталі"
-                                        >
+                                            aria-label="Розгорнути деталі">
                                             ▶
                                         </button>
                                     </td>
                                     <td class="left">{{ student.full_name }}</td>
                                     <td class="left">
                                         <span :class="['status-pill', getStatusClass(student.overall_status)]">
-                                            {{ student.overall_status }}
+                                            {{ statusLabel(student.overall_status) }}
                                         </span>
                                     </td>
                                     <td class="right">{{ formatGrade(student.max_grade) }}</td>
@@ -62,7 +61,7 @@
                                                         <col style="width: 20%">
                                                         <col style="width: 15%">
                                                     </colgroup>
-                                                     <thead class="visually-hidden">
+                                                    <thead class="visually-hidden">
                                                         <tr>
                                                             <th>Номер спроби</th>
                                                             <th>Статус спроби</th>
@@ -71,21 +70,19 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        <tr
-                                                            v-for="attempt in student.attempts"
-                                                            :key="attempt.id"
-                                                            class="attempt-row"
-                                                            @click="reviewAttempt(attempt.id)"
-                                                        >
-                                                            <td class="left">{{ `Спроба №${attempt.attempt_number}` }}</td>
+                                                        <tr v-for="attempt in student.attempts" :key="attempt.id"
+                                                            class="attempt-row" @click="reviewAttempt(attempt.id)">
+                                                            <td class="left">{{ `Спроба №${attempt.attempt_number}` }}
+                                                            </td>
                                                             <td class="left">
                                                                 <span
-                                                                    :class="['status-pill', getStatusClass(attempt.status)]"
-                                                                >
-                                                                    {{ attempt.status }}
+                                                                    :class="['status-pill', getStatusClass(attempt.status)]">
+                                                                    {{ statusLabel(attempt.status) }}
                                                                 </span>
                                                             </td>
-                                                            <td class="right">{{ attempt.grade }} / 100</td>
+                                                            <td class="right">{{
+                                                                formatEarnedPoints(attempt.earned_points) }} / 100
+                                                            </td>
                                                             <td class="right">{{ attempt.time_spent_minutes }} хв</td>
                                                         </tr>
                                                     </tbody>
@@ -106,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import { getExamJournal } from '../api/exams.js'
@@ -124,8 +121,11 @@ function isExpanded(studentId) {
     return expandedStudentId.value === studentId
 }
 
-function toggleDetails(studentId) {
-    expandedStudentId.value = isExpanded(studentId) ? null : studentId
+function toggleDetails(student) {
+    if (!student.attempts || student.attempts.length === 0) {
+        return
+    }
+    expandedStudentId.value = isExpanded(student.id) ? null : student.id
 }
 
 function reviewAttempt(attemptId) {
@@ -136,17 +136,41 @@ function formatGrade(grade) {
     if (grade === null || grade === undefined) {
         return '–'
     }
-    return `${grade} / 100`
+    return `${Math.ceil(grade)} / 100`
+}
+
+function formatEarnedPoints(earned_points) {
+    if (typeof earned_points === 'number') {
+        return Math.ceil(earned_points)
+    }
+    return '--'
 }
 
 function getStatusClass(status) {
     switch (status) {
-        case 'Потребує перевірки':
+        case 'not_started':
+            return 'not-started'
+        case 'completed':
             return 'pending'
-        case 'Оцінено':
+        case 'submitted':
             return 'evaluated'
         default:
-            return 'default-status'
+            return 'not-started'
+    }
+}
+
+function statusLabel(status) {
+    if (!status) return 'Не розпочато'
+
+    switch (status) {
+        case 'not_started':
+            return 'Не розпочато'
+        case 'completed':
+            return 'Потребує перевірки'
+        case 'submitted':
+            return 'Оцінено'
+        default:
+            return 'Не розпочато'
     }
 }
 
@@ -174,7 +198,7 @@ onMounted(async () => {
 .toggle-button {
     background: none;
     border: none;
-    cursor: pointer;
+    cursor: default;
     font-size: 0.8rem;
     color: var(--color-dark-gray);
     transition: transform 0.2s ease;
@@ -184,11 +208,12 @@ onMounted(async () => {
     transform: rotate(90deg);
 }
 
-.main-row {
+.main-row.is-expandable,
+.toggle-button>.main-row.is-expandable {
     cursor: pointer;
 }
 
-.details-row > td {
+.details-row>td {
     padding: 0;
     border: none;
 }
@@ -224,6 +249,10 @@ onMounted(async () => {
 
 .status-pill.pending {
     background-color: var(--color-red-half-opacity);
+}
+
+.status-pill.not-started {
+    background-color: var(--color-gray);
 }
 
 .fade-enter-active {
