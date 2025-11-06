@@ -48,7 +48,6 @@
                             />
                         </div>
 
-                        <div v-if="error" class="status-message error">{{ error }}</div>
                         <div v-if="success" class="status-message success">Курс успішно створено!</div>
 
                         <CButton type="submit" :disabled="loading" class="submit-button">
