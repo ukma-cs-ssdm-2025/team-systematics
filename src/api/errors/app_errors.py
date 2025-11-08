@@ -53,9 +53,16 @@ def install_exception_handlers(app: FastAPI) -> None:
     async def app_error_handler(_: Request, exc: AppError):
         return exc.to_response()
 
+    # Обробка для непередбачених помилок
+    @app.exception_handler(Exception)
+    async def generic_error_handler(_: Request, exc: Exception):
+        return JSONResponse(status_code=500, content={
+            "error": {"code": ErrorCode.INTERNAL_ERROR, "message": "An unexpected error occurred", "details": None}
+        })
+
     @app.exception_handler(StarletteHTTPException)
     async def starlette_exc_handler(_: Request, exc: StarletteHTTPException):
-        # Map to our envelope but keep original status
+        # Замість перехоплення усіх помилок, обробляємо лише певні типи помилок
         code = ErrorCode.INTERNAL_ERROR
         if exc.status_code == 404:
             code = ErrorCode.NOT_FOUND
@@ -63,8 +70,13 @@ def install_exception_handlers(app: FastAPI) -> None:
             code = ErrorCode.FORBIDDEN
         elif exc.status_code == 401:
             code = ErrorCode.UNAUTHORIZED
+        else:
+            # Для всіх інших статусів — залишаємо загальний код
+            code = ErrorCode.INTERNAL_ERROR
+
+        # Повертаємо лише специфічне повідомлення без розкриття деталів помилки
         return JSONResponse(status_code=exc.status_code, content={
-            "error": {"code": code, "message": str(exc.detail), "details": None}
+            "error": {"code": code, "message": "A specific error occurred", "details": None}
         })
 
     @app.exception_handler(RequestValidationError)
