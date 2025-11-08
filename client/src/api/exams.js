@@ -59,12 +59,15 @@ export async function getExamJournal(examId) {
     }
 }
 
-export async function createExam() {
+export async function createExam(examData) {
     try {
-        const response = await http.post(`/api/exams`)
+        const response = await http.post(`/api/exams`, examData)
         return response.data
     } catch (error) {
         console.error(`API Error creating a new exam`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
         throw new Error('Не вдалося створити новий іспит.')
     }
 }

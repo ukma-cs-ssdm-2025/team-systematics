@@ -122,7 +122,7 @@ function goToExamJournal(examId) {
 }
 
 function createNewExam() {
-    router.push(`/exams/create`)
+    router.push(`/courses/${courseId}/exams/create`)
 }
 
 function editExam(examId) {

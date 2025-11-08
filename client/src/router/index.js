@@ -61,7 +61,7 @@ const router = createRouter({
       }
     },
     {
-      path: '/exams/create',
+      path: '/courses/:courseId/exams/create',
       name: 'CreateExam',
       component: CreateExamView,
       meta: {
