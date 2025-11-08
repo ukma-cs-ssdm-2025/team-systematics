@@ -57,6 +57,7 @@ const isChecked = computed(() => props.modelValue === props.value);
     display: flex;
     align-items: center;
     justify-content: space-between;
+    flex-grow: 1;
 }
 
 .real-radio-button {
@@ -88,10 +89,6 @@ const isChecked = computed(() => props.modelValue === props.value);
 .option-item:has(.real-radio-button:focus-visible) {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
-}
-
-.option-content {
-    flex-grow: 1;
 }
 
 .option-item.is-disabled {
