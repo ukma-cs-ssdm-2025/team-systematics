@@ -62,21 +62,23 @@ def install_exception_handlers(app: FastAPI) -> None:
 
     @app.exception_handler(StarletteHTTPException)
     async def starlette_exc_handler(_: Request, exc: StarletteHTTPException):
-        # Замість перехоплення усіх помилок, обробляємо лише певні типи помилок
-        code = ErrorCode.INTERNAL_ERROR
+        # Обробка лише конкретних статусів помилок
         if exc.status_code == 404:
-            code = ErrorCode.NOT_FOUND
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.NOT_FOUND, "message": "Resource not found", "details": None}
+            })
         elif exc.status_code == 403:
-            code = ErrorCode.FORBIDDEN
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.FORBIDDEN, "message": "Access forbidden", "details": None}
+            })
         elif exc.status_code == 401:
-            code = ErrorCode.UNAUTHORIZED
-        else:
-            # Для всіх інших статусів — залишаємо загальний код
-            code = ErrorCode.INTERNAL_ERROR
-
-        # Повертаємо лише специфічне повідомлення без розкриття деталів помилки
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.UNAUTHORIZED, "message": "Unauthorized access", "details": None}
+            })
+    
+        # Для всіх інших статусів — загальний код помилки
         return JSONResponse(status_code=exc.status_code, content={
-            "error": {"code": code, "message": "A specific error occurred", "details": None}
+            "error": {"code": ErrorCode.INTERNAL_ERROR, "message": "A specific error occurred", "details": None}
         })
 
     @app.exception_handler(RequestValidationError)
