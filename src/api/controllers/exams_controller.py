@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Query, Path, status, Depends
+from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage
 from src.api.schemas.journal import ExamJournalResponse
