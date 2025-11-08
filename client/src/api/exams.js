@@ -58,3 +58,13 @@ export async function getExamJournal(examId) {
         throw new Error('Не вдалося завантажити дані журналу.')
     }
 }
+
+export async function createExam() {
+    try {
+        const response = await http.post(`/api/exams`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error creating a new exam`, error)
+        throw new Error('Не вдалося створити новий іспит.')
+    }
+}

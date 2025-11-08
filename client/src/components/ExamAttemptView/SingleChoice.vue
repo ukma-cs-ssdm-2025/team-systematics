@@ -84,58 +84,6 @@ const formattedPoints = computed(() => {
     list-style: none;
 }
 
-.option-item {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    padding: 12px;
-    border: 3px solid var(--color-gray);
-    border-radius: 12px;
-    cursor: pointer;
-    transition: all 150ms ease;
-}
-
-.option-item:hover {
-    border-color: var(--color-dark-gray);
-}
-
-.option-item.selected {
-    border-color: var(--color-purple);
-    background-color: var(--color-lavender);
-}
-
-.real-radio-button {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    cursor: pointer;
-}
-
-.letter-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--color-gray);
-    color: var(--color-black);
-    font-weight: bold;
-    transition: all 150ms ease;
-}
-
-.option-item.selected .letter-badge {
-    background-color: var(--color-purple);
-    color: white;
-}
-
-.option-item:has(.real-radio-button:focus-visible) {
-    outline: 3px solid var(--color-purple);
-    outline-offset: 2px;
-}
-
 .option-content {
     display: flex;
     justify-content: space-between;
