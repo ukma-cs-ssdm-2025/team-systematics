@@ -13,6 +13,7 @@ import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
 import CreateCourseView from '../views/CreateCourseView.vue'
+import CreateExamView from '../views/CreateExamView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -57,6 +58,16 @@ const router = createRouter({
         requiresAuth: true,  // доступ лише для авторизованих
         requiresRole: 'student',
         title: 'Мої іспити'
+      }
+    },
+    {
+      path: '/exams/create',
+      name: 'CreateExam',
+      component: CreateExamView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Створити новий іспит'
       }
     },
     {
