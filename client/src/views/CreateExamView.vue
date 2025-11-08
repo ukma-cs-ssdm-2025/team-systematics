@@ -93,7 +93,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, watch, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
@@ -110,8 +110,47 @@ const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
 
+// Ключ для localStorage
+const STORAGE_KEY = `exam-draft-${courseId}`
+
 // Функція для форматування дати для поля datetime-local
 const formatDateTimeForInput = (date) => date.toISOString().slice(0, 16)
+
+// Функція для збереження в localStorage
+function saveToLocalStorage() {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(exam.value))
+    } catch (err) {
+        console.warn('Не вдалося зберегти в localStorage:', err)
+    }
+}
+
+// Функція для відновлення з localStorage
+function loadFromLocalStorage() {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY)
+        if (saved) {
+            const savedData = JSON.parse(saved)
+            // Перевіряємо, чи course_id відповідає
+            if (savedData.course_id === courseId) {
+                exam.value = savedData
+                return true
+            }
+        }
+    } catch (err) {
+        console.warn('Не вдалося завантажити з localStorage:', err)
+    }
+    return false
+}
+
+// Функція для очищення localStorage
+function clearLocalStorage() {
+    try {
+        localStorage.removeItem(STORAGE_KEY)
+    } catch (err) {
+        console.warn('Не вдалося очистити localStorage:', err)
+    }
+}
 
 // Максимальна дата/час (поточна дата/час) для datetime-local полів
 const maxDateTime = computed(() => formatDateTimeForInput(new Date()))
@@ -204,7 +243,8 @@ function validatePositiveNumber(field, value) {
     exam.value[field] = Math.floor(numValue)
 }
 
-const exam = ref({
+// Ініціалізація exam - спробуємо завантажити з localStorage, інакше використовуємо значення за замовчуванням
+const defaultExam = {
     title: '',
     instructions: '',
     start_at: formatDateTimeForInput(new Date()),
@@ -214,7 +254,44 @@ const exam = ref({
     pass_threshold: 60,
     course_id: courseId,
     questions: []
+}
+
+const exam = ref(defaultExam)
+const isLoadingFromStorage = ref(false)
+
+// Завантажуємо дані з localStorage при монтуванні компонента
+onMounted(() => {
+    isLoadingFromStorage.value = true
+    const loaded = loadFromLocalStorage()
+    if (loaded) {
+        // Оновлюємо дати, якщо вони в минулому
+        const now = new Date()
+        const startDate = new Date(exam.value.start_at)
+        if (startDate > now) {
+            exam.value.start_at = formatDateTimeForInput(now)
+        }
+        const endDate = new Date(exam.value.end_at)
+        if (endDate < now) {
+            exam.value.end_at = formatDateTimeForInput(new Date(now.getTime() + 60 * 60 * 1000))
+        }
+    }
+    isLoadingFromStorage.value = false
 })
+
+// Зберігаємо в localStorage при зміні exam (з затримкою для уникнення надмірних записів)
+let saveTimeout = null
+watch(exam, () => {
+    // Не зберігаємо, якщо зараз відбувається завантаження з localStorage
+    if (isLoadingFromStorage.value) {
+        return
+    }
+    if (saveTimeout) {
+        clearTimeout(saveTimeout)
+    }
+    saveTimeout = setTimeout(() => {
+        saveToLocalStorage()
+    }, 500) // Зберігаємо через 500мс після останньої зміни
+}, { deep: true })
 
 let tempIdCounter = 0
 
@@ -345,6 +422,9 @@ async function handleSaveExam() {
     try {
         await createExam(exam.value)
         success.value = true
+        
+        // Очищаємо localStorage після успішного збереження
+        clearLocalStorage()
 
         // З невеликою затримкою перенаправляємо на сторінку іспитів курсу
         setTimeout(() => {
