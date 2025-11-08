@@ -1,15 +1,16 @@
 <template>
     <div class="question-block">
         <ol class="single-choice-list">
-            <li v-for="(option, i) in options" :key="option.id">
+            <li v-for="(option, i) in options" :key="option.id" class="option-row" :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
+                @click="!isReviewMode && handleOptionClick(option.id)">
                 <CRadio :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)"
-                    :value="option.id" :name="uniqueGroupName" :badgeContent="letter(i)" :disabled="isReviewMode"
-                    :class="getOptionClasses(option)">
+                    :value="option.id" :name="uniqueGroupName" :badgeContent="letter(i)" :disabled="isReviewMode" />
+                <div class="option-content">
                     <p class="option-text">{{ option.text }}</p>
                     <p v-if="isReviewMode && (option.is_correct || option.is_selected)" class="option-points">
-                        ({{ option.is_correct && option.is_selected ? formattedPoints : 0 }} б)
+                        ({{ getPointsForOption(option) }} б)
                     </p>
-                </CRadio>
+                </div>
             </li>
         </ol>
     </div>
@@ -38,10 +39,17 @@ const props = defineProps({
     },
 })
 
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
 
-// Генеруємо унікальне ім'я для групи радіокнопок, щоб вони працювали коректно
-const uniqueGroupName = computed(() => `group-${Math.random()}`)
+// Генеруємо унікальне ім'я для групи радіокнопок один раз при створенні компонента
+const uniqueGroupName = `group-${Math.random().toString(36).substr(2, 9)}`
+
+// Обробник кліку на option-row для передачі вибору
+function handleOptionClick(optionId) {
+    if (!props.isReviewMode) {
+        emit('update:modelValue', optionId)
+    }
+}
 
 // Функція для генерації літер A, B, C...
 // Replace Magic Number / Introduce Constant
@@ -69,8 +77,20 @@ function getOptionClasses(option) {
 }
 
 const formattedPoints = computed(() => {
+    if (props.earnedPoints == null) {
+        return '0'
+    }
     return props.earnedPoints.toFixed(0)
 })
+
+function getPointsForOption(option) {
+    // Якщо опція правильна і вибрана, показуємо earnedPoints
+    if (option.is_correct && option.is_selected) {
+        return formattedPoints.value
+    }
+    // Інакше показуємо 0
+    return '0'
+}
 
 </script>
 
@@ -80,8 +100,34 @@ const formattedPoints = computed(() => {
     margin-bottom: 20px;
 }
 
+.single-choice-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
 .single-choice-list li {
     list-style: none;
+    margin-bottom: 12px;
+}
+
+.single-choice-list li:last-child {
+    margin-bottom: 0;
+}
+
+.option-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border: 3px solid var(--color-gray);
+    border-radius: 12px;
+    transition: all 150ms ease;
+    cursor: pointer;
+}
+
+.option-row:hover:not(.review-mode) {
+    border-color: var(--color-dark-gray);
 }
 
 .option-content {
@@ -94,23 +140,47 @@ const formattedPoints = computed(() => {
     color: var(--color-black-half-opacity);
 }
 
-.option-item.review-mode {
+.option-row.review-mode {
     cursor: not-allowed;
 }
 
-.option-item.review-mode:hover {
+.option-row.review-mode:hover {
     border-color: var(--color-gray);
 }
 
-.option-item.review-mode.selected:hover {
+.option-row.review-mode.selected:hover {
     border-color: var(--color-purple);
 }
 
-.option-item.correct {
+.option-row.selected {
+    border-color: var(--color-purple);
+    background-color: var(--color-lavender);
+}
+
+.option-row.correct {
     background-color: var(--color-green-half-opacity);
 }
 
-.option-item.incorrect {
+.option-row.incorrect {
     background-color: var(--color-red-half-opacity);
+}
+
+/* Правильні та неправильні відповіді в review-mode мають пріоритет над selected */
+.option-row.review-mode.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.option-row.review-mode.incorrect {
+    background-color: var(--color-red-half-opacity);
+}
+
+.option-row.selected :deep(.letter-badge) {
+    background-color: var(--color-purple);
+    color: var(--color-white);
+}
+
+.option-row:has(:deep(.real-radio-button:focus-visible)) {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
 }
 </style>

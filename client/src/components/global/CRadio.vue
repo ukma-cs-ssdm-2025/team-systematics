@@ -8,11 +8,6 @@
         <div class="letter-badge" aria-hidden="true">
             {{ badgeContent }}
         </div>
-
-        <!-- 3. Контент, що передається ззовні -->
-        <div class="option-content">
-            <slot />
-        </div>
     </label>
 </template>
 
@@ -37,27 +32,7 @@ const isChecked = computed(() => props.modelValue === props.value);
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
-    border: 3px solid var(--color-gray);
-    border-radius: 12px;
     cursor: pointer;
-    transition: all 150ms ease;
-}
-
-.option-item:hover:not(.is-disabled) {
-    border-color: var(--color-dark-gray);
-}
-
-.option-item.selected {
-    border-color: var(--color-purple);
-    background-color: var(--color-lavender);
-}
-
-.option-content {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    flex-grow: 1;
 }
 
 .real-radio-button {

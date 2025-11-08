@@ -1,4 +1,3 @@
-<!-- components/global/CCheckbox.vue -->
 <template>
     <label class="option-item" :class="{ 'selected': modelValue, 'is-disabled': disabled }">
         <input type="checkbox" class="real-checkbox" :checked="modelValue" :disabled="disabled"
@@ -8,9 +7,6 @@
                 fill="none">
                 <path d="M5.7 12.025L0 6.325L1.425 4.9L5.7 9.175L14.875 0L16.3 1.425L5.7 12.025Z" />
             </svg>
-        </div>
-        <div class="option-content">
-            <slot />
         </div>
     </label>
 </template>
@@ -28,20 +24,7 @@ defineEmits(['update:modelValue']);
     display: flex;
     align-items: center;
     gap: 12px;
-    padding: 12px;
-    border: 3px solid var(--color-gray);
-    border-radius: 12px;
     cursor: pointer;
-    transition: all 150ms ease;
-}
-
-.option-item:hover:not(.is-disabled) {
-    border-color: var(--color-dark-gray);
-}
-
-.option-item.selected {
-    border-color: var(--cc-selected-border, var(--color-purple));
-    background-color: var(--cc-selected-bg, var(--color-lavender));
 }
 
 .real-checkbox {
@@ -70,10 +53,6 @@ defineEmits(['update:modelValue']);
 .option-item:has(.real-checkbox:focus-visible) {
     outline: 3px solid var(--color-purple);
     outline-offset: 2px;
-}
-
-.option-content {
-    flex-grow: 1;
 }
 
 .option-item.is-disabled {
