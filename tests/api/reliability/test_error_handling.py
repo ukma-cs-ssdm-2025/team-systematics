@@ -3,7 +3,7 @@ import pytest
 from fastapi import FastAPI, status, APIRouter, Depends, HTTPException
 from fastapi.testclient import TestClient
 from uuid import uuid4
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from src.api.schemas.exams import Exam, ExamCreate
@@ -13,10 +13,19 @@ from src.api.controllers.versioning import require_api_version
 from src.api.controllers.exams_controller import ExamsController
 
 
+class DatabaseConnectionError(Exception):
+    """Custom exception for database connection errors."""
+    
+    def __init__(self, message: str = "A database connection error occurred"):
+        super().__init__(message)
+        self.message = message
+
+
 class ExplodingService:
     """Mock service that simulates database errors"""
     def create(self, db: Session, payload: ExamCreate) -> Exam:
-        raise Exception("Database connection failed")
+        raise DatabaseConnectionError("Database connection failed")
+
 
 class ValidationService:
     """Mock service that simulates validation errors"""
@@ -31,9 +40,12 @@ class ValidationService:
             detail={"code": "VALIDATION_ERROR", "message": "Invalid exam data"}
         )
 
+
 class DummyService:
     """Mock service that returns valid exam objects"""
     def create(self, db: Session, payload: ExamCreate) -> Exam:
+        # Використовуємо now(timezone.utc) замість utcnow() для отримання часу в UTC
+        now = datetime.now(timezone.utc)
         exam_dict = {
             "id": str(uuid4()),
             "title": payload.title,
@@ -44,23 +56,23 @@ class DummyService:
             "max_attempts": payload.max_attempts,
             "pass_threshold": payload.pass_threshold,
             "owner_id": payload.owner_id,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": now,
+            "updated_at": now
         }
         return Exam(**exam_dict)
 
 
 def _valid_exam_payload():
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return {
         "title": "Test Exam",
         "instructions": "Do your best",
-        "start_at": (now + timedelta(days=1)).isoformat() + "Z",
-        "end_at": (now + timedelta(days=2)).isoformat() + "Z",
+        "start_at": (now + timedelta(days=1)).isoformat(),
+        "end_at": (now + timedelta(days=2)).isoformat(),
         "duration_minutes": 60,
         "max_attempts": 1,
         "pass_threshold": 60,
-        "owner_id": str(uuid4()),
+        "owner_id": str(uuid4())
     }
 
 
@@ -88,6 +100,7 @@ def test_create_exam_database_error_returns_500():
     assert error_response["detail"]["code"] == "INTERNAL_ERROR"
     assert "Database connection failed" in error_response["detail"]["message"]
 
+
 # Test: Validation error handling
 def test_create_exam_validation_error_returns_422():
     """Test that validation errors are properly handled and return 422 status code."""
@@ -111,6 +124,7 @@ def test_create_exam_validation_error_returns_422():
     assert "detail" in error_response
     assert error_response["detail"]["code"] == "VALIDATION_ERROR"
     assert "Invalid exam data" in error_response["detail"]["message"]
+
 
 # Test: Empty title validation
 def test_create_exam_empty_title_validation():
