@@ -53,6 +53,12 @@ const isChecked = computed(() => props.modelValue === props.value);
     background-color: var(--color-lavender);
 }
 
+.option-content {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
 .real-radio-button {
     position: absolute;
     opacity: 0;
@@ -90,9 +96,5 @@ const isChecked = computed(() => props.modelValue === props.value);
 
 .option-item.is-disabled {
     cursor: not-allowed;
-}
-
-.option-item.is-disabled:hover {
-    border-color: var(--color-gray);
 }
 </style>
