@@ -1,11 +1,15 @@
 <template>
-    <button class="custom-button" :disabled="disabled">
+    <button class="custom-button" :type="type" :disabled="disabled">
         <slot></slot>
     </button>
 </template>
 
 <script setup>
 defineProps({
+    type: {
+        type: String,
+        default: 'button'
+    },
     disabled: {
         type: Boolean,
         default: false

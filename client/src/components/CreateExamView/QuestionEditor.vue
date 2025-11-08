@@ -33,39 +33,38 @@
             </div>
         </div>
 
-        <!-- РЕДАКТОР ДЛЯ MATCHING (ДОПОВНЕНО) -->
+        <!-- РЕДАКТОР ДЛЯ MATCHING -->
         <div v-else-if="question.question_type === 'matching'">
-            <div class="matching-editor-grid">
-                <!-- Ліва колонка: Терміни + вибір відповідності -->
-                <div class="matching-column">
-                    <h4>Терміни (ліва колонка)</h4>
-                    <div v-for="(prompt, promptIndex) in question.matching_data.prompts" :key="prompt.temp_id"
-                        class="matching-row">
-                        <CInput type="text" v-model.trim="prompt.text" placeholder="Термін..." />
-                        <CSelect v-model="prompt.correct_match_id" :options="matchOptions"
-                            placeholder="Виберіть відповідність..." />
-                        <button @click="removePrompt(promptIndex)" class="remove-option-btn"
-                            title="Видалити термін">✖</button>
-                    </div>
-                    <CButton type="button" @click="addPrompt" class="add-option-btn">+ Додати термін</CButton>
-                </div>
+            <h4 class="question-options">Пари термін-визначення</h4>
+            <div v-for="(prompt, promptIndex) in question.matching_data.prompts" :key="prompt.temp_id"
+                class="matching-pair-row">
+                <CInput type="text" v-model.trim="prompt.text" placeholder="Термін..." class="matching-pair-input" />
+                <span class="matching-arrow">→</span>
+                <CInput type="text" :modelValue="getMatchText(prompt.correct_match_id)" 
+                    @update:modelValue="updateMatchText(prompt, $event)"
+                    placeholder="Визначення..." class="matching-pair-input" />
+                <button @click="removeMatchingPair(promptIndex)" class="remove-option-btn"
+                    title="Видалити пару">✖</button>
+            </div>
+            <CButton type="button" @click="addMatchingPair" class="add-option-btn">+ Додати пару</CButton>
+        </div>
 
-                <!-- Права колонка: Визначення -->
-                <div class="matching-column">
-                    <h4>Визначення (права колонка)</h4>
-                    <div v-for="(match, matchIndex) in question.matching_data.matches" :key="match.temp_id"
-                        class="matching-row-right">
-                        <CInput type="text" v-model.trim="match.text" placeholder="Визначення..." />
-                        <button @click="removeMatch(matchIndex)" class="remove-option-btn"
-                            title="Видалити визначення">✖</button>
-                    </div>
-                    <CButton @click="addMatch" class="add-option-btn">+ Додати визначення</CButton>
-                </div>
+        <!-- Редактор для Short Answer -->
+        <div v-else-if="question.question_type === 'short_answer'">
+            <div class="form-group">
+                <label>Правильна відповідь</label>
+                <input 
+                    type="text"
+                    class="correct-answer-input"
+                    :value="getCorrectAnswerText()"
+                    @input="updateCorrectAnswer($event.target.value)"
+                    placeholder="Введіть правильну відповідь..."
+                />
             </div>
         </div>
 
-        <!-- Для Short & Long Answer додаткових полів не потрібно -->
-        <div v-else>
+        <!-- Для Long Answer додаткових полів не потрібно -->
+        <div v-else-if="question.question_type === 'long_answer'">
             <p class="placeholder-text">Для цього типу питання додаткові налаштування не потрібні.</p>
         </div>
     </div>
@@ -75,7 +74,6 @@
 import { computed } from 'vue'
 import CButton from '../global/CButton.vue'
 import CInput from '../global/CInput.vue'
-import CSelect from '../global/CSelect.vue'
 import CRadio from '../global/CRadio.vue'
 import CCheckbox from '../global/CCheckbox.vue'
 
@@ -98,7 +96,11 @@ function capitalize(obj, key) {
 
 // --- Логіка для Single & Multi Choice ---
 function addOption() {
-    question.value.options.push({ text: '', is_correct: false })
+    question.value.options.push({ 
+        temp_id: getUniqueTempId(), 
+        text: '', 
+        is_correct: false 
+    })
 }
 
 function removeOption(index) {
@@ -116,36 +118,102 @@ function getCorrectOptionId() {
 }
 
 // --- Логіка для Matching ---
-function addPrompt() {
-    question.value.matching_data.prompts.push({ temp_id: getUniqueTempId(), text: '', correct_match_id: '' })
+function addMatchingPair() {
+    const matchId = getUniqueTempId()
+    question.value.matching_data.prompts.push({ 
+        temp_id: getUniqueTempId(), 
+        text: '', 
+        correct_match_id: matchId 
+    })
+    // Створюємо відповідний match
+    if (!question.value.matching_data.matches) {
+        question.value.matching_data.matches = []
+    }
+    question.value.matching_data.matches.push({ 
+        temp_id: matchId, 
+        text: '' 
+    })
 }
 
-function removePrompt(index) {
+function removeMatchingPair(index) {
+    const promptToRemove = question.value.matching_data.prompts[index]
+    // Видаляємо відповідний match
+    if (promptToRemove.correct_match_id) {
+        const matchIndex = question.value.matching_data.matches.findIndex(
+            m => m.temp_id === promptToRemove.correct_match_id
+        )
+        if (matchIndex !== -1) {
+            question.value.matching_data.matches.splice(matchIndex, 1)
+        }
+    }
+    // Видаляємо prompt
     question.value.matching_data.prompts.splice(index, 1)
 }
 
-function addMatch() {
-    question.value.matching_data.matches.push({ temp_id: getUniqueTempId(), text: '' })
+function getMatchText(matchId) {
+    if (!matchId || !question.value.matching_data.matches) {
+        return ''
+    }
+    const match = question.value.matching_data.matches.find(m => m.temp_id === matchId)
+    return match ? match.text : ''
 }
 
-function removeMatch(index) {
-    const matchToRemove = question.value.matching_data.matches[index]
-    // Перед видаленням, розірвемо зв'язок з усіма prompt, які на нього посилались
-    question.value.matching_data.prompts.forEach(p => {
-        if (p.correct_match_id === matchToRemove.temp_id) {
-            p.correct_match_id = ''
+function updateMatchText(prompt, text) {
+    if (!prompt.correct_match_id) {
+        // Якщо match ще не створено, створюємо його
+        const matchId = getUniqueTempId()
+        prompt.correct_match_id = matchId
+        if (!question.value.matching_data.matches) {
+            question.value.matching_data.matches = []
         }
-    })
-    question.value.matching_data.matches.splice(index, 1)
+        question.value.matching_data.matches.push({
+            temp_id: matchId,
+            text: text
+        })
+    } else {
+        // Оновлюємо існуючий match
+        const match = question.value.matching_data.matches.find(m => m.temp_id === prompt.correct_match_id)
+        if (match) {
+            match.text = text
+        }
+    }
 }
 
-// Computed-властивість для перетворення `matches` у формат для CSelect
-const matchOptions = computed(() => {
-    return question.value.matching_data.matches.map(match => ({
-        value: match.temp_id,
-        text: match.text || '...'
-    }))
-})
+// Функція для генерації унікальних тимчасових ID
+let tempIdCounter = 0
+function getUniqueTempId() {
+    return `temp-id-${Date.now()}-${tempIdCounter++}`
+}
+
+// --- Логіка для Short Answer ---
+function getCorrectAnswerText() {
+    if (!question.value.options || question.value.options.length === 0) {
+        return ''
+    }
+    const correctOption = question.value.options.find(opt => opt.is_correct)
+    return correctOption ? correctOption.text : ''
+}
+
+function updateCorrectAnswer(value) {
+    // Якщо options не існує або порожній, створюємо перший option
+    if (!question.value.options || question.value.options.length === 0) {
+        question.value.options = [{
+            temp_id: getUniqueTempId(),
+            text: value,
+            is_correct: true
+        }]
+    } else {
+        // Знаходимо правильний option або створюємо новий
+        let correctOption = question.value.options.find(opt => opt.is_correct)
+        if (correctOption) {
+            correctOption.text = value
+        } else {
+            // Якщо немає правильного option, робимо перший правильним
+            question.value.options[0].text = value
+            question.value.options[0].is_correct = true
+        }
+    }
+}
 
 </script>
 
@@ -228,31 +296,21 @@ const matchOptions = computed(() => {
     margin-top: 8px;
 }
 
-.matching-editor-grid {
-    display: grid;
-    grid-template-columns: 1.5fr 1fr;
-    gap: 32px;
-}
-
-.matching-column h4 {
-    margin-top: 0;
-    margin-bottom: 16px;
-}
-
-.matching-row {
-    display: grid;
-    grid-template-columns: 1fr 1fr auto;
-    gap: 8px;
-    margin-bottom: 12px;
+.matching-pair-row {
+    display: flex;
     align-items: center;
+    gap: 12px;
+    margin-bottom: 12px;
 }
 
-.matching-row-right {
-    display: grid;
-    grid-template-columns: 1fr auto;
-    gap: 8px;
-    margin-bottom: 12px;
-    align-items: center;
+.matching-pair-input {
+    flex: 1;
+}
+
+.matching-arrow {
+    font-size: 1.2rem;
+    color: var(--color-dark-gray);
+    font-weight: bold;
 }
 
 .placeholder-text {
@@ -261,15 +319,45 @@ const matchOptions = computed(() => {
 }
 
 .editor-options-theme {
-    /* --- Зелена тема для CRadio --- */
-    --cr-selected-border: var(--color-green);
-    --cr-selected-bg: var(--color-white); /* Залишаємо фон білим */
-    --cr-badge-bg: var(--color-green);    /* Робимо сам бейдж зеленим */
-    --cr-badge-text: var(--color-white);
-
-    /* --- Зелена тема для CCheckbox --- */
+    --cr-selected-bg: var(--color-green);
+    --cr-selected-text: var(--color-white);
     --cc-selected-border: var(--color-green);
-    --cc-selected-bg: var(--color-green-half-opacity); /* Напівпрозорий зелений фон */
-    --cc-icon-fill: var(--color-white); /* Біла галочка */
+    --cc-selected-bg: var(--color-green);
+    --cc-icon-fill: var(--color-white);
+}
+
+.editor-options-theme :deep(.option-item.selected .letter-badge) {
+    background-color: var(--color-green);
+    color: var(--color-white);
+}
+
+.editor-options-theme :deep(.option-item.selected .custom-checkbox) {
+    background-color: var(--color-green);
+}
+
+.editor-options-theme :deep(.option-item.selected .custom-checkbox svg path) {
+    fill: var(--color-white);
+}
+
+/* Стилі для поля правильної відповіді (Short Answer) */
+.correct-answer-input {
+    width: 40%;
+    padding: 20px;
+    background-color: var(--color-gray);
+    border: 3px solid var(--color-gray);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: inherit;
+    transition: all 150ms ease;
+    box-shadow: none;
+}
+
+.correct-answer-input:hover {
+    border-color: var(--color-dark-gray);
+}
+
+.correct-answer-input:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
 }
 </style>

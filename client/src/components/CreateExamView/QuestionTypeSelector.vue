@@ -6,7 +6,7 @@
             placeholder="Виберіть тип питання..."
         />
         
-        <CButton @click="addQuestion" :disabled="!selectedType" class="add-btn">
+        <CButton type="button" @click="addQuestion" :disabled="!selectedType" class="add-btn">
             Додати
         </CButton>
     </div>
