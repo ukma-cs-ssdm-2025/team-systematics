@@ -1,10 +1,10 @@
-from typing import Optional, Self
+from typing import Optional
 from fastapi.responses import JSONResponse
 import pytest
 from fastapi import APIRouter, Depends, FastAPI, status
 from fastapi.testclient import TestClient
 from uuid import uuid4
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from src.api.schemas.exams import Exam, ExamCreate
 from src.api.services.exams_service import ExamsService
@@ -18,6 +18,7 @@ class MockExamService:
         if payload.end_at <= payload.start_at:
             raise ValueError("end_at must be after start_at")
 
+        now = datetime.now(timezone.utc)
         return {
             "id": str(uuid4()),
             "title": payload.title,
@@ -28,18 +29,18 @@ class MockExamService:
             "max_attempts": payload.max_attempts,
             "pass_threshold": payload.pass_threshold,
             "owner_id": payload.owner_id,
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow()
+            "created_at": now,
+            "updated_at": now
         }
 
 def _create_exam_payload(title: str = "Test Exam", instructions: str = "Test Instructions") -> dict:
     """Helper function to create an exam payload with default values."""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return {
         "title": title,
         "instructions": instructions,
-        "start_at": (now + timedelta(days=1)).isoformat() + "Z",
-        "end_at": (now + timedelta(days=2)).isoformat() + "Z",
+        "start_at": (now + timedelta(days=1)).isoformat(),
+        "end_at": (now + timedelta(days=2)).isoformat(),
         "duration_minutes": 60,
         "max_attempts": 1,
         "pass_threshold": 60,
@@ -62,10 +63,10 @@ def test_create_exam_end_at_before_start_returns_422():
     app.dependency_overrides[get_db] = _fake_db
     client = TestClient(app)
 
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     payload = _create_exam_payload()
-    payload["start_at"] = now.isoformat() + "Z"
-    payload["end_at"] = now.isoformat() + "Z"
+    payload["start_at"] = now.isoformat()
+    payload["end_at"] = now.isoformat()
     
     response = client.post("/exams", json=payload)
     assert response.status_code == 422
@@ -83,7 +84,7 @@ def test_create_exam_with_minimum_title_length_accepted():
     class DummyService:
         def create(self, db, payload):
             exam_id = str(uuid4())
-            now = datetime.utcnow()
+            now = datetime.now(timezone.utc)
             return {
                 "id": exam_id,
                 "title": payload.title,
