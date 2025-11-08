@@ -2,37 +2,14 @@
     <div class="question-block">
         <ol class="single-choice-list">
             <li v-for="(option, i) in options" :key="option.id">
-                <label 
-                    class="option-item" 
-                    :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
-                >
-                    <!-- 1. Справжня радіокнопка, яку повністю приховаємо -->
-                    <input 
-                        type="radio"
-                        class="real-radio-button"
-                        :name="uniqueGroupName"
-                        :value="option.id"
-                        :checked="isChecked(option)"
-                        :disabled="isReviewMode"
-                        @change="$emit('update:modelValue', option.id) && !isReviewMode"
-                    />
-                    
-                    <!-- 2. Бейдж з літерою, який тепер виконує роль кастомної кнопки -->
-                    <div class="letter-badge" aria-hidden="true">
-                        {{ letter(i) }}
-                    </div>
-
-                    <!-- 3. Текст варіанту відповіді -->
-                     <div class="option-content">
-                        <p class="option-text">{{ option.text }}</p>
-                        <p 
-                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
-                            class="option-points"
-                        >
-                            ({{ option.is_correct && option.is_selected ? formattedPoints : 0 }} б)
-                        </p>
-                    </div>
-                </label>
+                <CRadio :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)"
+                    :value="option.id" :name="uniqueGroupName" :badgeContent="letter(i)" :disabled="isReviewMode"
+                    :class="getOptionClasses(option)">
+                    <p class="option-text">{{ option.text }}</p>
+                    <p v-if="isReviewMode && (option.is_correct || option.is_selected)" class="option-points">
+                        ({{ option.is_correct && option.is_selected ? formattedPoints : 0 }} б)
+                    </p>
+                </CRadio>
             </li>
         </ol>
     </div>
@@ -40,6 +17,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import CRadio from '../global/CRadio.vue'
 
 const props = defineProps({
     options: {
@@ -81,11 +59,11 @@ function getOptionClasses(option) {
         // В режимі проходження, нам потрібен тільки клас 'selected'
         return { selected: isChecked(option) }
     }
-    
+
     // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
     return {
         selected: option.is_selected,
-        correct: option.is_correct, 
+        correct: option.is_correct,
         incorrect: option.is_selected && !option.is_correct
     }
 }
@@ -155,7 +133,7 @@ const formattedPoints = computed(() => {
 
 .option-item:has(.real-radio-button:focus-visible) {
     outline: 3px solid var(--color-purple);
-    outline-offset: 2px; 
+    outline-offset: 2px;
 }
 
 .option-content {
@@ -171,6 +149,7 @@ const formattedPoints = computed(() => {
 .option-item.review-mode {
     cursor: not-allowed;
 }
+
 .option-item.review-mode:hover {
     border-color: var(--color-gray);
 }
@@ -186,5 +165,4 @@ const formattedPoints = computed(() => {
 .option-item.incorrect {
     background-color: var(--color-red-half-opacity);
 }
-
 </style>
