@@ -150,5 +150,3 @@ def test_create_exam_empty_title_validation():
     assert "detail" in error_response
     assert isinstance(error_response["detail"], list)
     assert any("title" in e["loc"] for e in error_response["detail"])
-
-    r = client.post("/exams", json=payload)
