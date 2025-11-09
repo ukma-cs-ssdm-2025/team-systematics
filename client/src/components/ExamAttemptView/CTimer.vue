@@ -64,7 +64,9 @@ function startTimer() {
     const endTimeMs = startTimeMs + durationMs
 
     const updateRemainingTime = () => {
-        const nowMs = new Date().getTime()
+
+        // === ВИПРАВЛЕНО ===
+        const nowMs = Date.now()
         const secondsLeft = Math.round((endTimeMs - nowMs) / 1000)
         remainingSeconds.value = Math.max(0, secondsLeft)
 
