@@ -46,7 +46,7 @@
                                 <td class="right">{{ formatAverageGrade(exam.average_grade)     }}</td>
                                 <td class="right actions-cell">
                                     <CButton v-if="exam.status === 'draft'" 
-                                        @click="publishExam(exam.id)" 
+                                        @click="showPublishConfirm(exam.id)" 
                                         variant="green"
                                         :disabled="publishingExamId === exam.id"
                                         aria-label="Опублікувати іспит" 
@@ -70,6 +70,19 @@
                 </section>
             </div>
         </main>
+        
+        <!-- Попап підтвердження публікації -->
+        <CPopup
+            v-if="examToPublish"
+            :visible="showPublishDialog"
+            header="Підтвердження публікації іспиту"
+            :disclaimer="publishConfirmMessage"
+            fst-button="Опублікувати"
+            snd-button="Скасувати"
+            fst-button-variant="green"
+            @fstAction="confirmPublishExam"
+            @sndAction="cancelPublishExam"
+        />
         
         <!-- Попап підтвердження видалення -->
         <CPopup
@@ -107,6 +120,8 @@ const error = ref(null)
 const publishingExamId = ref(null)
 const showDeleteDialog = ref(false)
 const examToDelete = ref(null)
+const showPublishDialog = ref(false)
+const examToPublish = ref(null)
 
 function statusLabel(exam) {
     if (!exam || !exam.status) return 'Не вказано'
@@ -146,8 +161,23 @@ function editExam(examId) {
     router.push(`/courses/${courseId}/exams/${examId}/edit`)
 }
 
-async function publishExam(examId) {
-    if (publishingExamId.value === examId) return
+function showPublishConfirm(examId) {
+    examToPublish.value = examId
+    showPublishDialog.value = true
+}
+
+function cancelPublishExam() {
+    showPublishDialog.value = false
+    examToPublish.value = null
+}
+
+async function confirmPublishExam() {
+    if (!examToPublish.value) return
+    if (publishingExamId.value === examToPublish.value) return
+    
+    const examId = examToPublish.value
+    showPublishDialog.value = false
+    examToPublish.value = null
     
     try {
         publishingExamId.value = examId
@@ -217,6 +247,12 @@ const deleteConfirmMessage = computed(() => {
     if (!examToDelete.value) return ''
     const examTitle = getExamTitle(examToDelete.value)
     return `Ви впевнені, що хочете видалити іспит "${examTitle}"? Цю дію неможливо скасувати.`
+})
+
+const publishConfirmMessage = computed(() => {
+    if (!examToPublish.value) return ''
+    const examTitle = getExamTitle(examToPublish.value)
+    return `Ви впевнені, що хочете опублікувати іспит "${examTitle}"? Після публікації іспит стане видимим для студентів курсу.`
 })
 </script>
 
