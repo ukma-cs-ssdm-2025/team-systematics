@@ -75,7 +75,7 @@
 
                     <!-- Секція 3: Дії та повідомлення -->
                     <div class="actions">
-                        <CButton type="submit" :disabled="loading" class="submit-button">
+                        <CButton type="button" @click="showConfirmDialog = true" :disabled="loading" class="submit-button">
                             {{ loading ? 'Збереження...' : (isEditMode ? 'Оновити іспит' : 'Зберегти іспит') }}
                         </CButton>
                         <div v-if="success" class="status-message success">{{ isEditMode ? 'Іспит успішно оновлено!' : 'Іспит успішно створено!' }}</div>
@@ -89,6 +89,17 @@
                 </form>
             </div>
         </main>
+        
+        <!-- Попап підтвердження збереження -->
+        <CPopup
+            :visible="showConfirmDialog"
+            :header="isEditMode ? 'Підтвердження оновлення іспиту' : 'Підтвердження створення іспиту'"
+            :disclaimer="isEditMode ? 'Ви впевнені, що хочете оновити цей іспит? Зміни будуть застосовані до всіх майбутніх спроб.' : 'Ви впевнені, що хочете створити цей іспит? Перевірте всі дані перед збереженням.'"
+            fst-button="Підтвердити"
+            snd-button="Скасувати"
+            @fstAction="confirmSaveExam"
+            @sndAction="showConfirmDialog = false"
+        />
     </div>
 </template>
 
@@ -101,6 +112,7 @@ import CInput from '../components/global/CInput.vue'
 import CTextarea from '../components/global/CTextarea.vue'
 import QuestionEditor from '../components/CreateExamView/QuestionEditor.vue'
 import QuestionTypeSelector from '../components/CreateExamView/QuestionTypeSelector.vue'
+import CPopup from '../components/global/CPopup.vue'
 import { createExam, getExamForEdit, updateExam } from '../api/exams.js'
 
 const router = useRouter()
@@ -112,6 +124,7 @@ const isEditMode = ref(!!examId)
 const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
+const showConfirmDialog = ref(false)
 
 // Ключ для localStorage
 const STORAGE_KEY = isEditMode.value ? `exam-draft-${examId}` : `exam-draft-${courseId}`
@@ -467,16 +480,11 @@ function validateExam() {
     return errors
 }
 
-async function handleSaveExam() {
-    loading.value = true
-    error.value = null
-    success.value = false
-
-    // Валідація перед збереженням
+function handleSaveExam() {
+    // Валідація перед показом діалогу підтвердження
     const validationErrors = validateExam()
     if (validationErrors.length > 0) {
         error.value = validationErrors
-        loading.value = false
         // Прокручуємо до помилок
         setTimeout(() => {
             const errorElement = document.querySelector('.status-message.error')
@@ -486,6 +494,16 @@ async function handleSaveExam() {
         }, 100)
         return
     }
+    
+    // Показуємо діалог підтвердження
+    showConfirmDialog.value = true
+}
+
+async function confirmSaveExam() {
+    showConfirmDialog.value = false
+    loading.value = true
+    error.value = null
+    success.value = false
 
     try {
         // Підготовка даних для відправки

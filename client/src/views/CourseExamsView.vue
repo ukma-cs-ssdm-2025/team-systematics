@@ -60,7 +60,7 @@
                                     </button>
                                     <button @click="editExam(exam.id)" class="icon-button" aria-label="Перейти до редагування питань іспиту"
                                         title="Редагувати питання">✏️</button>
-                                    <button class="icon-button" aria-label="Видалити іспит"
+                                    <button @click="showDeleteConfirm(exam.id)" class="icon-button" aria-label="Видалити іспит"
                                         title="Видалити іспит">🗑️</button>
                                 </td>
                             </tr>
@@ -70,17 +70,31 @@
                 </section>
             </div>
         </main>
+        
+        <!-- Попап підтвердження видалення -->
+        <CPopup
+            v-if="examToDelete"
+            :visible="showDeleteDialog"
+            header="Підтвердження видалення іспиту"
+            :disclaimer="deleteConfirmMessage"
+            fst-button="Видалити"
+            snd-button="Скасувати"
+            fst-button-variant="red"
+            @fstAction="confirmDeleteExam"
+            @sndAction="cancelDeleteExam"
+        />
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import CTooltip from '../components/global/CTooltip.vue'
+import CPopup from '../components/global/CPopup.vue'
 import { getCourseExams } from '../api/courses.js'
-import { publishExam as publishExamAPI } from '../api/exams.js'
+import { publishExam as publishExamAPI, deleteExam as deleteExamAPI } from '../api/exams.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -91,6 +105,8 @@ const courseName = ref('')
 const loading = ref(true)
 const error = ref(null)
 const publishingExamId = ref(null)
+const showDeleteDialog = ref(false)
+const examToDelete = ref(null)
 
 function statusLabel(exam) {
     if (!exam || !exam.status) return 'Не вказано'
@@ -164,6 +180,44 @@ async function loadExams() {
         loading.value = false
     }
 }
+
+function showDeleteConfirm(examId) {
+    examToDelete.value = examId
+    showDeleteDialog.value = true
+}
+
+function cancelDeleteExam() {
+    showDeleteDialog.value = false
+    examToDelete.value = null
+}
+
+async function confirmDeleteExam() {
+    if (!examToDelete.value) return
+    
+    try {
+        await deleteExamAPI(examToDelete.value)
+        showDeleteDialog.value = false
+        examToDelete.value = null
+        // Оновлюємо список іспитів
+        await loadExams()
+    } catch (err) {
+        console.error('Помилка видалення іспиту:', err)
+        error.value = err.message || 'Не вдалося видалити іспит'
+        showDeleteDialog.value = false
+        examToDelete.value = null
+    }
+}
+
+function getExamTitle(examId) {
+    const exam = exams.value.find(e => e.id === examId)
+    return exam ? exam.title : 'невідомий іспит'
+}
+
+const deleteConfirmMessage = computed(() => {
+    if (!examToDelete.value) return ''
+    const examTitle = getExamTitle(examToDelete.value)
+    return `Ви впевнені, що хочете видалити іспит "${examTitle}"? Цю дію неможливо скасувати.`
+})
 </script>
 
 <style scoped>

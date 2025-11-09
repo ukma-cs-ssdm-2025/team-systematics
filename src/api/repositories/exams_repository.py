@@ -166,8 +166,16 @@ class ExamsRepository:
             return None
         
         patch_data = patch.model_dump(exclude_unset=True)
+        # Виключаємо поля, які не повинні оновлюватися через цей метод
+        excluded_fields = {'exam_id', 'owner_id', 'id'}  # Ці поля не повинні оновлюватися
         for key, value in patch_data.items():
-            setattr(exam, key, value)
+            if key not in excluded_fields:
+                # Конвертуємо published в status, якщо потрібно
+                if key == 'published':
+                    from src.models.exams import ExamStatusEnum
+                    exam.status = ExamStatusEnum.published if value else ExamStatusEnum.draft
+                else:
+                    setattr(exam, key, value)
             
         self.db.commit()
         self.db.refresh(exam)
@@ -187,6 +195,11 @@ class ExamsRepository:
         exam = self.get(exam_id)
         if not exam:
             return False
+        
+        # Видаляємо всі спроби перед видаленням іспиту, щоб уникнути проблем з foreign key
+        # Це гарантує, що спроби будуть видалені перед видаленням іспиту
+        from src.models.attempts import Attempt
+        self.db.query(Attempt).filter(Attempt.exam_id == exam_id).delete()
         
         self.db.delete(exam)
         self.db.commit()

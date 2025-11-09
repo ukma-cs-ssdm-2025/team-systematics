@@ -52,7 +52,7 @@ class Exam(Base):
     owner = relationship("User")
     
     questions = relationship("Question", back_populates="exam", cascade=CASCADE_ALL_DELETE_ORPHAN)
-    attempts = relationship("Attempt", back_populates="exam")
+    attempts = relationship("Attempt", back_populates="exam", cascade="all, delete-orphan")
     courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):

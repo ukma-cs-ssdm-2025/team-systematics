@@ -151,6 +151,19 @@ export async function publishExam(examId) {
     }
 }
 
+// Видаляє іспит
+export async function deleteExam(examId) {
+    try {
+        await http.delete(`/api/exams/${examId}`)
+    } catch (error) {
+        console.error(`API Error deleting exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося видалити іспит.')
+    }
+}
+
 // Оновлює іспит
 export async function updateExam(examId, examData) {
     try {
