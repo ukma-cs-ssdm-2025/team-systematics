@@ -67,27 +67,14 @@ async def run_exam_email_scheduler():
             )
 
             if upcoming:
-                emails = _get_student_emails(db)
-                for exam in upcoming:
-                    already = db.query(ExamEmailNotification).filter(ExamEmailNotification.exam_id == exam.id).first()
-                    if already:
-                        continue
-                    if emails:
-                        send_email(
-                            subject="Exam reminder",
-                            body="Hello World!",
-                            recipients=emails,
-                        )
-                    db.add(ExamEmailNotification(exam_id=exam.id))
-                db.commit()
+                # === ОСЬ ТУТ МАЄ БУТИ ВИКЛИК НОВОЇ ФУНКЦІЇ ===
+                _process_upcoming_exams(db, upcoming) 
+                # === І БІЛЬШЕ НІЧОГО! ===
+
         except Exception:
-            # Best-effort scheduler; avoid crashing on errors
+            # ...
             pass
         finally:
-            try:
-                db.close()
-            except Exception:
-                pass
+            # ...
+            pass
         await asyncio.sleep(CHECK_INTERVAL_SECONDS)
-
-
