@@ -80,9 +80,17 @@ class ExamsService:
         if not ok:
             raise NotFoundError("Option not found")
 
-    def create(self, db: Session, payload: ExamCreate) -> Exam:
+    def create(self, db: Session, payload: ExamCreate, owner_id: UUID) -> Exam:
         repo = ExamsRepository(db)
+        # Встановлюємо owner_id з параметра (якщо не встановлено в payload)
+        if not payload.owner_id:
+            payload.owner_id = owner_id
         return repo.create(payload)
+    
+    def link_to_course(self, db: Session, exam_id: UUID, course_id: UUID) -> None:
+        """Зв'язує екзамен з курсом"""
+        repo = ExamsRepository(db)
+        repo.link_to_course(exam_id, course_id)
 
     def update(self, db: Session, exam_id: UUID, patch: ExamUpdate) -> Exam:
         repo = ExamsRepository(db)

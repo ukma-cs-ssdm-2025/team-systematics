@@ -63,9 +63,9 @@ class ExamCreate(BaseModel):
         description="Passing threshold in percent",
         example=75
     )
-    owner_id: UUID = Field(
-        ...,
-        description="Instructor user id",
+    owner_id: Optional[UUID] = Field(
+        None,
+        description="Instructor user id (automatically set from token if not provided)",
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
 

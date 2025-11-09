@@ -59,10 +59,61 @@ export async function getExamJournal(examId) {
     }
 }
 
+// Створює зв'язок між екзаменом та курсом
+async function linkExamToCourse(examId, courseId) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/courses/${courseId}`)
+        return response.data
+    } catch (error) {
+        console.error('Error linking exam to course:', error)
+        throw error
+    }
+}
+
+// Створює питання для екзамену
+async function createQuestion(examId, questionData) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/questions`, questionData)
+        return response.data
+    } catch (error) {
+        console.error(`API Error creating question:`, error)
+        throw error
+    }
+}
+
 export async function createExam(examData) {
     try {
-        const response = await http.post(`/api/exams`, examData)
-        return response.data
+        // Створюємо екзамен
+        const examResponse = await http.post(`/api/exams`, {
+            title: examData.title,
+            instructions: examData.instructions || null,
+            start_at: examData.start_at,
+            end_at: examData.end_at,
+            duration_minutes: examData.duration_minutes,
+            max_attempts: examData.max_attempts,
+            pass_threshold: examData.pass_threshold,
+            owner_id: examData.owner_id
+        })
+        const exam = examResponse.data
+        
+        // Зв'язуємо з курсом (якщо є course_id)
+        if (examData.course_id) {
+            try {
+                await linkExamToCourse(exam.id, examData.course_id)
+            } catch (linkError) {
+                console.warn('Could not link exam to course:', linkError)
+                // Продовжуємо, навіть якщо зв'язок не вдався
+            }
+        }
+        
+        // Створюємо питання
+        if (examData.questions && examData.questions.length > 0) {
+            for (const question of examData.questions) {
+                await createQuestion(exam.id, question)
+            }
+        }
+        
+        return exam
     } catch (error) {
         console.error(`API Error creating a new exam`, error)
         if (error.response?.data?.detail) {

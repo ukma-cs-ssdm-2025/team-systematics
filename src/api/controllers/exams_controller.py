@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Query, Path, status, Depends
+from fastapi import APIRouter, Query, Path, status, Depends, HTTPException
 from uuid import UUID
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage
 from src.api.schemas.journal import ExamJournalResponse
@@ -29,8 +29,20 @@ class ExamsController:
             return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
-        async def create_exam(payload: ExamCreate, db: Session = Depends(get_db)):
-            return self.service.create(db, payload)
+        async def create_exam(payload: ExamCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+            # Встановлюємо owner_id з поточного користувача
+            return self.service.create(db, payload, owner_id=current_user.id)
+        
+        @self.router.post("/{exam_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Link exam to course")
+        async def link_exam_to_course(
+            exam_id: UUID = Path(...),
+            course_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Зв'язує екзамен з курсом"""
+            self.service.link_to_course(db, exam_id, course_id)
+            return None
 
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):

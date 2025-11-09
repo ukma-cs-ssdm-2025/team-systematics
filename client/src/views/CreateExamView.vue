@@ -420,16 +420,60 @@ async function handleSaveExam() {
     }
 
     try {
-        await createExam(exam.value)
+        // Підготовка даних для відправки
+        const examData = {
+            title: exam.value.title,
+            instructions: exam.value.instructions || null,
+            start_at: new Date(exam.value.start_at).toISOString(),
+            end_at: new Date(exam.value.end_at).toISOString(),
+            duration_minutes: exam.value.duration_minutes,
+            max_attempts: exam.value.max_attempts,
+            pass_threshold: exam.value.pass_threshold,
+            course_id: courseId,
+            questions: exam.value.questions.map(q => {
+                const questionData = {
+                    title: q.title,
+                    question_type: q.question_type,
+                    points: q.points || 1,
+                    options: []
+                }
+                
+                // Для single_choice, multi_choice, short_answer
+                if (q.question_type === 'single_choice' || q.question_type === 'multi_choice' || q.question_type === 'short_answer') {
+                    questionData.options = (q.options || [])
+                        .filter(opt => opt.text && opt.text.trim() !== '')
+                        .map(opt => ({
+                            text: opt.text,
+                            is_correct: opt.is_correct || false
+                        }))
+                }
+                
+                // Для matching
+                if (q.question_type === 'matching') {
+                    questionData.matching_data = {
+                        prompts: (q.matching_data?.prompts || [])
+                            .filter(p => p.text && p.text.trim() !== '')
+                            .map(p => {
+                                const match = q.matching_data?.matches?.find(m => m.temp_id === p.correct_match_id)
+                                return {
+                                    text: p.text,
+                                    correct_match: match?.text || ''
+                                }
+                            })
+                    }
+                }
+                
+                return questionData
+            })
+        }
+        
+        await createExam(examData)
         success.value = true
         
         // Очищаємо localStorage після успішного збереження
         clearLocalStorage()
 
-        // З невеликою затримкою перенаправляємо на сторінку іспитів курсу
-        setTimeout(() => {
-            router.push(`/courses/${courseId}/exams`)
-        }, 1500)
+        router.push(`/courses/${courseId}/exams`)
 
     } catch (err) {
         if (err.response?.data?.detail) {

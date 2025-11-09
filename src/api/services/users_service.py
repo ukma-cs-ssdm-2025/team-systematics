@@ -11,6 +11,7 @@ class UsersService:
     def get_user_profile(self, user: User) -> dict:
         """Формує дані для відповіді профілю."""
         return {
+            "id": user.id,
             "full_name": f"{user.last_name or ''} {user.first_name or ''} {user.patronymic or ''}".strip(),
             "email": user.email,
             "major_name": user.major.name if user.major else "Спеціальність не вказано", 
