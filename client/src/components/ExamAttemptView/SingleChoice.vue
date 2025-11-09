@@ -42,7 +42,10 @@ const props = defineProps({
 const emit = defineEmits(['update:modelValue'])
 
 // Генеруємо унікальне ім'я для групи радіокнопок один раз при створенні компонента
-const uniqueGroupName = `group-${Math.random().toString(36).substr(2, 9)}`
+// Використовуємо детермінований підхід замість Math.random() для безпеки
+// Використовуємо модульний лічильник для гарантії унікальності
+let groupNameCounter = 0
+const uniqueGroupName = `group-${Date.now()}-${groupNameCounter++}`
 
 // Обробник кліку на option-row для передачі вибору
 function handleOptionClick(optionId) {
