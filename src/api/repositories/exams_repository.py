@@ -49,6 +49,15 @@ class ExamsRepository:
     # ВИПРАВЛЕНО: Замінено 'Exam | None' на 'Optional[Exam]'
     def get(self, exam_id: UUID) -> Optional[Exam]:
         return self.db.query(Exam).filter(Exam.id == exam_id).first()
+    
+    def get_with_questions(self, exam_id: UUID) -> Optional[Exam]:
+        """Отримує іспит разом з питаннями, опціями та matching_data"""
+        from sqlalchemy.orm import joinedload
+        exam = self.db.query(Exam).options(
+            joinedload(Exam.questions).joinedload(Question.options),
+            joinedload(Exam.questions).joinedload(Question.matching_options)
+        ).filter(Exam.id == exam_id).first()
+        return exam
 
     def create(self, payload: ExamCreate) -> Exam:
         new_exam = Exam(**payload.model_dump())

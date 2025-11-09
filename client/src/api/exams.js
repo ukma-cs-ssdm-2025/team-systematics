@@ -122,3 +122,62 @@ export async function createExam(examData) {
         throw new Error('Не вдалося створити новий іспит.')
     }
 }
+
+// Отримує іспит з питаннями для редагування
+export async function getExamForEdit(examId) {
+    try {
+        const response = await http.get(`/api/exams/${examId}/edit`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error fetching exam for edit:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося завантажити іспит для редагування.')
+    }
+}
+
+// Оновлює іспит
+export async function updateExam(examId, examData) {
+    try {
+        // Оновлюємо основні дані іспиту
+        const examResponse = await http.patch(`/api/exams/${examId}`, {
+            title: examData.title,
+            instructions: examData.instructions || null,
+            start_at: examData.start_at,
+            end_at: examData.end_at,
+            duration_minutes: examData.duration_minutes,
+            max_attempts: examData.max_attempts,
+            pass_threshold: examData.pass_threshold
+        })
+        const exam = examResponse.data
+        
+        // Видаляємо всі старі питання та створюємо нові
+        // Спочатку отримуємо список існуючих питань
+        const existingExam = await getExamForEdit(examId)
+        if (existingExam.questions) {
+            for (const question of existingExam.questions) {
+                try {
+                    await http.delete(`/api/exams/${examId}/questions/${question.id}`)
+                } catch (deleteError) {
+                    console.warn(`Could not delete question ${question.id}:`, deleteError)
+                }
+            }
+        }
+        
+        // Створюємо нові питання
+        if (examData.questions && examData.questions.length > 0) {
+            for (const question of examData.questions) {
+                await createQuestion(examId, question)
+            }
+        }
+        
+        return exam
+    } catch (error) {
+        console.error(`API Error updating exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося оновити іспит.')
+    }
+}

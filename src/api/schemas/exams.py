@@ -159,6 +159,17 @@ class Exam(BaseModel):
 
     model_config = {"from_attributes": True}
 
+# Схема для іспиту з питаннями (для редагування)
+from src.api.schemas.questions import QuestionSchema
+
+class ExamWithQuestions(Exam):
+    questions: List[QuestionSchema] = Field(
+        default_factory=list,
+        description="List of exam questions with options"
+    )
+    
+    model_config = {"from_attributes": True}
+
 class ExamsPage(BaseModel):
     items: List[Exam] = Field(
         ...,

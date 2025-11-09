@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, Query, Path, status, Depends, HTTPException
 from uuid import UUID
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
@@ -47,6 +47,15 @@ class ExamsController:
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):
             return self.service.get(db, exam_id)
+        
+        @self.router.get("/{exam_id}/edit", response_model=ExamWithQuestions, summary="Get exam with questions for editing")
+        async def get_exam_for_edit(
+            exam_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Отримує іспит з питаннями, опціями та matching_data для редагування"""
+            return self.service.get_for_edit(db, exam_id)
 
         @self.router.patch("/{exam_id}", response_model=Exam, summary="Update exam (partial)")
         async def update_exam(patch: ExamUpdate, exam_id: UUID, db: Session = Depends(get_db)):

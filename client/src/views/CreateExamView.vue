@@ -4,7 +4,7 @@
         <main class="container">
             <div class="content-div">
                 <div class="page-header">
-                    <h2>Створення нового іспиту</h2>
+                    <h2>{{ isEditMode ? 'Редагування іспиту' : 'Створення нового іспиту' }}</h2>
                 </div>
 
                 <form @submit.prevent="handleSaveExam" class="form-wrapper">
@@ -76,9 +76,9 @@
                     <!-- Секція 3: Дії та повідомлення -->
                     <div class="actions">
                         <CButton type="submit" :disabled="loading" class="submit-button">
-                            {{ loading ? 'Збереження...' : 'Зберегти іспит' }}
+                            {{ loading ? 'Збереження...' : (isEditMode ? 'Оновити іспит' : 'Зберегти іспит') }}
                         </CButton>
-                        <div v-if="success" class="status-message success">Іспит успішно створено!</div>
+                        <div v-if="success" class="status-message success">{{ isEditMode ? 'Іспит успішно оновлено!' : 'Іспит успішно створено!' }}</div>
                         <div v-if="error" class="status-message error">
                             <div v-if="Array.isArray(error)">
                                 <div v-for="(err, index) in error" :key="index">{{ err }}</div>
@@ -101,17 +101,20 @@ import CInput from '../components/global/CInput.vue'
 import CTextarea from '../components/global/CTextarea.vue'
 import QuestionEditor from '../components/CreateExamView/QuestionEditor.vue'
 import QuestionTypeSelector from '../components/CreateExamView/QuestionTypeSelector.vue'
-import { createExam } from '../api/exams.js'
+import { createExam, getExamForEdit, updateExam } from '../api/exams.js'
 
 const router = useRouter()
-const courseId = useRoute().params.courseId
+const route = useRoute()
+const courseId = route.params.courseId
+const examId = route.params.examId
+const isEditMode = ref(!!examId)
 
 const loading = ref(false)
 const error = ref(null)
 const success = ref(false)
 
 // Ключ для localStorage
-const STORAGE_KEY = `exam-draft-${courseId}`
+const STORAGE_KEY = isEditMode.value ? `exam-draft-${examId}` : `exam-draft-${courseId}`
 
 // Функція для форматування дати для поля datetime-local
 const formatDateTimeForInput = (date) => date.toISOString().slice(0, 16)
@@ -259,22 +262,87 @@ const defaultExam = {
 const exam = ref(defaultExam)
 const isLoadingFromStorage = ref(false)
 
-// Завантажуємо дані з localStorage при монтуванні компонента
-onMounted(() => {
+// Завантажуємо дані з localStorage або з бекенду при монтуванні компонента
+onMounted(async () => {
     isLoadingFromStorage.value = true
-    const loaded = loadFromLocalStorage()
-    if (loaded) {
-        // Оновлюємо дати, якщо вони в минулому
-        const now = new Date()
-        const startDate = new Date(exam.value.start_at)
-        if (startDate > now) {
-            exam.value.start_at = formatDateTimeForInput(now)
+    
+    if (isEditMode.value) {
+        // Режим редагування: завантажуємо з бекенду
+        try {
+            loading.value = true
+            const examData = await getExamForEdit(examId)
+            
+            // Конвертуємо дані з бекенду в формат, який очікує фронтенд
+            exam.value = {
+                title: examData.title || '',
+                instructions: examData.instructions || '',
+                start_at: formatDateTimeForInput(new Date(examData.start_at)),
+                end_at: formatDateTimeForInput(new Date(examData.end_at)),
+                duration_minutes: examData.duration_minutes || 60,
+                max_attempts: examData.max_attempts || 1,
+                pass_threshold: examData.pass_threshold || 60,
+                course_id: courseId,
+                questions: (examData.questions || []).map(q => {
+                    const question = {
+                        id: q.id, // Зберігаємо id для редагування
+                        temp_id: getUniqueTempId(), // Додаємо temp_id для Vue key
+                        title: q.title || '',
+                        question_type: q.question_type,
+                        points: q.points || 1,
+                        options: [],
+                        matching_data: { prompts: [], matches: [] }
+                    }
+                    
+                    // Якщо це matching питання, конвертуємо matching_data
+                    if (q.question_type === 'matching' && q.matching_data) {
+                        question.matching_data = q.matching_data
+                    } else if (q.question_type === 'short_answer') {
+                        // Для short_answer створюємо опцію з правильною відповіддю
+                        const correctOption = q.options?.find(opt => opt.is_correct)
+                        if (correctOption) {
+                            question.options = [{
+                                id: correctOption.id,
+                                temp_id: getUniqueTempId(),
+                                text: correctOption.text || '',
+                                is_correct: true
+                            }]
+                        }
+                    } else {
+                        // Для single_choice та multi_choice
+                        question.options = (q.options || []).map(opt => ({
+                            id: opt.id,
+                            temp_id: getUniqueTempId(),
+                            text: opt.text || '',
+                            is_correct: opt.is_correct || false
+                        }))
+                    }
+                    
+                    return question
+                })
+            }
+        } catch (err) {
+            console.error('Помилка завантаження іспиту:', err)
+            error.value = err.message || 'Не вдалося завантажити іспит для редагування'
+        } finally {
+            loading.value = false
         }
-        const endDate = new Date(exam.value.end_at)
-        if (endDate < now) {
-            exam.value.end_at = formatDateTimeForInput(new Date(now.getTime() + 60 * 60 * 1000))
+    } else {
+        // Режим створення: завантажуємо з localStorage
+        const loaded = loadFromLocalStorage()
+        if (loaded) {
+            // Оновлюємо дати, якщо вони в минулому
+            const now = new Date()
+            const startDate = new Date(exam.value.start_at)
+            if (startDate > now) {
+                exam.value.start_at = formatDateTimeForInput(now)
+            }
+            const endDate = new Date(exam.value.end_at)
+            if (endDate < now) {
+                exam.value.end_at = formatDateTimeForInput(new Date(now.getTime() + 60 * 60 * 1000))
+            }
         }
     }
+    
     isLoadingFromStorage.value = false
 })
 
@@ -467,13 +535,17 @@ async function handleSaveExam() {
             })
         }
         
-        await createExam(examData)
-        success.value = true
-        
-        // Очищаємо localStorage після успішного збереження
-        clearLocalStorage()
-
-        router.push(`/courses/${courseId}/exams`)
+        if (isEditMode.value) {
+            await updateExam(examId, examData)
+            success.value = true
+            clearLocalStorage()
+            router.push(`/courses/${courseId}/exams`)
+        } else {
+            await createExam(examData)
+            success.value = true
+            clearLocalStorage()
+            router.push(`/courses/${courseId}/exams`)
+        }
 
     } catch (err) {
         if (err.response?.data?.detail) {

@@ -50,7 +50,7 @@
                                         aria-label="Перейти до журналу і перевірки робот" title="Журнал і перевірка">
                                         📖
                                     </button>
-                                    <button class="icon-button" aria-label="Перейти до редагування питань іспиту"
+                                    <button @click="editExam(exam.id)" class="icon-button" aria-label="Перейти до редагування питань іспиту"
                                         title="Редагувати питання">✏️</button>
                                     <button class="icon-button" aria-label="Видалити іспит"
                                         title="Видалити іспит">🗑️</button>
@@ -126,7 +126,7 @@ function createNewExam() {
 }
 
 function editExam(examId) {
-    router.push(`/exams/${examId}/edit`)
+    router.push(`/courses/${courseId}/exams/${examId}/edit`)
 }
 </script>
 

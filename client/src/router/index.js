@@ -71,6 +71,16 @@ const router = createRouter({
       }
     },
     {
+      path: '/courses/:courseId/exams/:examId/edit',
+      name: 'EditExam',
+      component: CreateExamView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Редагувати іспит'
+      }
+    },
+    {
       path: '/transcript',
       name: 'MyTranscript',
       component: MyTranscriptView,

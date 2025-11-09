@@ -1,9 +1,12 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
+import uuid as uuid_lib
 from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.courses_repository import CoursesRepository
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamInList
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamInList, ExamWithQuestions
+from src.api.schemas.questions import QuestionSchema
+from src.models.matching_options import MatchingOption
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
 from .courses_service import CoursesService
 from src.api.errors.app_errors import NotFoundError, ConflictError
@@ -40,6 +43,76 @@ class ExamsService:
         if not exam:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         return exam
+    
+    def get_for_edit(self, db: Session, exam_id: UUID) -> ExamWithQuestions:
+        """Отримує іспит з питаннями, опціями та matching_data для редагування"""
+        repo = ExamsRepository(db)
+        exam = repo.get_with_questions(exam_id)
+        if not exam:
+            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
+        
+        # Форматуємо питання з опціями та matching_data
+        questions_data = []
+        for question in exam.questions:
+            question_dict = {
+                "id": question.id,
+                "exam_id": question.exam_id,
+                "title": question.title,
+                "question_type": question.question_type,
+                "points": question.points or 1,
+                "position": question.position or 0,
+                "options": [
+                    {
+                        "id": opt.id,
+                        "question_id": opt.question_id,
+                        "text": opt.text,
+                        "is_correct": opt.is_correct
+                    }
+                    for opt in question.options
+                ],
+                "matching_data": None
+            }
+            
+            # Додаємо matching_data якщо питання типу matching
+            if question.question_type.value == "matching" and question.matching_options:
+                prompts = []
+                matches_map = {}
+                for matching_option in question.matching_options:
+                    # Генеруємо унікальний temp_id для кожного prompt та match
+                    temp_id = str(uuid_lib.uuid4())
+                    prompts.append({
+                        "temp_id": temp_id,
+                        "text": matching_option.prompt,
+                        "correct_match_id": temp_id  # Match має той самий ID
+                    })
+                    matches_map[temp_id] = {
+                        "temp_id": temp_id,
+                        "text": matching_option.correct_match
+                    }
+                question_dict["matching_data"] = {
+                    "prompts": prompts,
+                    "matches": list(matches_map.values())
+                }
+            
+            questions_data.append(question_dict)
+        
+        # Створюємо ExamWithQuestions з відформатованими питаннями
+        exam_dict = {
+            "id": exam.id,
+            "title": exam.title,
+            "instructions": exam.instructions,
+            "start_at": exam.start_at,
+            "end_at": exam.end_at,
+            "duration_minutes": exam.duration_minutes,
+            "max_attempts": exam.max_attempts,
+            "pass_threshold": exam.pass_threshold,
+            "owner_id": exam.owner_id,
+            "published": exam.status.value != "draft",
+            "question_count": len(questions_data),
+            "questions": questions_data
+        }
+        
+        return ExamWithQuestions(**exam_dict)
 
     # --- Question & Option operations for teachers ---
     def create_question(self, db: Session, exam_id: UUID, payload) -> object:
