@@ -60,6 +60,15 @@ class ExamsController:
         @self.router.patch("/{exam_id}", response_model=Exam, summary="Update exam (partial)")
         async def update_exam(patch: ExamUpdate, exam_id: UUID, db: Session = Depends(get_db)):
             return self.service.update(db, exam_id, patch)
+        
+        @self.router.post("/{exam_id}/publish", response_model=Exam, summary="Publish exam")
+        async def publish_exam(
+            exam_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Публікує іспит (змінює статус з draft на published)"""
+            return self.service.publish_exam(db, exam_id)
 
         @self.router.delete("/{exam_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete exam")
         async def delete_exam(exam_id: UUID, db: Session = Depends(get_db)):

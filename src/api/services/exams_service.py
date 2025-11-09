@@ -171,6 +171,14 @@ class ExamsService:
         if not updated:
             raise NotFoundError("Exam not found for update")
         return updated
+    
+    def publish_exam(self, db: Session, exam_id: UUID) -> Exam:
+        """Публікує іспит (змінює статус з draft на published)"""
+        repo = ExamsRepository(db)
+        updated = repo.publish(exam_id)
+        if not updated:
+            raise NotFoundError("Exam not found for publish")
+        return updated
 
     def delete(self, db: Session, exam_id: UUID) -> None:
         repo = ExamsRepository(db)

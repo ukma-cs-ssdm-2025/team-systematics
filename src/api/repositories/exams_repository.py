@@ -2,7 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
-from src.models.exams import Exam
+from src.models.exams import Exam, ExamStatusEnum
 from src.models.exams import Question, Option
 from src.models.attempts import Attempt, AttemptStatus
 from src.models.courses import Course, CourseEnrollment
@@ -36,7 +36,8 @@ class ExamsRepository:
         ).join(
             CourseEnrollment, CourseEnrollment.course_id == Course.id
         ).filter(
-            CourseEnrollment.user_id == user_id
+            CourseEnrollment.user_id == user_id,
+            Exam.status != ExamStatusEnum.draft  # Виключаємо чернетки зі списку для студентів
         ).outerjoin(
             attempt_count_subquery, Exam.id == attempt_count_subquery.c.exam_id
         )
@@ -168,6 +169,16 @@ class ExamsRepository:
         for key, value in patch_data.items():
             setattr(exam, key, value)
             
+        self.db.commit()
+        self.db.refresh(exam)
+        return exam
+    
+    def publish(self, exam_id: UUID) -> Optional[Exam]:
+        """Змінює статус іспиту з draft на published"""
+        exam = self.get(exam_id)
+        if not exam:
+            return None
+        exam.status = ExamStatusEnum.published
         self.db.commit()
         self.db.refresh(exam)
         return exam

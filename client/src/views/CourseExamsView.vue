@@ -45,7 +45,15 @@
                                 <td class="right">{{ exam.students_completed }}</td>
                                 <td class="right">{{ formatAverageGrade(exam.average_grade)     }}</td>
                                 <td class="right actions-cell">
-
+                                    <CButton v-if="exam.status === 'draft'" 
+                                        @click="publishExam(exam.id)" 
+                                        variant="green"
+                                        :disabled="publishingExamId === exam.id"
+                                        aria-label="Опублікувати іспит" 
+                                        title="Опублікувати іспит"
+                                        class="publish-button">
+                                        {{ publishingExamId === exam.id ? '...' : '📢 Опублікувати' }}
+                                    </CButton>
                                     <button @click="goToExamJournal(exam.id)" class="icon-button"
                                         aria-label="Перейти до журналу і перевірки робот" title="Журнал і перевірка">
                                         📖
@@ -72,6 +80,7 @@ import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import CTooltip from '../components/global/CTooltip.vue'
 import { getCourseExams } from '../api/courses.js'
+import { publishExam as publishExamAPI } from '../api/exams.js'
 
 const route = useRoute()
 const router = useRouter()
@@ -81,6 +90,7 @@ const exams = ref([])
 const courseName = ref('')
 const loading = ref(true)
 const error = ref(null)
+const publishingExamId = ref(null)
 
 function statusLabel(exam) {
     if (!exam || !exam.status) return 'Не вказано'
@@ -105,16 +115,7 @@ function formatAverageGrade(grade) {
 }
 
 onMounted(async () => {
-    try {
-        const response = await getCourseExams(courseId)
-        exams.value = response.exams
-        courseName.value = response.course_name
-        document.title = `Іспити курсу ${courseName.value} | Systematics`
-    } catch (err) {
-        error.value = err.message
-    } finally {
-        loading.value = false
-    }
+    await loadExams()
 })
 
 function goToExamJournal(examId) {
@@ -127,6 +128,41 @@ function createNewExam() {
 
 function editExam(examId) {
     router.push(`/courses/${courseId}/exams/${examId}/edit`)
+}
+
+async function publishExam(examId) {
+    if (publishingExamId.value === examId) return
+    
+    try {
+        publishingExamId.value = examId
+        await publishExamAPI(examId)
+        // Оновлюємо статус іспиту в списку
+        const exam = exams.value.find(e => e.id === examId)
+        if (exam) {
+            exam.status = 'published'
+        }
+    } catch (err) {
+        console.error('Помилка публікації іспиту:', err)
+        error.value = err.message || 'Не вдалося опублікувати іспит'
+        // Оновлюємо список іспитів для відображення актуального стану
+        await loadExams()
+    } finally {
+        publishingExamId.value = null
+    }
+}
+
+async function loadExams() {
+    try {
+        loading.value = true
+        const response = await getCourseExams(courseId)
+        exams.value = response.exams
+        courseName.value = response.course_name
+        document.title = `Іспити курсу ${courseName.value} | Systematics`
+    } catch (err) {
+        error.value = err.message
+    } finally {
+        loading.value = false
+    }
 }
 </script>
 
@@ -180,5 +216,11 @@ function editExam(examId) {
 
 .icon-button:hover {
     background-color: #f0f0f0
+}
+
+.publish-button {
+    padding: 8px 16px;
+    font-size: 0.9rem;
+    white-space: nowrap;
 }
 </style>

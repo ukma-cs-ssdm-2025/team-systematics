@@ -137,6 +137,20 @@ export async function getExamForEdit(examId) {
     }
 }
 
+// Публікує іспит (змінює статус з draft на published)
+export async function publishExam(examId) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/publish`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error publishing exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося опублікувати іспит.')
+    }
+}
+
 // Оновлює іспит
 export async function updateExam(examId, examData) {
     try {
