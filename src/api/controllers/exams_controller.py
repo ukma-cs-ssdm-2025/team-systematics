@@ -26,11 +26,37 @@ class ExamsController:
             limit: int = Query(10, ge=1, le=100),
             offset: int = Query(0, ge=0)
             ):
-            return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+            try:
+                return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+            except HTTPException as he:
+                # Re-raise HTTP exceptions (validation errors, etc.)
+                raise he
+            except Exception as e:
+                # Handle unexpected errors (including database failures)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "code": "INTERNAL_ERROR",
+                        "message": str(e)
+                    }
+                )
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(payload: ExamCreate, db: Session = Depends(get_db)):
-            return self.service.create(db, payload)
+            try:
+                return self.service.create(db, payload)
+            except HTTPException as he:
+                # Re-raise HTTP exceptions (validation errors, etc.)
+                raise he
+            except Exception as e:
+                # Handle unexpected errors
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "code": "INTERNAL_ERROR",
+                        "message": str(e)
+                    }
+                )
 
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):
@@ -113,3 +139,4 @@ class ExamsController:
                     detail="Цей функціонал доступний лише для викладачів",
                 )
             return self.journal_service.get_journal_for_exam(db, exam_id)
+        
