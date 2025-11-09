@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from fastapi import APIRouter, Query, Path, status, Depends, HTTPException
+from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
 from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions
 from src.api.schemas.journal import ExamJournalResponse
@@ -26,7 +26,20 @@ class ExamsController:
             limit: int = Query(10, ge=1, le=100),
             offset: int = Query(0, ge=0)
             ):
-            return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+            try:
+                return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+            except HTTPException as he:
+                # Re-raise HTTP exceptions (validation errors, etc.)
+                raise he
+            except Exception as e:
+                # Handle unexpected errors (including database failures)
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={
+                        "code": "INTERNAL_ERROR",
+                        "message": str(e)
+                    }
+                )
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(payload: ExamCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
@@ -143,3 +156,4 @@ class ExamsController:
                     detail="Цей функціонал доступний лише для викладачів",
                 )
             return self.journal_service.get_journal_for_exam(db, exam_id)
+        
