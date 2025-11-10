@@ -92,7 +92,7 @@ class PlagiarismService:
             return self._to_report(check)
 
         # 4. Рівень 2: глибокий семантичний аналіз (парафрази)
-        deep_matches, max_semantic_sim = self._run_deep_semantic_analysis(
+        deep_matches, _ = self._run_deep_semantic_analysis(
             db, base_text, fast_matches
         )
 
