@@ -7,6 +7,8 @@ from src.api.services.attempts_service import AttemptsService
 from src.api.services.exam_review_service import ExamReviewService
 from .versioning import require_api_version
 from src.api.database import get_db
+from src.models.users import User
+from src.api.dependencies import get_current_user
 
 class AttemptsController:
     def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
@@ -27,8 +29,17 @@ class AttemptsController:
             return self.service.get_attempt_details(db, attempt_id)
 
         @self.router.get("/{attempt_id}/results", response_model=AttemptResultResponse, summary="Send exam results")
-        async def read_attempt_result(attempt_id: UUID, db: Session = Depends(get_db)):
-            return self.service.get_attempt_result(db, attempt_id=attempt_id)
+        async def read_attempt_result(
+            attempt_id: UUID,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+        ):
+            return self.service.get_attempt_result(
+                db,
+                attempt_id=attempt_id,
+                current_user=current_user,
+            )
+
 
         @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
             summary="Отримати детальний огляд спроби іспиту")
