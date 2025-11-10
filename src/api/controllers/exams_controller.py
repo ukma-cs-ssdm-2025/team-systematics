@@ -30,8 +30,16 @@ class ExamsController:
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(payload: ExamCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-            # Встановлюємо owner_id з поточного користувача
-            return self.service.create(db, payload, owner_id=current_user.id)
+            try:
+                # Встановлюємо owner_id з поточного користувача
+                return self.service.create(db, payload, owner_id=current_user.id)
+            except HTTPException as he:
+                raise he
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={"code": "INTERNAL_ERROR", "message": str(e)}
+                )
         
         @self.router.post("/{exam_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Link exam to course")
         async def link_exam_to_course(
