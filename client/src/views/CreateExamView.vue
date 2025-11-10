@@ -398,7 +398,8 @@ function validatePositiveNumber(field, value) {
     }
     
     // Видаляємо всі нечислові символи (крім крапки для десяткових чисел, але ми працюємо з цілими)
-    let cleanedValue = String(value).replace(/\D/g, '')
+    // Використовуємо replaceAll з регулярним виразом та глобальним флагом
+    let cleanedValue = String(value).replaceAll(/\D/g, '')
     
     // Якщо після очищення значення порожнє, встановлюємо мінімальне значення
     if (cleanedValue === '') {
@@ -649,84 +650,92 @@ function validateTitle() {
     titleError.value = null
 }
 
+// Валідація опцій для single_choice та multi_choice
+function validateChoiceOptions(question, questionNum, errors) {
+    if (!question.options || question.options.length === 0) {
+        errors.push(`Питання ${questionNum}: додайте хоча б одну опцію відповіді.`)
+        return
+    }
+    
+    const emptyOptions = question.options.filter(opt => !opt.text || opt.text.trim() === '')
+    if (emptyOptions.length > 0) {
+        errors.push(`Питання ${questionNum}: всі опції відповіді мають бути заповнені або видалені. Заповніть або видаліть порожні опції.`)
+    }
+    
+    const filledOptions = question.options.filter(opt => opt.text && opt.text.trim() !== '')
+    if (filledOptions.length === 0) {
+        errors.push(`Питання ${questionNum}: додайте хоча б одну опцію з текстом.`)
+        return
+    }
+    
+    if (filledOptions.length < 2) {
+        errors.push(`Питання ${questionNum}: додайте хоча б дві опції відповіді.`)
+    }
+    
+    const hasCorrectOption = filledOptions.some(opt => opt.is_correct === true)
+    if (!hasCorrectOption) {
+        errors.push(`Питання ${questionNum}: оберіть правильний варіант відповіді.`)
+    }
+}
+
+// Валідація matching питань
+function validateMatchingQuestion(question, questionNum, errors) {
+    const prompts = question.matching_data?.prompts || []
+    if (prompts.length === 0) {
+        errors.push(`Питання ${questionNum}: додайте хоча б одну пару термін-визначення.`)
+        return
+    }
+    
+    for (let promptIndex = 0; promptIndex < prompts.length; promptIndex++) {
+        const prompt = prompts[promptIndex]
+        if (!prompt.text || prompt.text.trim() === '') {
+            errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть термін.`)
+        }
+        const match = question.matching_data?.matches?.find(m => m.temp_id === prompt.correct_match_id)
+        if (!match || !match.text || match.text.trim() === '') {
+            errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть визначення.`)
+        }
+    }
+}
+
+// Валідація short_answer питань
+function validateShortAnswerQuestion(question, questionNum, errors) {
+    const correctOption = question.options?.find(opt => opt.is_correct === true)
+    if (!correctOption || !correctOption.text || correctOption.text.trim() === '') {
+        errors.push(`Питання ${questionNum}: введіть правильну відповідь.`)
+    }
+}
+
+// Валідація одного питання
+function validateQuestion(question, questionNum, errors) {
+    if (!question.title || question.title.trim() === '') {
+        errors.push(`Питання ${questionNum}: введіть текст питання.`)
+    }
+    
+    const isChoiceType = question.question_type === 'single_choice' || question.question_type === 'multi_choice'
+    if (isChoiceType) {
+        validateChoiceOptions(question, questionNum, errors)
+    } else if (question.question_type === 'matching') {
+        validateMatchingQuestion(question, questionNum, errors)
+    } else if (question.question_type === 'short_answer') {
+        validateShortAnswerQuestion(question, questionNum, errors)
+    }
+    // long_answer не потребує валідації (немає правильної відповіді)
+}
+
 // Валідація іспиту перед збереженням
 function validateExam() {
     const errors = []
     
-    // 1. Перевірка наявності питань
     if (!exam.value.questions || exam.value.questions.length === 0) {
         errors.push('Додайте хоча б одне питання до іспиту.')
         return errors
     }
     
-    // 2. Перевірка кожного питання
     for (let index = 0; index < exam.value.questions.length; index++) {
         const question = exam.value.questions[index]
         const questionNum = index + 1
-        
-        // Перевірка наявності тексту питання
-        if (!question.title || question.title.trim() === '') {
-            errors.push(`Питання ${questionNum}: введіть текст питання.`)
-        }
-        
-        // Перевірка для single_choice та multi_choice
-        if (question.question_type === 'single_choice' || question.question_type === 'multi_choice') {
-            // Перевірка наявності опцій
-            if (!question.options || question.options.length === 0) {
-                errors.push(`Питання ${questionNum}: додайте хоча б одну опцію відповіді.`)
-            } else {
-                // Перевірка, що всі опції або заповнені, або видалені (не має порожніх опцій)
-                const emptyOptions = question.options.filter(opt => !opt.text || opt.text.trim() === '')
-                if (emptyOptions.length > 0) {
-                    errors.push(`Питання ${questionNum}: всі опції відповіді мають бути заповнені або видалені. Заповніть або видаліть порожні опції.`)
-                }
-                
-                // Перевірка наявності опцій з текстом (після фільтрації порожніх)
-                const filledOptions = question.options.filter(opt => opt.text && opt.text.trim() !== '')
-                if (filledOptions.length === 0) {
-                    errors.push(`Питання ${questionNum}: додайте хоча б одну опцію з текстом.`)
-                } else if (filledOptions.length < 2) {
-                    // Для single_choice та multi_choice потрібно мінімум 2 опції
-                    errors.push(`Питання ${questionNum}: додайте хоча б дві опції відповіді.`)
-                }
-                
-                // Перевірка наявності правильної відповіді
-                const hasCorrectOption = filledOptions.some(opt => opt.is_correct === true)
-                if (!hasCorrectOption) {
-                    errors.push(`Питання ${questionNum}: оберіть правильний варіант відповіді.`)
-                }
-            }
-        }
-        
-        // Перевірка для matching
-        if (question.question_type === 'matching') {
-            const prompts = question.matching_data?.prompts || []
-            if (prompts.length === 0) {
-                errors.push(`Питання ${questionNum}: додайте хоча б одну пару термін-визначення.`)
-            } else {
-                // Перевірка, чи всі пари заповнені
-                for (let promptIndex = 0; promptIndex < prompts.length; promptIndex++) {
-                    const prompt = prompts[promptIndex]
-                    if (!prompt.text || prompt.text.trim() === '') {
-                        errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть термін.`)
-                    }
-                    const match = question.matching_data?.matches?.find(m => m.temp_id === prompt.correct_match_id)
-                    if (!match || !match.text || match.text.trim() === '') {
-                        errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть визначення.`)
-                    }
-                }
-            }
-        }
-        
-        // Перевірка для short_answer
-        if (question.question_type === 'short_answer') {
-            const correctOption = question.options?.find(opt => opt.is_correct === true)
-            if (!correctOption || !correctOption.text || correctOption.text.trim() === '') {
-                errors.push(`Питання ${questionNum}: введіть правильну відповідь.`)
-            }
-        }
-        
-        // long_answer не потребує валідації (немає правильної відповіді)
+        validateQuestion(question, questionNum, errors)
     }
     
     return errors
