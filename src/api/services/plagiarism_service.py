@@ -8,13 +8,13 @@ from sqlalchemy.orm import Session
 from src.api.repositories.plagiarism_repository import PlagiarismRepository
 from src.models.attempts import Attempt, Answer, PlagiarismStatus
 from src.models.exams import Question, QuestionType
-from src.api.schemas.plagiarism import PlagiarismReport, PlagiarismMatch
+from src.api.schemas.plagiarism import PlagiarismCheckSummary, PlagiarismComparisonResponse, PlagiarismReport, PlagiarismMatch
 
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 import logging
 from src.models.paraphrase import ParaphraseModel
-
+from difflib import SequenceMatcher
 
 logger = logging.getLogger(__name__)
 
@@ -273,3 +273,117 @@ class PlagiarismService:
             status=check.status.value if hasattr(check.status, "value") else str(check.status),
             matches=matches,
         )
+    
+        # ---------- ПУБЛІЧНІ ЗАПИТИ ДЛЯ ВИКЛАДАЧА ----------
+
+    def list_exam_checks(
+        self,
+        db: Session,
+        exam_id: UUID,
+        max_uniqueness: Optional[float] = None,
+    ) -> List[PlagiarismCheckSummary]:
+        """
+        Повертає список результатів перевірки на плагіат по іспиту,
+        з можливим фільтром max_uniqueness (наприклад, <= 70).
+        """
+        checks = self.repo.list_by_exam_with_filter(
+            db,
+            exam_id=exam_id,
+            max_uniqueness=max_uniqueness,
+        )
+
+        results: List[PlagiarismCheckSummary] = []
+        for ch in checks:
+            # ch.attempt має бути доступний через relationship
+            attempt: Attempt = ch.attempt
+            results.append(
+                PlagiarismCheckSummary(
+                    attempt_id=attempt.id,
+                    student_id=attempt.user_id,
+                    uniqueness_percent=ch.uniqueness_percent,
+                    max_similarity=ch.max_similarity,
+                    status=ch.status.value if hasattr(ch.status, "value") else str(ch.status),
+                )
+            )
+        return results
+
+    def compare_attempts_texts(
+        self,
+        db: Session,
+        base_attempt_id: UUID,
+        other_attempt_id: UUID,
+    ) -> PlagiarismComparisonResponse:
+        """
+        Повертає тексти long_answer для двох спроб та їх семантичну схожість
+        (через ParaphraseModel).
+        """
+        base_text = self._build_attempt_text(db, base_attempt_id)
+        other_text = self._build_attempt_text(db, other_attempt_id)
+
+        similarity_score = self.paraphrase_model.similarity(base_text, other_text)
+
+        return PlagiarismComparisonResponse(
+            base_attempt_id=base_attempt_id,
+            other_attempt_id=other_attempt_id,
+            base_text=base_text,
+            other_text=other_text,
+            similarity_score=similarity_score,
+        )
+    
+    def get_comparison(
+        self,
+        db: Session,
+        *,
+        base_attempt_id: UUID,
+        other_attempt_id: UUID,
+    ) -> PlagiarismComparisonResponse:
+        """
+        Повертає тексти двох спроб (long_answer-відповіді) + оцінку схожості
+        та діапазони збігів для підсвітки.
+        """
+        base_text = self._build_attempt_text(db, base_attempt_id)
+        other_text = self._build_attempt_text(db, other_attempt_id)
+
+        if not base_text.strip() or not other_text.strip():
+            similarity_score = 0.0
+            base_spans: List[Tuple[int, int]] = []
+            other_spans: List[Tuple[int, int]] = []
+        else:
+            # Використовуємо нейромережу для оцінки загальної схожості
+            similarity_score = self.paraphrase_model.similarity(base_text, other_text)
+            # А для підсвітки — SequenceMatcher
+            base_spans, other_spans = self._compute_highlight_spans(base_text, other_text)
+
+        return PlagiarismComparisonResponse(
+            base_attempt_id=base_attempt_id,
+            other_attempt_id=other_attempt_id,
+            base_text=base_text,
+            other_text=other_text,
+            similarity_score=similarity_score,
+            base_highlight_spans=base_spans,
+            other_highlight_spans=other_spans,
+        )
+    
+    def _compute_highlight_spans(
+        self,
+        base_text: str,
+        other_text: str,
+        min_match_len: int = 20,
+    ) -> Tuple[List[Tuple[int, int]], List[Tuple[int, int]]]:
+        """
+        Шукає однакові фрагменти між base_text та other_text
+        і повертає списки span'ів для підсвітки.
+        min_match_len — мінімальна довжина фрагмента, щоб його підсвічувати.
+        """
+        matcher = SequenceMatcher(None, base_text, other_text)
+        base_spans: List[Tuple[int, int]] = []
+        other_spans: List[Tuple[int, int]] = []
+
+        for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+            # Нас цікавлять тільки однакові фрагменти достатньої довжини
+            if tag == "equal" and (i2 - i1) >= min_match_len:
+                base_spans.append((i1, i2))
+                other_spans.append((j1, j2))
+
+        return base_spans, other_spans
+
