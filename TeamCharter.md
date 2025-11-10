@@ -11,10 +11,10 @@ Systematics
 - Колінько Владислава Володимирівна (v.kolinko@ukma.edu.ua, GitHub: @SlavaKolinko)
 
 ### 2) Ролі та відповідальності:
-- Release Manager - Малій Олександра
-- Code Analyst - Фломбойм Мирослава
-- QA Engineer - Колінько Владислава
-- Refactoring Lead  - Бакалина Анастасія
+- Reliability Explorer - Малій Олександра
+- Risk Documentarian - Фломбойм Мирослава
+- Resilience Engineer - Колінько Владислава
+- Fault Classifier  - Бакалина Анастасія
 
 ### 3) План комунікації:
 - Основний канал комунікації - Discord
