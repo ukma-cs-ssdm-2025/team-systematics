@@ -47,18 +47,19 @@ def test_list_courses(repo, mock_db):
 # Test for creating a course
 def test_create_course(repo, mock_db):
     course_data = CourseCreate(name="Test Course", description="Test Description", code="CS101")
-    
+    owner_id = uuid4()
+
     # Mock the DB methods
     mock_db.add.return_value = None
     mock_db.commit.return_value = None
     mock_db.refresh.return_value = None
-    
-    course = repo.create(course_data)
 
-    # Check that the course creation is correct
+    course = repo.create(course_data, owner_id=owner_id)
+
     assert course.name == "Test Course"
     assert course.description == "Test Description"
     assert course.code == "CS101"
+    assert course.owner_id == owner_id
 
 
 # Test for updating a course
