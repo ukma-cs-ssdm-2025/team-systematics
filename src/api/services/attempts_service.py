@@ -1,23 +1,44 @@
+from typing import Optional
 from sqlalchemy.orm import Session, joinedload, selectinload
 from sqlalchemy import func
 from uuid import UUID
+
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.services.grading_service import GradingService
 from src.api.schemas.attempts import (
     AnswerUpsert,
     Answer as AnswerSchema,
     Attempt as AttemptSchema,
-    AttemptResultResponse
+    AttemptResultResponse,
 )
 from src.models.attempts import Attempt, AttemptStatus, Answer
 from src.models.exams import Exam, Question
 from src.api.errors.app_errors import NotFoundError, ConflictError
 
+from src.api.schemas.plagiarism import PlagiarismReport
+from src.api.services.plagiarism_service import PlagiarismService
+from src.api.repositories.plagiarism_repository import PlagiarismRepository
+from src.models.users import User
+from src.models.user_roles import UserRole
+from src.models.paraphrase import ParaphraseModel
+
 # Introduce Constant / Replace Magic Literal
 ATTEMPT_NOT_FOUND_MSG = "Attempt not found"
+TEACHER_ROLE_ID = 2
 
 class AttemptsService:
-    def add_answer(self, db: Session, attempt_id: UUID, payload: AnswerUpsert) -> AnswerSchema:
+    def __init__(self, plagiarism_service: Optional[PlagiarismService] = None) -> None:
+        if plagiarism_service:
+            self.plagiarism_service = plagiarism_service
+        else:
+            self.plagiarism_service = PlagiarismService(
+                repo=PlagiarismRepository(),
+                paraphrase_model=ParaphraseModel(),
+            )
+
+    def add_answer(
+        self, db: Session, attempt_id: UUID, payload: AnswerUpsert
+    ) -> AnswerSchema:
         repo = AttemptsRepository(db)
         att = repo.get_attempt(attempt_id)
         if not att:
@@ -70,11 +91,14 @@ class AttemptsService:
             attempt.status = AttemptStatus.submitted
         else:
             attempt.status = AttemptStatus.completed
-            
+
+        # Автоматична перевірка на плагіат (тільки long_answer всередині сервісу)
+        self.plagiarism_service.check_attempt(db, attempt)
+
         db.commit()
         db.refresh(attempt)
-        
-        return attempt
+
+        return attempt    
 
     def get_attempt_details(self, db: Session, attempt_id: UUID):
         repo = AttemptsRepository(db)
@@ -84,9 +108,15 @@ class AttemptsService:
             raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         return att
 
-    def get_attempt_result(self, db: Session, attempt_id: UUID) -> AttemptResultResponse:
+    def get_attempt_result(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        current_user: User,
+    ) -> AttemptResultResponse:
         """
         Отримує вже обчислені результати спроби та форматує їх для відповіді API.
+        Додає звіт про плагіат ТІЛЬКИ якщо поточний користувач є викладачем.
         """
         repo = AttemptsRepository(db)
         data = repo.get_attempt_result_raw(attempt_id)
@@ -97,6 +127,22 @@ class AttemptsService:
         if data["pending_count"] == 0 and status == "submitted":
             status = "completed"
 
+        # За замовчуванням — без звіту про плагіат (для студентів)
+        plagiarism_report: Optional[PlagiarismReport] = None
+
+        # Якщо користувач — викладач, підтягуємо PlagiarismCheck
+        if self._is_teacher(db, current_user):
+            attempt: Optional[Attempt] = (
+                db.query(Attempt)
+                .options(joinedload(Attempt.plagiarism_check))
+                .filter(Attempt.id == attempt_id)
+                .one_or_none()
+            )
+            if attempt and attempt.plagiarism_check:
+                plagiarism_report = self.plagiarism_service._to_report(
+                    attempt.plagiarism_check
+                )
+
         return AttemptResultResponse(
             exam_title=data["exam_title"],
             status=status,
@@ -106,5 +152,23 @@ class AttemptsService:
             answers_given=data["answers_given"],
             correct_answers=data["correct_answers"],
             incorrect_answers=data["incorrect_answers"],
-            pending_count=data["pending_count"]
+            pending_count=data["pending_count"],
+            plagiarism_report=plagiarism_report,
+        )
+
+
+
+    def _is_teacher(self, db: Session, user: User) -> bool:
+        """
+        Перевіряємо, чи має користувач роль викладача через таблицю user_roles.
+        TEACHER_ROLE_ID = 2.
+        """
+        return (
+            db.query(UserRole)
+            .filter(
+                UserRole.user_id == user.id,
+                UserRole.role_id == TEACHER_ROLE_ID,
+            )
+            .first()
+            is not None
         )
