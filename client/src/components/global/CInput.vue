@@ -71,7 +71,7 @@ function handleInput(event) {
       emit('update:modelValue', '')
     } else {
       const numValue = Number(value)
-      emit('update:modelValue', isNaN(numValue) ? value : numValue)
+      emit('update:modelValue', Number.isNaN(numValue) ? value : numValue)
     }
   } else {
     emit('update:modelValue', value)
@@ -100,7 +100,7 @@ function handleKeydown(event) {
     }
     
     // Блокуємо всі інші символи, крім цифр
-    if (!/^[0-9]$/.test(key)) {
+    if (!/^\d$/.test(key)) {
       event.preventDefault()
       return false
     }

@@ -1,6 +1,7 @@
 <template>
     <label class="option-item" :class="{ 'selected': modelValue, 'is-disabled': disabled }">
         <input type="checkbox" class="real-checkbox" :checked="modelValue" :disabled="disabled"
+            :aria-label="title || 'Checkbox'"
             @change="$emit('update:modelValue', $event.target.checked)" />
         <div class="custom-checkbox" aria-hidden="true">
             <svg v-if="modelValue" xmlns="http://www.w3.org/2000/svg" width="17" height="13" viewBox="0 0 17 13"
@@ -15,6 +16,7 @@
 defineProps({
     modelValue: { type: Boolean, default: false },
     disabled: { type: Boolean, default: false },
+    title: { type: String, default: '' }
 });
 defineEmits(['update:modelValue']);
 </script>

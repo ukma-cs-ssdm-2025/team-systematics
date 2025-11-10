@@ -5,8 +5,8 @@
             <button @click="$emit('delete')" class="delete-btn" title="Видалити питання">🗑️</button>
         </div>
         <div class="form-group">
-            <label>Текст питання</label>
-            <CInput type="text" v-model.trim="question.title" @blur="capitalize(question, 'title')"
+            <label :for="`question-title-${question.temp_id}`">Текст питання</label>
+            <CInput :id="`question-title-${question.temp_id}`" type="text" v-model.trim="question.title" @blur="capitalize(question, 'title')"
                 placeholder="Наприклад, 'Встановіть відповідність між країною та її столицею'" />
         </div>
 
@@ -52,8 +52,9 @@
         <!-- Редактор для Short Answer -->
         <div v-else-if="question.question_type === 'short_answer'">
             <div class="form-group">
-                <label>Правильна відповідь</label>
+                <label :for="`correct-answer-${question.temp_id}`">Правильна відповідь</label>
                 <input 
+                    :id="`correct-answer-${question.temp_id}`"
                     type="text"
                     class="correct-answer-input"
                     :value="getCorrectAnswerText()"
@@ -108,9 +109,9 @@ function removeOption(index) {
 }
 
 function setCorrectOptionSingle(selectedId) {
-    question.value.options.forEach(opt => {
+    for (const opt of question.value.options) {
         opt.is_correct = (opt.temp_id === selectedId)
-    });
+    }
 }
 function getCorrectOptionId() {
     const correctOption = question.value.options.find(opt => opt.is_correct)
@@ -159,7 +160,13 @@ function getMatchText(matchId) {
 }
 
 function updateMatchText(prompt, text) {
-    if (!prompt.correct_match_id) {
+    if (prompt.correct_match_id) {
+        // Оновлюємо існуючий match
+        const match = question.value.matching_data.matches.find(m => m.temp_id === prompt.correct_match_id)
+        if (match) {
+            match.text = text
+        }
+    } else {
         // Якщо match ще не створено, створюємо його
         const matchId = getUniqueTempId()
         prompt.correct_match_id = matchId
@@ -170,12 +177,6 @@ function updateMatchText(prompt, text) {
             temp_id: matchId,
             text: text
         })
-    } else {
-        // Оновлюємо існуючий match
-        const match = question.value.matching_data.matches.find(m => m.temp_id === prompt.correct_match_id)
-        if (match) {
-            match.text = text
-        }
     }
 }
 

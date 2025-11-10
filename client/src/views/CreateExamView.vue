@@ -219,7 +219,7 @@ const minEndDateTime = computed(() => {
     const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
     const roundedMinEnd = new Date(Math.ceil(minEndDate.getTime() / 60000) * 60000)
     // Повертаємо більшу з двох дат (поточна або початок + 1 хвилина)
-    return formatDateTimeForInput(roundedMinEnd > roundedNow ? roundedMinEnd : roundedNow)
+    return formatDateTimeForInput(new Date(Math.max(roundedMinEnd.getTime(), roundedNow.getTime())))
 })
 
 // Валідація дати початку
@@ -256,7 +256,7 @@ function validateStartDate(value) {
             // Інакше встановлюємо мінімум: початок + 1 хвилина
             const minEndDate = new Date(startDate.getTime() + 60000) // +1 хвилина
             const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
-            const newEndDate = minEndDate > roundedNow ? minEndDate : roundedNow
+            const newEndDate = new Date(Math.max(minEndDate.getTime(), roundedNow.getTime()))
             exam.value.end_at = formatDateTimeForInput(newEndDate)
             // watch для end_at автоматично викличе validateEndDate
         }
@@ -398,7 +398,7 @@ function validatePositiveNumber(field, value) {
     }
     
     // Видаляємо всі нечислові символи (крім крапки для десяткових чисел, але ми працюємо з цілими)
-    let cleanedValue = String(value).replace(/[^0-9]/g, '')
+    let cleanedValue = String(value).replace(/\D/g, '')
     
     // Якщо після очищення значення порожнє, встановлюємо мінімальне значення
     if (cleanedValue === '') {
@@ -411,7 +411,7 @@ function validatePositiveNumber(field, value) {
     let numValue = Number(cleanedValue)
     
     // Якщо не число або NaN, встановлюємо мінімальне значення
-    if (isNaN(numValue)) {
+    if (Number.isNaN(numValue)) {
         exam.value[field] = field === 'pass_threshold' ? 0 : 1
         // watch для duration_minutes автоматично викличе updateEndDateFromDuration
         return
@@ -660,7 +660,8 @@ function validateExam() {
     }
     
     // 2. Перевірка кожного питання
-    exam.value.questions.forEach((question, index) => {
+    for (let index = 0; index < exam.value.questions.length; index++) {
+        const question = exam.value.questions[index]
         const questionNum = index + 1
         
         // Перевірка наявності тексту питання
@@ -704,7 +705,8 @@ function validateExam() {
                 errors.push(`Питання ${questionNum}: додайте хоча б одну пару термін-визначення.`)
             } else {
                 // Перевірка, чи всі пари заповнені
-                prompts.forEach((prompt, promptIndex) => {
+                for (let promptIndex = 0; promptIndex < prompts.length; promptIndex++) {
+                    const prompt = prompts[promptIndex]
                     if (!prompt.text || prompt.text.trim() === '') {
                         errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть термін.`)
                     }
@@ -712,7 +714,7 @@ function validateExam() {
                     if (!match || !match.text || match.text.trim() === '') {
                         errors.push(`Питання ${questionNum}, пара ${promptIndex + 1}: заповніть визначення.`)
                     }
-                })
+                }
             }
         }
         
@@ -725,7 +727,7 @@ function validateExam() {
         }
         
         // long_answer не потребує валідації (немає правильної відповіді)
-    })
+    }
     
     return errors
 }
