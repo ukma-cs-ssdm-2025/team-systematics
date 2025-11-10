@@ -41,6 +41,7 @@ class Exam(Base):
     duration_minutes = Column(Integer, nullable=False, default=60)
     max_attempts = Column(Integer, default=1)
     pass_threshold = Column(Integer, default=60)
+    question_count = Column(Integer, nullable=False, default=0)
     status = Column(SQLAlchemyEnum(
         ExamStatusEnum,
         name="exam_status_enum",
@@ -51,7 +52,7 @@ class Exam(Base):
     owner = relationship("User")
     
     questions = relationship("Question", back_populates="exam", cascade=CASCADE_ALL_DELETE_ORPHAN)
-    attempts = relationship("Attempt", back_populates="exam")
+    attempts = relationship("Attempt", back_populates="exam", cascade="all, delete-orphan")
     courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):

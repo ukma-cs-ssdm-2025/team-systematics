@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
@@ -42,29 +42,54 @@ class ExamsController:
                 )
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
-        async def create_exam(payload: ExamCreate, db: Session = Depends(get_db)):
+        async def create_exam(payload: ExamCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
             try:
-                return self.service.create(db, payload)
+                # Встановлюємо owner_id з поточного користувача
+                return self.service.create(db, payload, owner_id=current_user.id)
             except HTTPException as he:
-                # Re-raise HTTP exceptions (validation errors, etc.)
                 raise he
             except Exception as e:
-                # Handle unexpected errors
                 raise HTTPException(
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={
-                        "code": "INTERNAL_ERROR",
-                        "message": str(e)
-                    }
+                    detail={"code": "INTERNAL_ERROR", "message": str(e)}
                 )
+        
+        @self.router.post("/{exam_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Link exam to course")
+        async def link_exam_to_course(
+            exam_id: UUID = Path(...),
+            course_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Зв'язує екзамен з курсом"""
+            self.service.link_to_course(db, exam_id, course_id)
+            return None
 
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):
             return self.service.get(db, exam_id)
+        
+        @self.router.get("/{exam_id}/edit", response_model=ExamWithQuestions, summary="Get exam with questions for editing")
+        async def get_exam_for_edit(
+            exam_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Отримує іспит з питаннями, опціями та matching_data для редагування"""
+            return self.service.get_for_edit(db, exam_id)
 
         @self.router.patch("/{exam_id}", response_model=Exam, summary="Update exam (partial)")
         async def update_exam(patch: ExamUpdate, exam_id: UUID, db: Session = Depends(get_db)):
             return self.service.update(db, exam_id, patch)
+        
+        @self.router.post("/{exam_id}/publish", response_model=Exam, summary="Publish exam")
+        async def publish_exam(
+            exam_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user)
+        ):
+            """Публікує іспит (змінює статус з draft на published)"""
+            return self.service.publish_exam(db, exam_id)
 
         @self.router.delete("/{exam_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete exam")
         async def delete_exam(exam_id: UUID, db: Session = Depends(get_db)):

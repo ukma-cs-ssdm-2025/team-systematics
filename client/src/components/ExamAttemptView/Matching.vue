@@ -15,17 +15,12 @@
                 </label>
 
                 <div v-if="!isReviewMode" class="match-item">
-                    <select
-                        :id="`match-select-${prompt.id}`"
-                        class="match-select"
-                        :value="modelValue[prompt.id] || ''"
-                        @change="updateMatch(prompt.id, $event.target.value)"
-                    >
-                        <option disabled value="">Виберіть відповідь...</option>
-                        <option v-for="match in shuffledMatches" :key="match.id" :value="match.id">
-                            {{ match.text }}
-                        </option>
-                    </select>
+                    <CSelect
+                        :modelValue="modelValue[prompt.id] || ''"
+                        @update:modelValue="newValue => updateMatch(prompt.id, newValue)"
+                        :options="selectOptions"
+                        placeholder="Виберіть відповідь..."
+                    />
                 </div>
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
@@ -39,7 +34,8 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { ref, watch, computed } from 'vue'
+import CSelect from '../global/CSelect.vue'
 
 const props = defineProps({
     prompts: {
@@ -62,6 +58,13 @@ const props = defineProps({
 
 const emit = defineEmits(['update:modelValue'])
 const shuffledMatches = ref([])
+
+const selectOptions = computed(() => {
+    return shuffledMatches.value.map(match => ({
+        value: match.id,
+        text: match.text
+    }));
+});
 
 // Тасування масиву (Fisher–Yates)
 function shuffleArray(array) {

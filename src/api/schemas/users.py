@@ -17,6 +17,7 @@ class UserSchema(UserBase):
         orm_mode = True
 
 class UserProfileResponse(BaseModel):
+    id: UUID
     full_name: str
     email: EmailStr
     major_name: str

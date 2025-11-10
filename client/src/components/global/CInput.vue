@@ -1,24 +1,111 @@
 <template>
   <input
     class="custom-input"
-    :value="modelValue"
-    @input="$emit('update:modelValue', $event.target.value)"
+    :value="displayValue"
+    @input="handleInput"
+    @keydown="handleKeydown"
     :disabled="disabled"
+    :type="type"
+    :min="min"
+    :max="max"
+    :id="id"
+    :placeholder="placeholder"
+    :required="required"
   />
 </template>
 
 <script setup>
-defineProps({
+import { computed } from 'vue'
+
+const props = defineProps({
   modelValue: {
-    type: String,
+    type: [String, Number],
     default: ''
   },
-    disabled: {
+  disabled: {
     type: Boolean,
     default: false
   },
+  type: {
+    type: String,
+    default: 'text'
+  },
+  min: {
+    type: [String, Number],
+    default: undefined
+  },
+  max: {
+    type: [String, Number],
+    default: undefined
+  },
+  id: {
+    type: String,
+    default: undefined
+  },
+  placeholder: {
+    type: String,
+    default: undefined
+  },
+  required: {
+    type: Boolean,
+    default: false
+  }
 })
-defineEmits(['update:modelValue'])
+
+const emit = defineEmits(['update:modelValue'])
+
+// Конвертуємо modelValue в рядок для відображення
+const displayValue = computed(() => {
+  if (props.modelValue === null || props.modelValue === undefined) {
+    return ''
+  }
+  return String(props.modelValue)
+})
+
+// Обробник зміни значення
+function handleInput(event) {
+  const value = event.target.value
+  if (props.type === 'number') {
+    // Для number типів конвертуємо в число, якщо значення не порожнє
+    if (value === '') {
+      emit('update:modelValue', '')
+    } else {
+      const numValue = Number(value)
+      emit('update:modelValue', Number.isNaN(numValue) ? value : numValue)
+    }
+  } else {
+    emit('update:modelValue', value)
+  }
+}
+
+// Блокуємо введення нечислових символів та мінуса для числових полів
+function handleKeydown(event) {
+  if (props.type === 'number') {
+    const key = event.key
+    
+    // Дозволяємо: цифри, Backspace, Delete, Tab, Escape, Enter, стрілки
+    const allowedKeys = ['Backspace', 'Delete', 'Tab', 'Escape', 'Enter', 
+                         'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+                         'Home', 'End']
+    
+    if (allowedKeys.includes(key)) {
+      return true
+    }
+    
+    // Дозволяємо Ctrl/Cmd + A, C, V, X (вибір, копіювання, вставка, вирізання)
+    if (event.ctrlKey || event.metaKey) {
+      if (['a', 'c', 'v', 'x'].includes(key.toLowerCase())) {
+        return true
+      }
+    }
+    
+    // Блокуємо всі інші символи, крім цифр
+    if (!/^\d$/.test(key)) {
+      event.preventDefault()
+      return false
+    }
+  }
+}
 </script>
 
 <style scoped>

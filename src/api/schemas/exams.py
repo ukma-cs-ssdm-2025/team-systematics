@@ -1,13 +1,33 @@
 from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
-from datetime import datetime
+from datetime import datetime, timezone
 from pydantic import BaseModel, Field, conint, constr, validator
 from src.models.exams import ExamStatusEnum
 
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
 DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретичних питань."
 EXAMPLE_TITLE = "Вступ до Docker"
+
+def datetime_must_not_be_in_past(cls, v):
+    """Перевіряє, що дата/час не в минулому відносно поточного часу.
+
+    Args:
+        v: Значення поля datetime, яке проходить валідацію.
+
+    Returns:
+        Не змінене значення, якщо валідація успішна.
+
+    Raises:
+        ValueError: Якщо дата/час в минулому.
+    """
+    if v:
+        now = datetime.now(timezone.utc)
+        # Якщо datetime не має timezone, вважаємо його UTC
+        v_with_tz = v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v
+        if v_with_tz < now:
+            raise ValueError("Дата та час не можуть бути в минулому")
+    return v
 
 def end_at_must_be_after_start_at(cls, v, values):
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
@@ -63,12 +83,14 @@ class ExamCreate(BaseModel):
         description="Passing threshold in percent",
         example=75
     )
-    owner_id: UUID = Field(
-        ...,
-        description="Instructor user id",
+    owner_id: Optional[UUID] = Field(
+        None,
+        description="Instructor user id (automatically set from token if not provided)",
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
 
+    _validate_start_at_not_in_past = validator("start_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    _validate_end_at_not_in_past = validator("end_at", allow_reuse=True)(datetime_must_not_be_in_past)
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class ExamUpdate(BaseModel):
@@ -109,7 +131,9 @@ class ExamUpdate(BaseModel):
     )
     published: Optional[bool] = Field(None, description="Publish exam (true/false)")
 
-    # Attach the same validator to this model
+    # Attach validators to this model
+    _validate_start_at_not_in_past = validator("start_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    _validate_end_at_not_in_past = validator("end_at", allow_reuse=True)(datetime_must_not_be_in_past)
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class Exam(BaseModel):
@@ -157,6 +181,17 @@ class Exam(BaseModel):
         example=20
     )
 
+    model_config = {"from_attributes": True}
+
+# Схема для іспиту з питаннями (для редагування)
+from src.api.schemas.questions import QuestionSchema
+
+class ExamWithQuestions(Exam):
+    questions: List[QuestionSchema] = Field(
+        default_factory=list,
+        description="List of exam questions with options"
+    )
+    
     model_config = {"from_attributes": True}
 
 class ExamsPage(BaseModel):
