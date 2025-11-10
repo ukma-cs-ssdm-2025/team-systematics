@@ -93,7 +93,7 @@ class PlagiarismService:
 
         # 4. Рівень 2: глибокий семантичний аналіз (парафрази)
         deep_matches, max_semantic_sim = self._run_deep_semantic_analysis(
-            base_text, fast_matches
+            db, base_text, fast_matches
         )
 
         # Якщо глибокий аналіз нічого не додав — використовуємо fast рівень
