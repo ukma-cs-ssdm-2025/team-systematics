@@ -12,6 +12,9 @@ from src.api.schemas.attempts import (
 from src.models.attempts import Attempt, AttemptStatus, Answer
 from src.models.exams import Exam, Question
 from src.api.errors.app_errors import NotFoundError, ConflictError
+from fastapi import HTTPException, status
+from src.api.repositories.user_repository import UserRepository
+from models.users import User
 
 # Introduce Constant / Replace Magic Literal
 ATTEMPT_NOT_FOUND_MSG = "Attempt not found"
@@ -108,3 +111,51 @@ class AttemptsService:
             incorrect_answers=data["incorrect_answers"],
             pending_count=data["pending_count"]
         )
+
+    def extend_attempt_time(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        extra_minutes: int,
+        current_user: User,
+    ) -> AttemptSchema:
+        """
+        Додає додатковий час до дедлайну спроби іспиту.
+
+        Доступно тільки для користувача з роллю 'supervisor'.
+        Додатковий час можна додати лише для спроби студента в статусі 'in_progress'.
+        """
+        if extra_minutes <= 0:
+            raise ConflictError("extra_minutes must be positive")
+
+        user_repo = UserRepository(db)
+
+        # 1. Перевіряємо, що поточний користувач – supervisor
+        current_user_roles = user_repo.get_user_roles(current_user.id)
+        if "supervisor" not in current_user_roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Only supervisors can extend attempt time",
+            )
+
+        repo = AttemptsRepository(db)
+        attempt = repo.get_attempt(attempt_id)
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+
+        # 2. Переконуємось, що це спроба студента
+        target_user_roles = user_repo.get_user_roles(attempt.user_id)
+        if "student" not in target_user_roles:
+            raise ConflictError("Time can be extended only for student attempts")
+
+        # 3. Спроба має бути ще в процесі
+        if attempt.status != AttemptStatus.in_progress:
+            raise ConflictError("Attempt is not in progress")
+
+        # 4. Подовжуємо дедлайн
+        updated_attempt = repo.extend_attempt_time(attempt_id, extra_minutes)
+        if not updated_attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+
+        return updated_attempt
+    
