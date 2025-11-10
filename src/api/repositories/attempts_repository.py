@@ -27,9 +27,9 @@ class AttemptsRepository:
             exam_id=exam_id,
             user_id=user_id,
             status="in_progress",
-            started_at=to_utc_iso(started_at),
-            due_at=to_utc_iso(due_at),
-        )
+            started_at=started_at,
+            due_at=due_at,
+        ) 
         self.db.add(new_attempt)
         self.db.commit()
         self.db.refresh(new_attempt)
