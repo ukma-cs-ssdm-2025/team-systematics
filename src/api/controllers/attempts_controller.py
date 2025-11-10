@@ -1,6 +1,8 @@
 from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi import APIRouter, status, Depends
+from api.dependencies import get_current_user
+from models.users import User
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
@@ -37,3 +39,29 @@ class AttemptsController:
             db: Session = Depends(get_db),
         ):
             return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
+        
+        @self.router.post(
+            "/{attempt_id}/extend-time",
+            response_model=Attempt,
+            summary="Extend exam attempt time for a student (supervisor only)",
+        )
+        async def extend_attempt_time(
+            attempt_id: UUID,
+            extra_minutes: int,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+        ):
+            """
+            Додає додатковий час до спроби іспиту.
+
+            Очікується, що:
+            - current_user має роль 'supervisor';
+            - extra_minutes > 0 (наприклад, 5, 10);
+            - спроба належить студенту і ще триває.
+            """
+            return self.service.extend_attempt_time(
+                db=db,
+                attempt_id=attempt_id,
+                extra_minutes=extra_minutes,
+                current_user=current_user,
+            )
