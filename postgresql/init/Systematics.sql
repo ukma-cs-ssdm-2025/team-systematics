@@ -70,6 +70,17 @@ ALTER TYPE public.attemptstatus OWNER TO postgres;
 -- Name: exam_status_enum; Type: TYPE; Schema: public; Owner: postgres
 --
 
+
+-- Тип статусу перевірки на плагіат
+CREATE TYPE public.plagiarism_status_enum AS ENUM (
+    'ok',
+    'suspicious',
+    'high_risk'
+);
+
+ALTER TYPE public.plagiarism_status_enum OWNER TO postgres;
+
+
 CREATE TYPE public.exam_status_enum AS ENUM (
     'draft',
     'published',
@@ -267,6 +278,21 @@ ALTER TABLE public.attempts OWNER TO postgres;
 -- TOC entry 236 (class 1259 OID 16838)
 -- Name: course_enrollments; Type: TABLE; Schema: public; Owner: postgres
 --
+
+
+-- Таблиця з результатом перевірки на плагіат
+CREATE TABLE public.plagiarism_checks (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    attempt_id uuid NOT NULL,
+    uniqueness_percent real NOT NULL,
+    max_similarity real NOT NULL,
+    status public.plagiarism_status_enum NOT NULL,
+    details jsonb,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+ALTER TABLE public.plagiarism_checks OWNER TO postgres;
+
 
 CREATE TABLE public.course_enrollments (
     user_id uuid NOT NULL,
@@ -1217,6 +1243,23 @@ ALTER TABLE ONLY public.answers
 -- Name: user_majors user_majors_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
+
+-- Первинний ключ
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_pkey PRIMARY KEY (id);
+
+
+-- Одна перевірка на одну спробу
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_attempt_id_key UNIQUE (attempt_id);
+
+
+-- Зовнішній ключ на attempts
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_attempt_id_fkey FOREIGN KEY (attempt_id)
+    REFERENCES public.attempts(id) ON DELETE CASCADE;
+
+
 ALTER TABLE ONLY public.user_majors
     ADD CONSTRAINT user_majors_pkey PRIMARY KEY (user_id);
 
@@ -1294,6 +1337,10 @@ CREATE INDEX idx_questions_on_exam_id ON public.questions USING btree (exam_id);
 --
 
 CREATE INDEX idx_student_answers_on_attempt_id ON public.answers USING btree (attempt_id);
+
+
+CREATE INDEX idx_plagiarism_checks_attempt_id
+    ON public.plagiarism_checks USING btree (attempt_id);
 
 
 --
