@@ -3,6 +3,7 @@ from typing import Optional, List
 from uuid import UUID
 from pydantic import BaseModel, Field, conint, constr, PastDatetime
 from datetime import datetime
+from src.api.schemas.plagiarism import PlagiarismReport
 
 class Attempt(BaseModel):
     id: UUID
@@ -12,7 +13,7 @@ class Attempt(BaseModel):
     started_at: PastDatetime
     due_at: datetime
     submitted_at: Optional[PastDatetime] = None
-    score_percent: Optional[conint(ge=0, le=100)] = None
+    score_percent: Optional[conint(ge=0, le=100)] = None # type: ignore
     time_spent_seconds: Optional[int] = None
 
 class AttemptStartRequest(BaseModel):
@@ -20,7 +21,7 @@ class AttemptStartRequest(BaseModel):
 
 class AnswerUpsert(BaseModel):
     question_id: UUID = Field(..., description="Question id being answered")
-    text: Optional[constr(max_length=5000)] = Field(None, description="Free text answer")
+    text: Optional[constr(max_length=5000)] = Field(None, description="Free text answer") # type: ignore
     selected_option_ids: Optional[List[UUID]] = Field(None, description="Selected option ids for MCQ")
 
 class Answer(BaseModel):
@@ -44,3 +45,4 @@ class AttemptResultResponse(BaseModel):
     correct_answers: int
     incorrect_answers: int
     pending_count: int
+    plagiarism_report: Optional[PlagiarismReport] = None
