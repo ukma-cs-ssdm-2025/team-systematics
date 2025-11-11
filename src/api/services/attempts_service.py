@@ -370,9 +370,6 @@ class AttemptsService:
             attempt.status = AttemptStatus.completed
             attempt.pending_count = 0
             db.commit()
-            pending_count=data["pending_count"],
-            plagiarism_report=plagiarism_report,
-        )
 
     def _is_teacher(self, db: Session, user: User) -> bool:
         """

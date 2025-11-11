@@ -14,7 +14,6 @@ from src.utils.auth import get_current_user_with_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
-from src.models.users import User
 from src.api.dependencies import get_current_user
 from typing import List, Optional
 from src.api.schemas.plagiarism import PlagiarismCheckSummary, PlagiarismComparisonResponse
