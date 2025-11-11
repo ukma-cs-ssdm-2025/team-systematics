@@ -31,6 +31,9 @@ class Answer(BaseModel):
     selected_option_ids: Optional[List[UUID]] = None    
     saved_at: PastDatetime
 
+class AnswerScoreUpdate(BaseModel):
+    earned_points: float = Field(..., ge=0, description="Оцінка за питання (не може бути від'ємною)")
+
 class AttemptResultResponse(BaseModel):
     exam_title: str
     status: str # in_progress | submitted | completed

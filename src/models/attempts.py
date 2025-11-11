@@ -37,7 +37,8 @@ class Answer(Base):
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
     answer_text = Column(String, nullable=True)
     answer_json = Column(JSONB, nullable=True)
-    saved_at = Column(TIMESTAMP(timezone=True), nullable=False) 
+    saved_at = Column(TIMESTAMP(timezone=True), nullable=False)
+    earned_points = Column(Float, nullable=True, comment="Оцінка за це питання (для long_answer встановлюється вручну вчителем)")
     
     attempt = relationship("Attempt", back_populates="answers")
     question = relationship("Question")

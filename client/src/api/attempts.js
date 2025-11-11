@@ -32,12 +32,9 @@ export async function getExamAttemptDetails(attemptId) {
         let savedStartedAt = localStorage.getItem(startTimeKey)
 
         // Extract Method
-        if (savedStartedAt) {
-        console.log("MOCK: Знайдено збережений час початку:", savedStartedAt)
-            } else {
-        console.log("MOCK: Не знайдено збережений час початку. Генеруємо новий.")
-        savedStartedAt = new Date().toISOString()
-        localStorage.setItem(startTimeKey, savedStartedAt)
+        if (!savedStartedAt) {
+            savedStartedAt = new Date().toISOString()
+            localStorage.setItem(startTimeKey, savedStartedAt)
         }
 
         return {
@@ -61,7 +58,6 @@ export async function getExamAttemptDetails(attemptId) {
 // Зберігаємо відповідь користувача на сервері
 export async function saveAnswer(attemptId, questionId, answer, questionType) {
     if (USE_MOCK_DATA) {
-        console.log(`MOCK: Збереження відповіді для attemptId=${attemptId}, questionId=${questionId}`, answer)
         return
     }
 
@@ -80,7 +76,6 @@ export async function saveAnswer(attemptId, questionId, answer, questionType) {
             && answer !== null ? JSON.stringify(answer) : String(answer)
         }
 
-        console.log("Sending payload to saveAnswer:", payload)
         const response = await http.post(url, payload)
         return response.data
 
@@ -95,7 +90,6 @@ export async function saveAnswer(attemptId, questionId, answer, questionType) {
 // Зберігаємо спробу іспиту як завершену
 export async function submitExamAttempt(attemptId) {
     if (USE_MOCK_DATA) {
-        console.log(`MOCK: Завершення (submit) спроби ${attemptId}`)
         return { // Приклад
             id: attemptId,
             exam_id: "e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b", 
@@ -152,5 +146,28 @@ export async function getExamAttemptReview(attemptId) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати огляд іспиту. Спробуйте ще раз')
+    }
+}
+
+export async function updateAnswerScore(attemptId, questionId, earnedPoints) {
+    const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+
+    if (USE_MOCK_DATA) {
+        return { id: questionId, earned_points: earnedPoints }
+    }
+
+    try {
+        const response = await http.patch(`/api/attempts/${attemptId}/questions/${questionId}/score`, {
+            earned_points: earnedPoints
+        })
+        return response.data
+    } catch (error) {
+        if (error.response?.status === 403) {
+            throw new Error('Недостатньо прав для оцінювання. Переконайтеся, що ви увійшли як вчитель.')
+        }
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося оновити оцінку. Спробуйте ще раз.')
     }
 }

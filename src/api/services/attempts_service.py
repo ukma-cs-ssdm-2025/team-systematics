@@ -1,17 +1,20 @@
-from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy.orm import Session, joinedload, selectinload, load_only
 from sqlalchemy import func
 from uuid import UUID
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.services.grading_service import GradingService
+from src.api.repositories.weights_repository import WeightsRepository
 from src.api.schemas.attempts import (
     AnswerUpsert,
     Answer as AnswerSchema,
     Attempt as AttemptSchema,
-    AttemptResultResponse
+    AttemptResultResponse,
+    AnswerScoreUpdate
 )
 from src.models.attempts import Attempt, AttemptStatus, Answer
-from src.models.exams import Exam, Question
+from src.models.exams import Exam, Question, QuestionType
 from src.api.errors.app_errors import NotFoundError, ConflictError
+from src.utils.largest_remainder import distribute_largest_remainder
 
 # Introduce Constant / Replace Magic Literal
 ATTEMPT_NOT_FOUND_MSG = "Attempt not found"
@@ -24,7 +27,23 @@ class AttemptsService:
             raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         if att.status != "in_progress":
             raise ConflictError("Attempt is locked or submitted")
-        return repo.upsert_answer(attempt_id, payload)
+        
+        answer = repo.upsert_answer(attempt_id, payload)
+        
+        # Конвертуємо SQLAlchemy модель у Pydantic схему
+        # Отримуємо selected_option_ids для MCQ питань
+        selected_option_ids = None
+        if answer.selected_options:
+            selected_option_ids = [opt.selected_option_id for opt in answer.selected_options]
+        
+        return AnswerSchema(
+            id=answer.id,
+            attempt_id=answer.attempt_id,
+            question_id=answer.question_id,
+            text=answer.answer_text,
+            selected_option_ids=selected_option_ids,
+            saved_at=answer.saved_at
+        )
 
     def submit(self, db: Session, attempt_id: UUID) -> AttemptSchema:
         """
@@ -108,3 +127,195 @@ class AttemptsService:
             incorrect_answers=data["incorrect_answers"],
             pending_count=data["pending_count"]
         )
+
+    def update_answer_score(
+        self, 
+        db: Session, 
+        attempt_id: UUID, 
+        answer_id: UUID, 
+        payload: AnswerScoreUpdate,
+        max_points: float
+    ) -> AnswerSchema:
+        """
+        Оновлює оцінку для відповіді на long_answer питання.
+        Валідує, що оцінка не перевищує максимальну та не від'ємна.
+        earned_points зберігається в масштабі final_points (масштабованих до 100 балів системи).
+        Перераховує загальну оцінку та перевіряє, чи всі long_answer оцінені.
+        """
+        repo = AttemptsRepository(db)
+        
+        # Валідація оцінки
+        if payload.earned_points < 0:
+            raise ValueError("Оцінка не може бути від'ємною")
+        if payload.earned_points > max_points:
+            raise ValueError(f"Оцінка не може перевищувати максимальну ({max_points})")
+        
+        # Завантажуємо attempt з усіма даними для розрахунку масштабу
+        attempt = db.query(Attempt).options(
+            joinedload(Attempt.exam).selectinload(Exam.questions),
+            selectinload(Attempt.answers).joinedload(Answer.question)
+        ).filter(Attempt.id == attempt_id).first()
+        
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        # Знаходимо відповідь та питання
+        answer = None
+        question = None
+        for ans in attempt.answers:
+            if ans.id == answer_id:
+                answer = ans
+                question = ans.question
+                break
+        
+        if not answer or not question:
+            raise NotFoundError("Answer or question not found")
+        
+        if question.question_type != QuestionType.long_answer:
+            raise ValueError("Цей endpoint призначений тільки для long_answer питань")
+        
+        # Розраховуємо final_points для цього питання (масштабовані до 100 балів)
+        weights_repo = WeightsRepository(db)
+        weights_map = weights_repo.get_all_weights()
+        
+        total_exam_weight = sum(
+            weights_map.get(q.question_type, 1) for q in attempt.exam.questions
+        )
+        
+        if total_exam_weight == 0:
+            points_per_weight_unit = 0.0
+        else:
+            points_per_weight_unit = 100.0 / total_exam_weight
+        
+        true_points_map = {
+            q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
+            for q in attempt.exam.questions
+        }
+        
+        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
+        question_final_points = final_points_map.get(question.id, 0)
+        
+        # Зберігаємо earned_points в БД для long_answer питань
+        # Оскільки це ручна оцінка вчителя, вона має зберігатися
+        earned_points_to_save = min(payload.earned_points, question_final_points)
+        earned_points_to_save = max(0.0, earned_points_to_save)  # Не може бути від'ємним
+        
+        # Оновлюємо оцінку (в масштабі final_points)
+        answer.earned_points = earned_points_to_save
+        db.commit()
+        
+        # Перераховуємо загальну оцінку
+        self._recalculate_attempt_score(db, attempt)
+        
+        # Перевіряємо, чи всі long_answer питання оцінені
+        self._check_and_update_attempt_status(db, attempt)
+        
+        db.refresh(answer)
+        return AnswerSchema(
+            id=answer.id,
+            attempt_id=answer.attempt_id,
+            question_id=answer.question_id,
+            text=answer.answer_text,
+            selected_option_ids=None,  # Не використовується для long_answer
+            saved_at=answer.saved_at
+        )
+    
+    def _recalculate_attempt_score(self, db: Session, attempt: Attempt) -> None:
+        """
+        Перераховує загальну оцінку для спроби на основі всіх оцінок за питання.
+        Використовує ту саму логіку, що й exam_review_service для консистентності.
+        earned_points зберігається в масштабі points питання (які вже масштабовані до 100 балів).
+        """
+        weights_repo = WeightsRepository(db)
+        weights_map = weights_repo.get_all_weights()
+        
+        # Розраховуємо бали для кожного питання (масштабовані до 100 балів)
+        total_exam_weight = sum(
+            weights_map.get(q.question_type, 1) for q in attempt.exam.questions
+        )
+        
+        if total_exam_weight == 0:
+            points_per_weight_unit = 0.0
+        else:
+            points_per_weight_unit = 100.0 / total_exam_weight
+        
+        true_points_map = {
+            q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
+            for q in attempt.exam.questions
+        }
+        
+        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
+        
+        # Збираємо відповіді студента
+        answers_map = {ans.question_id: ans for ans in attempt.answers}
+        
+        # Рахуємо загальну оцінку
+        total_earned = 0.0
+        grading_service = GradingService()
+        correct_data = grading_service._build_correct_data(attempt.exam)
+        
+        for question in attempt.exam.questions:
+            answer = answers_map.get(question.id)
+            question_points = final_points_map.get(question.id, 0)
+            
+            if question.question_type == QuestionType.long_answer:
+                # Для long_answer використовуємо збережену оцінку (вже в масштабі question_points)
+                if answer and answer.earned_points is not None:
+                    total_earned += answer.earned_points
+            else:
+                # Для інших типів використовуємо стандартну логіку оцінювання
+                if answer:
+                    q_type = question.question_type
+                    base_question_points = float(question.points or 0.0)
+                    
+                    if q_type == QuestionType.single_choice:
+                        earned_base, _ = grading_service._grade_single_choice(question, answer, correct_data.get(question.id, {}))
+                        if base_question_points > 0:
+                            earned_scaled = (earned_base / base_question_points) * question_points
+                            total_earned += earned_scaled
+                    elif q_type == QuestionType.multi_choice:
+                        earned_base, _ = grading_service._grade_multi_choice(question, answer, correct_data.get(question.id, {}))
+                        if base_question_points > 0:
+                            earned_scaled = (earned_base / base_question_points) * question_points
+                            total_earned += earned_scaled
+                    elif q_type == QuestionType.short_answer:
+                        earned_base, _ = grading_service._grade_short_answer(question, answer, correct_data.get(question.id, {}))
+                        if base_question_points > 0:
+                            earned_scaled = (earned_base / base_question_points) * question_points
+                            total_earned += earned_scaled
+                    elif q_type == QuestionType.matching:
+                        earned_base, _ = grading_service._grade_matching(question, answer, correct_data.get(question.id, {}))
+                        if base_question_points > 0:
+                            earned_scaled = (earned_base / base_question_points) * question_points
+                            total_earned += earned_scaled
+        
+        # Оновлюємо загальну оцінку
+        attempt.earned_points = min(100.0, max(0.0, total_earned))
+        db.commit()
+    
+    def _check_and_update_attempt_status(self, db: Session, attempt: Attempt) -> None:
+        """
+        Перевіряє, чи всі long_answer питання оцінені.
+        Якщо так, і статус submitted, змінює статус на completed.
+        """
+        # Знаходимо всі long_answer питання
+        long_answer_questions = [q for q in attempt.exam.questions if q.question_type == QuestionType.long_answer]
+        
+        if not long_answer_questions:
+            return
+        
+        # Перевіряємо, чи всі long_answer питання мають відповіді з оцінками
+        answers_map = {ans.question_id: ans for ans in attempt.answers}
+        all_graded = True
+        
+        for question in long_answer_questions:
+            answer = answers_map.get(question.id)
+            if not answer or answer.earned_points is None:
+                all_graded = False
+                break
+        
+        # Якщо всі long_answer оцінені і статус submitted, змінюємо на completed
+        if all_graded and attempt.status == AttemptStatus.submitted:
+            attempt.status = AttemptStatus.completed
+            attempt.pending_count = 0
+            db.commit()

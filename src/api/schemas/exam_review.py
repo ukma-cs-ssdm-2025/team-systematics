@@ -76,6 +76,7 @@ QuestionReview = Union[
 
 # Це головна модель, яку повертатиме API
 class ExamAttemptReviewResponse(BaseModel):
+    exam_id: str  # Додаємо exam_id для навігації до журналу
     exam_title: str
     questions: List[
         Annotated[QuestionReview, Field(discriminator="question_type")]
