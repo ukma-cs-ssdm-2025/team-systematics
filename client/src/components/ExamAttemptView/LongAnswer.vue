@@ -37,7 +37,7 @@
                             @input="validateInput"
                             @keydown="preventInvalidInput"
                             inputmode="decimal"
-                            pattern="[0-9]*\.?[0-9]*"
+                            pattern="\d*\.?\d*"
                             class="score-input"
                             ref="scoreInputRef"
                             :aria-label="`Введіть оцінку від 0 до ${questionData.points}`"
@@ -117,6 +117,7 @@ function startEditing(event) {
                     scoreInputRef.value.select()
                 } catch (selectionError) {
                     // Якщо select() не підтримується, просто встановлюємо курсор в кінець
+                    console.warn('Failed to select input text, falling back to cursor positioning:', selectionError)
                     const length = scoreInputRef.value.value.length
                     if (scoreInputRef.value.setSelectionRange) {
                         scoreInputRef.value.setSelectionRange(length, length)
@@ -204,7 +205,7 @@ function preventInvalidInput(event) {
     }
     
     // Дозволяємо тільки цифри та крапку
-    if (!/[0-9.]/.test(key)) {
+    if (!/[\d.]/.test(key)) {
         event.preventDefault()
         return false
     }
@@ -216,7 +217,7 @@ function preventInvalidInput(event) {
     }
     
     // Перевірка на максимум при введенні цифри
-    if (/[0-9]/.test(key)) {
+    if (/\d/.test(key)) {
         // Створюємо нове значення після введення (замінюємо виділений текст, якщо є)
         const newValue = currentValue.slice(0, cursorPosition) + key + currentValue.slice(selectionEnd)
         

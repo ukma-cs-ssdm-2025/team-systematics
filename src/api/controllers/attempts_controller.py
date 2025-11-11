@@ -24,6 +24,7 @@ class AttemptsController:
         self.service = service
         self.review_service = review_service
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
+        self._setup_routes()
 
     def _calculate_max_points(self, db: Session, attempt_id: UUID, question_id: UUID) -> float:
         """Calculate max points for a question based on exam weights."""
@@ -55,6 +56,8 @@ class AttemptsController:
         final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
         return final_points_map.get(question_id, 0)
 
+    def _setup_routes(self):
+        """Setup all route handlers for the attempts router."""
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
         async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.add_answer(db, attempt_id, payload)
