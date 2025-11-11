@@ -166,7 +166,9 @@ function validateInput(event) {
     }
     
     // Форматуємо для відображення (зберігаємо десяткові, якщо вони є)
-    const formattedValue = value % 1 === 0 ? value.toString() : value.toFixed(1).replace(/\.?0+$/, '')
+    // Використовуємо безпечний підхід: toFixed(1) завжди повертає один десятковий знак
+    const fixedValue = value.toFixed(1)
+    const formattedValue = fixedValue.endsWith('.0') ? fixedValue.slice(0, -2) : fixedValue
     // Оновлюємо значення (конвертуємо в рядок для text input)
     editScore.value = formattedValue
     input.value = formattedValue
