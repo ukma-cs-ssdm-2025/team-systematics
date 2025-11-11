@@ -51,6 +51,20 @@ export function useAuth() {
     localStorage.removeItem('userMajor')
     localStorage.removeItem('avatarUrl')
 
+    // Видаляємо всі збережені чернетки створення іспитів
+    try {
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key && key.startsWith('exam-draft-')) {
+          keysToRemove.push(key)
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key))
+    } catch (err) {
+      console.error('Не вдалося видалити чернетки іспитів з localStorage:', err)
+    }
+
     clearTimeout(inactivityTimer)
     router.push('/login')
   }
