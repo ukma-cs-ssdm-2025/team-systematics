@@ -16,13 +16,11 @@ class AttemptsRepository:
         self.db = db
 
     def create_attempt(self, exam_id: UUID, user_id: UUID, duration_minutes: int) -> Attempt:
-        print(f"DEBUG: Received duration_minutes={duration_minutes}, type={type(duration_minutes)}")
         if not isinstance(duration_minutes, int) or duration_minutes <= 0:
             raise ValueError(f"Invalid duration_minutes: {duration_minutes}")
             
         started_at = datetime.now(timezone.utc)
         due_at = started_at + timedelta(minutes=duration_minutes)
-        print(f"Creating attempt: started_at={started_at.isoformat()}, due_at={due_at.isoformat()}, duration={duration_minutes}")
         new_attempt = Attempt(
             exam_id=exam_id,
             user_id=user_id,

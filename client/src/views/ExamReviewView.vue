@@ -35,8 +35,7 @@ import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
-import { getExamAttemptReview } from '../api/attempts.js'
-import { getExamAttemptDetails } from '../api/attempts.js'
+import { getExamAttemptReview, getExamAttemptDetails } from '../api/attempts.js'
 import { useAuth } from '../store/loginInfo.js'
 
 const route = useRoute()
@@ -57,6 +56,7 @@ onMounted(async () => {
             examId.value = attemptDetails.exam_id
         } catch (err) {
             // Ігноруємо помилку, якщо не вдалося отримати exam_id з attempt details
+            console.warn('Failed to get exam_id from attempt details:', err)
         }
         
         const data = await getExamAttemptReview(attemptId)

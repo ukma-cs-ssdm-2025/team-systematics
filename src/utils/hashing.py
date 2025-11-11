@@ -8,7 +8,7 @@ def truncate_utf8(s: str, max_bytes: int = 72) -> str:
     return encoded[:max_bytes].decode('utf-8', errors='ignore')
 
 def verify_password(plain: str, hashed: str) -> bool:
-    print(f"Verifying password. Plain: {plain}, Hashed: {hashed}")
+    """Verify a password against a bcrypt hash."""
     # Apply same truncation during verification
     truncated = truncate_utf8(plain, 72)
     try:
@@ -18,11 +18,11 @@ def verify_password(plain: str, hashed: str) -> bool:
         hashed_bytes = hashed.encode('utf-8') if isinstance(hashed, str) else hashed
         # Verify the password
         return bcrypt.checkpw(password_bytes, hashed_bytes)
-    except ValueError as e:
-        print(f"Password verification error: {str(e)}")
+    except (ValueError, TypeError):
+        # Invalid hash format or encoding issue
         return False
-    except Exception as e:
-        print(f"Unexpected error during password verification: {str(e)}")
+    except Exception:
+        # Unexpected error during password verification
         return False
 
 def get_password_hash(password: str) -> str:

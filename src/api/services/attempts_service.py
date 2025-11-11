@@ -98,7 +98,6 @@ class AttemptsService:
     def get_attempt_details(self, db: Session, attempt_id: UUID):
         repo = AttemptsRepository(db)
         att = repo.get_attempt_with_details(attempt_id)
-        print(f"Спроба з функції отримання результатів: {att}")
         if not att:
             raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         return att

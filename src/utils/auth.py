@@ -104,7 +104,7 @@ def get_user_role(db: Session, user_id: UUID) -> str:
         )
     
     # Повертаємо роль у нижньому регістрі для консистентності
-    return role_name.lower().strip() if role_name else None
+    return role_name.lower().strip()
 
 
 def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_current_user_id)) -> User:

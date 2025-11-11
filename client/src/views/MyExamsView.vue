@@ -150,7 +150,8 @@ function openStartExamPopup(exam) {
     selectedExam.value = exam
     
     // Перевіряємо, чи час початку вже настав
-    if (!canStartExam(exam)) {
+    const canStart = canStartExam(exam)
+    if (canStart === false) {
         // Показуємо попап з попередженням (тільки з кнопкою "Закрити")
         isWarningPopup.value = true
         isPopupVisible.value = true

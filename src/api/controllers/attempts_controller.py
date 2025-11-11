@@ -21,6 +21,36 @@ class AttemptsController:
         self.review_service = review_service
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
 
+    def _calculate_max_points(self, db: Session, attempt_id: UUID, question_id: UUID) -> float:
+        """Calculate max points for a question based on exam weights."""
+        attempts_repo = AttemptsRepository(db)
+        weights_repo = WeightsRepository(db)
+        attempt = attempts_repo.get_attempt(attempt_id)
+        
+        if not attempt or not attempt.exam:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Attempt not found"
+            )
+        
+        weights_map = weights_repo.get_all_weights()
+        total_exam_weight = sum(
+            weights_map.get(q.question_type, 1) for q in attempt.exam.questions
+        )
+        
+        if total_exam_weight == 0:
+            points_per_weight_unit = 0.0
+        else:
+            points_per_weight_unit = 100.0 / total_exam_weight
+        
+        true_points_map = {
+            q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
+            for q in attempt.exam.questions
+        }
+        
+        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
+        return final_points_map.get(question_id, 0)
+
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
         async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.add_answer(db, attempt_id, payload)
@@ -89,33 +119,7 @@ class AttemptsController:
                 )
             
             # Розраховуємо max_points (final_points для цього питання)
-            attempts_repo = AttemptsRepository(db)
-            weights_repo = WeightsRepository(db)
-            attempt = attempts_repo.get_attempt(attempt_id)
-            
-            if not attempt or not attempt.exam:
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Attempt not found"
-                )
-            
-            weights_map = weights_repo.get_all_weights()
-            total_exam_weight = sum(
-                weights_map.get(q.question_type, 1) for q in attempt.exam.questions
-            )
-            
-            if total_exam_weight == 0:
-                points_per_weight_unit = 0.0
-            else:
-                points_per_weight_unit = 100.0 / total_exam_weight
-            
-            true_points_map = {
-                q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
-                for q in attempt.exam.questions
-            }
-            
-            final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
-            max_points = final_points_map.get(question.id, 0)
+            max_points = self._calculate_max_points(db, attempt_id, question.id)
             
             try:
                 return self.service.update_answer_score(

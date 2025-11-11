@@ -14,14 +14,13 @@
                     {{ questionData.student_answer_text }}
                 </p>
                 
-                <div 
+                <button 
                     v-if="isTeacher" 
+                    type="button"
                     class="points-display editable"
                     @click="startEditing"
                     @keyup.enter="startEditing"
                     @keyup.space.prevent="startEditing"
-                    tabindex="0"
-                    role="button"
                     :title="'Клік або Enter для редагування оцінки'"
                     :aria-label="`Оцінка: ${formattedEarnedPoints} з ${questionData.points} балів. Натисніть для редагування`"
                 >
@@ -45,7 +44,7 @@
                         />
                         <span> / {{ questionData.points }} б</span>
                     </div>
-                </div>
+                </button>
                 <div v-else class="points-display">
                     ({{ formattedEarnedPoints }} / {{ questionData.points }} б)
                 </div>
@@ -116,7 +115,7 @@ function startEditing(event) {
             if (scoreInputRef.value.type === 'text' || scoreInputRef.value.type === '') {
                 try {
                     scoreInputRef.value.select()
-                } catch (e) {
+                } catch (selectionError) {
                     // Якщо select() не підтримується, просто встановлюємо курсор в кінець
                     const length = scoreInputRef.value.value.length
                     if (scoreInputRef.value.setSelectionRange) {
@@ -145,10 +144,10 @@ function validateInput(event) {
     }
     
     // Парсимо значення
-    let value = parseFloat(inputValue)
+    let value = Number.parseFloat(inputValue)
     
     // Якщо не число (наприклад, тільки крапка), не робимо нічого
-    if (isNaN(value)) {
+    if (Number.isNaN(value)) {
         // Якщо це не просто порожня строка або крапка, очищаємо
         if (inputValue !== '.' && inputValue !== '') {
             input.value = ''
@@ -205,7 +204,7 @@ function preventInvalidInput(event) {
     }
     
     // Дозволяємо тільки цифри та крапку
-    if (!/[\d.]/.test(key)) {
+    if (!/[0-9.]/.test(key)) {
         event.preventDefault()
         return false
     }
@@ -217,16 +216,16 @@ function preventInvalidInput(event) {
     }
     
     // Перевірка на максимум при введенні цифри
-    if (/[\d]/.test(key)) {
+    if (/[0-9]/.test(key)) {
         // Створюємо нове значення після введення (замінюємо виділений текст, якщо є)
         const newValue = currentValue.slice(0, cursorPosition) + key + currentValue.slice(selectionEnd)
         
         // Перевіряємо, чи не перевищує максимум
-        const numValue = parseFloat(newValue)
+        const numValue = Number.parseFloat(newValue)
         
         // Якщо значення перевищує максимум, просто блокуємо введення
         // Не встановлюємо максимум автоматично
-        if (!isNaN(numValue) && numValue > maxPoints) {
+        if (!Number.isNaN(numValue) && numValue > maxPoints) {
             event.preventDefault()
             return false
         }
@@ -239,14 +238,14 @@ async function saveScore() {
     if (isSaving.value) return
     
     // Якщо поле порожнє, встановлюємо 0
-    if (editScore.value === '' || editScore.value === null || isNaN(editScore.value)) {
+    if (editScore.value === '' || editScore.value === null || Number.isNaN(Number.parseFloat(editScore.value))) {
         editScore.value = 0
     }
     
-    const newScore = parseFloat(editScore.value)
+    const newScore = Number.parseFloat(editScore.value)
     
     // Фінальна валідація (на всяк випадок)
-    if (isNaN(newScore)) {
+    if (Number.isNaN(newScore)) {
         cancelEditing()
         return
     }
@@ -333,6 +332,11 @@ watch(() => props.questionData.earned_points, (newValue) => {
     border-radius: 4px;
     transition: background-color 0.2s;
     outline: none;
+    border: none;
+    background: transparent;
+    font-family: inherit;
+    font-size: inherit;
+    color: inherit;
 }
 
 .points-display.editable:hover {
