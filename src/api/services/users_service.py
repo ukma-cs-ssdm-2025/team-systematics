@@ -1,5 +1,6 @@
 from fastapi import UploadFile, HTTPException, status
 import cloudinary.uploader
+import cloudinary.exceptions
 from uuid import UUID
 from sqlalchemy.orm import Session
 from src.models.users import User
@@ -48,8 +49,16 @@ class UsersService:
                 public_id=public_id,
                 overwrite=True,
             )
-        except Exception as e:
-            raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=f"Failed to upload image: {e}")
+        except cloudinary.exceptions.Error as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail=f"Failed to upload image: {str(e)}"
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to upload image due to an unexpected error"
+            )
 
         avatar_url = upload_result.get("secure_url")
         if not avatar_url:

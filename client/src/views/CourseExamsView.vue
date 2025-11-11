@@ -44,24 +44,26 @@
                                 <td class="right">{{ exam.questions_count }}</td>
                                 <td class="right">{{ exam.students_completed }}</td>
                                 <td class="right">{{ formatAverageGrade(exam.average_grade)     }}</td>
-                                <td class="right actions-cell">
-                                    <CButton v-if="exam.status === 'draft'" 
-                                        @click="showPublishConfirm(exam.id)" 
-                                        variant="green"
-                                        :disabled="publishingExamId === exam.id"
-                                        aria-label="Опублікувати іспит" 
-                                        title="Опублікувати іспит"
-                                        class="publish-button">
-                                        {{ publishingExamId === exam.id ? '...' : '📢 Опублікувати' }}
-                                    </CButton>
-                                    <button @click="goToExamJournal(exam.id)" class="icon-button"
-                                        aria-label="Перейти до журналу і перевірки робот" title="Журнал і перевірка">
-                                        📖
-                                    </button>
-                                    <button @click="editExam(exam.id)" class="icon-button" aria-label="Перейти до редагування питань іспиту"
-                                        title="Редагувати питання">✏️</button>
-                                    <button @click="showDeleteConfirm(exam.id)" class="icon-button" aria-label="Видалити іспит"
-                                        title="Видалити іспит">🗑️</button>
+                                <td class="right actions-cell" style="vertical-align: middle;">
+                                    <div class="actions-wrapper">
+                                        <CButton v-if="exam.status === 'draft'" 
+                                            @click="showPublishConfirm(exam.id)" 
+                                            variant="green"
+                                            :disabled="publishingExamId === exam.id"
+                                            aria-label="Опублікувати іспит" 
+                                            title="Опублікувати іспит"
+                                            class="publish-button">
+                                            {{ publishingExamId === exam.id ? '...' : '📢 Опублікувати' }}
+                                        </CButton>
+                                        <button @click="goToExamJournal(exam.id)" class="icon-button"
+                                            aria-label="Перейти до журналу і перевірки робот" title="Журнал і перевірка">
+                                            📖
+                                        </button>
+                                        <button @click="editExam(exam.id)" class="icon-button" aria-label="Перейти до редагування питань іспиту"
+                                            title="Редагувати питання">✏️</button>
+                                        <button @click="showDeleteConfirm(exam.id)" class="icon-button" aria-label="Видалити іспит"
+                                            title="Видалити іспит">🗑️</button>
+                                    </div>
                                 </td>
                             </tr>
                         </tbody>
@@ -274,10 +276,14 @@ const publishConfirmMessage = computed(() => {
 }
 
 .actions-cell {
+    vertical-align: middle !important;
+}
+
+.actions-wrapper {
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px
+    gap: 8px;
 }
 
 .info-icon {

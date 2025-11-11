@@ -93,6 +93,7 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
 def get_user_role(db: Session, user_id: UUID) -> str:
     """
     Знаходить та повертає назву ролі для вказаного користувача.
+    Повертає роль у нижньому регістрі для консистентності.
     """
     role_name = db.query(Role.name).join(UserRole).filter(UserRole.user_id == user_id).scalar()
     
@@ -101,8 +102,9 @@ def get_user_role(db: Session, user_id: UUID) -> str:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User has no assigned role. Access denied."
         )
-        
-    return role_name
+    
+    # Повертаємо роль у нижньому регістрі для консистентності
+    return role_name.lower().strip()
 
 
 def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_current_user_id)) -> User:

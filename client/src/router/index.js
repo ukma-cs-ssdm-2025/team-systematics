@@ -197,6 +197,11 @@ router.beforeEach((to, from, next) => {
     if (to.meta.requiresRole === 'student' && auth.isStudent.value) {
       hasAccess = true
     }
+    // Дозволяємо доступ до /exams як для студентів, так і для вчителів
+    // Вчителі можуть переглядати список іспитів
+    if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
+      hasAccess = true
+    }
 
     if (!hasAccess) {
       next({ path: '/forbidden' })

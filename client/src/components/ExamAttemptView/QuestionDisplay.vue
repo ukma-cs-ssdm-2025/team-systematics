@@ -56,6 +56,9 @@
                     placeholder="Введіть відповідь..."
                     :is-review-mode="isReviewMode"
                     :question-data="question"
+                    :is-teacher="isTeacher"
+                    :attempt-id="attemptId"
+                    @score-updated="(newScore) => emit('score-updated', question.id, newScore)"
                 />
             </div>
 
@@ -101,10 +104,18 @@ const props = defineProps({
     points: {
         type: Number,
         default: 0
+    },
+    isTeacher: {
+        type: Boolean,
+        default: false
+    },
+    attemptId: {
+        type: String,
+        default: null
     }
 })
 
-const emit = defineEmits(['answer-changed'])
+const emit = defineEmits(['answer-changed', 'score-updated'])
 
 const localAnswer = ref(null)
 

@@ -76,6 +76,7 @@ class ExamReviewService:
             review_questions.append(question_data)
             
         return ExamAttemptReviewResponse(
+            exam_id=str(attempt.exam.id),  # Додаємо exam_id для навігації
             exam_title=attempt.exam.title,
             questions=review_questions
         ).model_dump()
@@ -174,10 +175,17 @@ class ExamReviewService:
         )
 
     def _build_long_answer_data(self, base_data, student_answer):
+        # earned_points може бути встановлено вчителем вручну
+        # Якщо earned_points встановлено в Answer, використовуємо його
+        # earned_points зберігається в масштабі final_points (масштабованих до 100 балів)
+        earned_points = None
+        if student_answer and student_answer.earned_points is not None:
+            # earned_points вже в правильному масштабі (final_points)
+            earned_points = student_answer.earned_points
+        
         return LongAnswerQuestionReview(
             **base_data,
-            # 'earned_points' для цього типу завжди null до ручної перевірки
-            earned_points=None, 
+            earned_points=earned_points, 
             student_answer_text=student_answer.answer_text if student_answer else ""
         )
         

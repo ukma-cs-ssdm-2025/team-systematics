@@ -1,5 +1,5 @@
 <template>
-    <div v-if="visible" class="popup-overlay" @click.self="$emit('sndAction')">
+    <div v-if="visible" class="popup-overlay" @click.self="handleOverlayClick">
         <div class="popup-container">
             <div class="popup-header">
                 {{ header }}
@@ -7,9 +7,9 @@
             <div class="popup-disclaimer">
                 {{ disclaimer }}
             </div>
-            <div class="buttons-container">
+            <div class="buttons-container" :class="{ 'single-button': !sndButton }">
                 <CButton class="fst-button" :variant="fstButtonVariant" @click="$emit('fstAction')"> {{ fstButton }}</CButton>
-                <CButton class="snd-button" :variant="sndButtonVariant" @click="$emit('sndAction')"> {{ sndButton }}</CButton>
+                <CButton v-if="sndButton" class="snd-button" :variant="sndButtonVariant" @click="$emit('sndAction')"> {{ sndButton }}</CButton>
             </div>
         </div>
     </div>
@@ -18,17 +18,27 @@
 <script setup>
 import CButton from '../global/CButton.vue'
 
-defineProps({
+const props = defineProps({
     visible: { type: Boolean, default: false },
     header: { type: String, required: true },
     disclaimer: { type: String, required: true },
     fstButton: { type: String, default: 'Підтвердити' },
-    sndButton: { type: String, default: 'Скасувати' },
+    sndButton: { type: String, default: null },
     fstButtonVariant: { type: String, default: 'default' },
     sndButtonVariant: { type: String, default: 'default' }
 })
 
-defineEmits(['fstAction', 'sndAction'])
+const emit = defineEmits(['fstAction', 'sndAction'])
+
+function handleOverlayClick() {
+    // Якщо є друга кнопка, викликаємо sndAction при кліку на overlay
+    // Якщо немає другої кнопки, закриваємо попап через fstAction
+    if (props.sndButton) {
+        emit('sndAction')
+    } else {
+        emit('fstAction')
+    }
+}
 
 </script>
 
@@ -66,6 +76,10 @@ defineEmits(['fstAction', 'sndAction'])
     align-items: center;
     align-self: stretch;
     gap: 20px;
+}
+
+.buttons-container.single-button {
+    justify-content: center;
 }
 
 .popup-header {
