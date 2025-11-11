@@ -136,11 +136,9 @@ class AttemptsService:
         self,
         db: Session,
         attempt_id: UUID,
-        current_user: User,
     ) -> AttemptResultResponse:
         """
         Отримує вже обчислені результати спроби та форматує їх для відповіді API.
-        Додає звіт про плагіат ТІЛЬКИ якщо поточний користувач є викладачем.
         """
         repo = AttemptsRepository(db)
         data = repo.get_attempt_result_raw(attempt_id)
@@ -274,7 +272,7 @@ class AttemptsService:
         
         return distribute_largest_remainder(true_points_map, target_total=100)
     
-    def _calculate_long_answer_score(self, answer: Answer, question_points: float) -> float:
+    def _calculate_long_answer_score(self, answer: Answer) -> float:
         """Розраховує бали для long_answer питання."""
         if answer and answer.earned_points is not None:
             return answer.earned_points
@@ -330,7 +328,7 @@ class AttemptsService:
             question_points = final_points_map.get(question.id, 0)
             
             if question.question_type == QuestionType.long_answer:
-                total_earned += self._calculate_long_answer_score(answer, question_points)
+                total_earned += self._calculate_long_answer_score(answer)
             else:
                 total_earned += self._calculate_auto_graded_score(
                     question, answer, question_points, grading_service, correct_data
