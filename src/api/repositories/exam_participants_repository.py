@@ -73,7 +73,7 @@ class ExamParticipantsRepository:
         """
         Чи є в юзера активна спроба (in_progress) в ІНШОМУ іспиті.
         """
-        q = (
+        return (
             self.db.query(Attempt)
             .filter(
                 and_(
