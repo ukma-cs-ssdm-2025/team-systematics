@@ -177,6 +177,7 @@ class ExamReviewService:
     def _build_long_answer_data(self, base_data, student_answer):
         # earned_points може бути встановлено вчителем вручну
         # Якщо earned_points встановлено в Answer, використовуємо його
+        answer_id = str(student_answer.id) if student_answer else None
         # earned_points зберігається в масштабі final_points (масштабованих до 100 балів)
         earned_points = None
         if student_answer and student_answer.earned_points is not None:
@@ -186,7 +187,8 @@ class ExamReviewService:
         return LongAnswerQuestionReview(
             **base_data,
             earned_points=earned_points, 
-            student_answer_text=student_answer.answer_text if student_answer else ""
+            student_answer_text=student_answer.answer_text if student_answer else "",
+            answer_id=answer_id
         )
         
     def _build_short_answer_data(self, base_data, question, student_answer):

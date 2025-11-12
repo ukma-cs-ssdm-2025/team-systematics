@@ -53,6 +53,7 @@ class MultiChoiceQuestionReview(BaseQuestionReview):
 class LongAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["long_answer"]
     student_answer_text: str
+    answer_id: Optional[str] = None  # ID відповіді для позначення на плагіат
 
 class ShortAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["short_answer"]

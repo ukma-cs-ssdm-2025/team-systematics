@@ -78,11 +78,40 @@ class PlagiarismComparisonResponse(BaseModel):
     """
     base_attempt_id: UUID = Field(..., description="Спроба, яку переглядає викладач")
     other_attempt_id: UUID = Field(..., description="Спроба, з якою порівнюємо")
-    base_text: str = Field(..., description="Об’єднаний текст long_answer відповіді базової спроби")
-    other_text: str = Field(..., description="Об’єднаний текст long_answer відповіді іншої спроби")
+    base_text: str = Field(..., description="Об'єднаний текст long_answer відповіді базової спроби")
+    other_text: str = Field(..., description="Об'єднаний текст long_answer відповіді іншої спроби")
     similarity_score: float = Field(
         ...,
         ge=0.0,
         le=1.0,
         description="Підсумкова семантична схожість між текстами (0–1)",
     )
+
+
+class FlaggedAnswerResponse(BaseModel):
+    """Відповідь з інформацією про позначену відповідь"""
+    answer_id: UUID = Field(..., description="ID відповіді")
+    attempt_id: UUID = Field(..., description="ID спроби")
+    question_id: UUID = Field(..., description="ID питання")
+    student_name: str = Field(..., description="Повне ім'я студента")
+    exam_title: str = Field(..., description="Назва іспиту")
+    exam_id: UUID = Field(..., description="ID іспиту")
+    answer_text: str = Field(..., description="Текст відповіді")
+    flagged_at: str = Field(..., description="Дата позначення")
+
+
+class AnswerComparisonResponse(BaseModel):
+    """Відповідь для порівняння двох конкретних відповідей"""
+    answer1_id: UUID = Field(..., description="ID першої відповіді")
+    answer2_id: UUID = Field(..., description="ID другої відповіді")
+    answer1_text: str = Field(..., description="Текст першої відповіді")
+    answer2_text: str = Field(..., description="Текст другої відповіді")
+    similarity_score: float = Field(
+        ...,
+        ge=0.0,
+        le=1.0,
+        description="Схожість між відповідями (0–1)",
+    )
+    student1_name: str = Field(..., description="Ім'я першого студента")
+    student2_name: str = Field(..., description="Ім'я другого студента")
+    exam_title: str = Field(..., description="Назва іспиту")

@@ -171,3 +171,72 @@ export async function updateAnswerScore(attemptId, questionId, earnedPoints) {
         throw new Error('Не вдалося оновити оцінку. Спробуйте ще раз.')
     }
 }
+
+export async function flagAnswerForPlagiarism(answerId) {
+    if (!answerId) {
+        throw new Error('ID відповіді не вказано')
+    }
+    try {
+        const response = await http.post(`/api/attempts/answers/${answerId}/flag`)
+        return response.data
+    } catch (error) {
+        console.error('flagAnswerForPlagiarism error:', error)
+        if (error.response?.data?.error?.message) {
+            throw new Error(error.response.data.error.message)
+        }
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося позначити відповідь для перевірки на плагіат.')
+    }
+}
+
+export async function unflagAnswer(answerId) {
+    try {
+        await http.delete(`/api/attempts/answers/${answerId}/flag`)
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося зняти позначення з відповіді.')
+    }
+}
+
+export async function getFlaggedAnswers() {
+    try {
+        const response = await http.get('/api/attempts/flagged-answers')
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити список позначених відповідей.')
+    }
+}
+
+export async function compareAnswers(answer1Id, answer2Id) {
+    try {
+        const response = await http.post(`/api/attempts/answers/${answer1Id}/compare/${answer2Id}`)
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося порівняти відповіді.')
+    }
+}
+
+export async function getAnswerId(attemptId, questionId) {
+    try {
+        const response = await http.get(`/api/attempts/${attemptId}/questions/${questionId}/answer-id`)
+        return response.data.answer_id
+    } catch (error) {
+        if (error.response?.status === 404) {
+            return null // Відповідь не знайдена
+        }
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося отримати ID відповіді.')
+    }
+}

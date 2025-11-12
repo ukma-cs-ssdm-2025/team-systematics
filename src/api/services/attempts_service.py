@@ -27,6 +27,8 @@ from src.utils.largest_remainder import distribute_largest_remainder
 
 from src.api.services.plagiarism_service import PlagiarismService
 from src.api.repositories.plagiarism_repository import PlagiarismRepository
+from src.api.repositories.flagged_answers_repository import FlaggedAnswersRepository
+from src.api.schemas.plagiarism import FlaggedAnswerResponse, AnswerComparisonResponse
 from src.models.users import User
 from src.models.user_roles import UserRole
 from src.models.paraphrase import ParaphraseModel
@@ -422,5 +424,167 @@ class AttemptsService:
             db=db,
             base_attempt_id=base_attempt_id,
             other_attempt_id=other_attempt_id,
+        )
+    
+    def flag_answer_for_plagiarism_check(
+        self,
+        db: Session,
+        answer_id: UUID,
+        current_user: User,
+    ) -> FlaggedAnswerResponse:
+        """Позначити відповідь для перевірки на плагіат (тільки для вчителя)"""
+        if not self._is_teacher(db, current_user):
+            raise ConflictError("Only teachers can flag answers for plagiarism check")
+        
+        # Перевіряємо, чи існує відповідь та чи це long_answer
+        answer = (
+            db.query(Answer)
+            .options(joinedload(Answer.question), joinedload(Answer.attempt))
+            .filter(Answer.id == answer_id)
+            .one_or_none()
+        )
+        
+        if not answer:
+            raise NotFoundError("Answer not found")
+        
+        if answer.question.question_type != QuestionType.long_answer:
+            raise ValueError("Можна позначити тільки відповіді типу long_answer")
+        
+        repo = FlaggedAnswersRepository()
+        
+        # Перевіряємо, чи вже позначена
+        if repo.is_flagged(db, answer_id):
+            raise ConflictError("Answer is already flagged")
+        
+        # Створюємо позначення
+        flagged = repo.create(db, answer_id)
+        db.commit()
+        
+        # Отримуємо повну інформацію
+        attempt = answer.attempt
+        exam = attempt.exam
+        student = attempt.user
+        
+        return FlaggedAnswerResponse(
+            answer_id=answer.id,
+            attempt_id=attempt.id,
+            question_id=answer.question_id,
+            student_name=f"{student.first_name} {student.last_name}".strip(),
+            exam_title=exam.title,
+            exam_id=exam.id,
+            answer_text=answer.answer_text or "",
+            flagged_at=flagged.flagged_at.isoformat(),
+        )
+    
+    def unflag_answer(
+        self,
+        db: Session,
+        answer_id: UUID,
+        current_user: User,
+    ) -> None:
+        """Зняти позначення з відповіді (тільки для вчителя)"""
+        if not self._is_teacher(db, current_user):
+            raise ConflictError("Only teachers can unflag answers")
+        
+        repo = FlaggedAnswersRepository()
+        if not repo.delete(db, answer_id):
+            raise NotFoundError("Flagged answer not found")
+        db.commit()
+    
+    def list_flagged_answers(
+        self,
+        db: Session,
+        current_user: User,
+    ) -> List[FlaggedAnswerResponse]:
+        """Отримати список всіх позначених відповідей (тільки для вчителя)"""
+        if not self._is_teacher(db, current_user):
+            raise ConflictError("Only teachers can view flagged answers")
+        
+        repo = FlaggedAnswersRepository()
+        flagged_list = repo.list_all(db)
+        
+        results = []
+        for flagged in flagged_list:
+            answer = flagged.answer
+            attempt = answer.attempt
+            exam = attempt.exam
+            student = attempt.user
+            
+            results.append(FlaggedAnswerResponse(
+                answer_id=answer.id,
+                attempt_id=attempt.id,
+                question_id=answer.question_id,
+                student_name=f"{student.first_name} {student.last_name}".strip(),
+                exam_title=exam.title,
+                exam_id=exam.id,
+                answer_text=answer.answer_text or "",
+                flagged_at=flagged.flagged_at.isoformat(),
+            ))
+        
+        return results
+    
+    def compare_two_answers(
+        self,
+        db: Session,
+        answer1_id: UUID,
+        answer2_id: UUID,
+        current_user: User,
+    ) -> AnswerComparisonResponse:
+        """Порівняти дві конкретні відповіді на плагіат (тільки для вчителя)"""
+        if not self._is_teacher(db, current_user):
+            raise ConflictError("Only teachers can compare answers")
+        
+        # Отримуємо відповіді з повною інформацією
+        answer1 = (
+            db.query(Answer)
+            .options(
+                joinedload(Answer.question),
+                joinedload(Answer.attempt).joinedload(Attempt.user), 
+                joinedload(Answer.attempt).joinedload(Attempt.exam)
+            )
+            .filter(Answer.id == answer1_id)
+            .one_or_none()
+        )
+        
+        answer2 = (
+            db.query(Answer)
+            .options(
+                joinedload(Answer.question),
+                joinedload(Answer.attempt).joinedload(Attempt.user), 
+                joinedload(Answer.attempt).joinedload(Attempt.exam)
+            )
+            .filter(Answer.id == answer2_id)
+            .one_or_none()
+        )
+        
+        if not answer1 or not answer2:
+            raise NotFoundError("One or both answers not found")
+        
+        # Перевіряємо, що обидві відповіді long_answer
+        if answer1.question.question_type != QuestionType.long_answer or \
+           answer2.question.question_type != QuestionType.long_answer:
+            raise ValueError("Можна порівнювати тільки відповіді типу long_answer")
+        
+        # Отримуємо тексти відповідей
+        text1 = answer1.answer_text or ""
+        text2 = answer2.answer_text or ""
+        
+        # Використовуємо ParaphraseModel для порівняння
+        paraphrase_model = ParaphraseModel()
+        similarity_score = paraphrase_model.similarity(text1, text2)
+        
+        student1 = answer1.attempt.user
+        student2 = answer2.attempt.user
+        exam = answer1.attempt.exam  # Припускаємо, що обидві відповіді з одного іспиту
+        
+        return AnswerComparisonResponse(
+            answer1_id=answer1.id,
+            answer2_id=answer2.id,
+            answer1_text=text1,
+            answer2_text=text2,
+            similarity_score=similarity_score,
+            student1_name=f"{student1.first_name} {student1.last_name}".strip(),
+            student2_name=f"{student2.first_name} {student2.last_name}".strip(),
+            exam_title=exam.title,
         )
     

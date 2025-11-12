@@ -14,37 +14,38 @@
                     {{ questionData.student_answer_text }}
                 </p>
                 
-                <button 
-                    v-if="isTeacher" 
-                    type="button"
-                    class="points-display editable"
-                    @click="startEditing"
-                    @keyup.enter="startEditing"
-                    @keyup.space.prevent="startEditing"
-                    :title="'Клік або Enter для редагування оцінки'"
-                    :aria-label="`Оцінка: ${formattedEarnedPoints} з ${questionData.points} балів. Натисніть для редагування`"
-                >
-                    <span v-if="!isEditing">
-                        ({{ formattedEarnedPoints }} / {{ questionData.points }} б)
-                    </span>
-                    <div v-else class="score-edit" @click.stop>
-                        <input 
-                            type="text" 
-                            v-model="editScore" 
-                            @blur="saveScore"
-                            @keyup.enter="saveScore"
-                            @keyup.esc="cancelEditing"
-                            @input="validateInput"
-                            @keydown="preventInvalidInput"
-                            inputmode="decimal"
-                            pattern="\d*\.?\d*"
-                            class="score-input"
-                            ref="scoreInputRef"
-                            :aria-label="`Введіть оцінку від 0 до ${questionData.points}`"
-                        />
-                        <span> / {{ questionData.points }} б</span>
-                    </div>
-                </button>
+                <div v-if="isTeacher" class="teacher-actions">
+                    <button 
+                        type="button"
+                        class="points-display editable"
+                        @click="startEditing"
+                        @keyup.enter="startEditing"
+                        @keyup.space.prevent="startEditing"
+                        :title="'Клік або Enter для редагування оцінки'"
+                        :aria-label="`Оцінка: ${formattedEarnedPoints} з ${questionData.points} балів. Натисніть для редагування`"
+                    >
+                        <span v-if="!isEditing">
+                            ({{ formattedEarnedPoints }} / {{ questionData.points }} б)
+                        </span>
+                        <div v-else class="score-edit" @click.stop>
+                            <input 
+                                type="text" 
+                                v-model="editScore" 
+                                @blur="saveScore"
+                                @keyup.enter="saveScore"
+                                @keyup.esc="cancelEditing"
+                                @input="validateInput"
+                                @keydown="preventInvalidInput"
+                                inputmode="decimal"
+                                pattern="\d*\.?\d*"
+                                class="score-input"
+                                ref="scoreInputRef"
+                                :aria-label="`Введіть оцінку від 0 до ${questionData.points}`"
+                            />
+                            <span> / {{ questionData.points }} б</span>
+                        </div>
+                    </button>
+                </div>
                 <div v-else class="points-display">
                     ({{ formattedEarnedPoints }} / {{ questionData.points }} б)
                 </div>
@@ -348,6 +349,13 @@ watch(() => props.questionData.earned_points, (newValue) => {
     background-color: rgba(0, 0, 0, 0.08);
     outline: 2px solid var(--color-purple);
     outline-offset: 2px;
+}
+
+.teacher-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 12px;
 }
 
 .score-edit {
