@@ -6,6 +6,7 @@ from fastapi import Query
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.courses import CourseCreate, CourseUpdate
+from src.models.users import User
 
 class CoursesRepository:
     def __init__(self, db: Session):
@@ -99,6 +100,54 @@ class CoursesRepository:
         items = self._format_course_results(results)
         return items, total
 
+    def get_course_participants_for_supervisor(self, course_id: UUID) -> dict:
+        """
+        Деталі курсу для наглядача:
+          - students: список {id, full_name, email}
+          - teachers: список {id, full_name, email} (наразі owner як основний викладач)
+        Якщо у майбутньому з'явиться таблиця course_teachers — тут треба буде
+        замінити логіку формування списку викладачів.
+        """
+        course = self.get(course_id)
+        if not course:
+            return {"students": [], "teachers": []}
+
+        # Студенти (enrolled)
+        stu_rows = (
+            self.db.query(User.id, User.first_name, User.last_name, User.email)
+            .join(CourseEnrollment, CourseEnrollment.user_id == User.id)
+            .filter(CourseEnrollment.course_id == course_id)
+            .order_by(User.last_name, User.first_name)
+            .all()
+        )
+        students = [
+            {
+                "id": row.id,
+                "full_name": f"{row.first_name} {row.last_name}".strip(),
+                "email": row.email,
+                "status": "enrolled",
+            }
+            for row in stu_rows
+        ]
+
+        # Викладачі (owner як мінімум один)
+        owner_row = (
+            self.db.query(User.id, User.first_name, User.last_name, User.email)
+            .filter(User.id == course.owner_id)
+            .first()
+        )
+        teachers: List[dict] = []
+        if owner_row:
+            teachers.append(
+                {
+                    "id": owner_row.id,
+                    "full_name": f"{owner_row.first_name} {owner_row.last_name}".strip(),
+                    "email": owner_row.email,
+                }
+            )
+
+        return {"students": students, "teachers": teachers}
+
 
     def get(self, course_id: UUID) -> Optional[Course]:
         return self.db.query(Course).filter(Course.id == course_id).first()
@@ -145,3 +194,5 @@ class CoursesRepository:
     def get_student_count(self, course_id: UUID) -> int:
         """Підраховує кількість студентів, записаних на курс."""
         return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0
+    
+    
