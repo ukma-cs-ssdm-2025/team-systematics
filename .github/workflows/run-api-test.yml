@@ -4,7 +4,7 @@ on:
   push:
     branches: 
       - main
-      - allyxandraaa/configure-api-test-workflow
+      - allyxandraaa/fix-test-workflow
   pull_request:
     branches: [ main ]
 
@@ -15,6 +15,7 @@ jobs:
     env:
       PYTHONPATH: ${{ github.workspace }}
       DATABASE_URL: "sqlite:///:memory:"
+      JWT_SECRET: "test-secret"
 
     steps:
       - name: Checkout repository

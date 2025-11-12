@@ -2,6 +2,7 @@ from sqlalchemy.orm import Session
 from sqlalchemy import and_, func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
+import logging
 from src.models.exams import Exam, ExamStatusEnum
 from src.models.exams import Question, Option
 from src.models.attempts import Attempt, AttemptStatus
@@ -9,6 +10,8 @@ from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.models.matching_options import MatchingOption
 from src.api.schemas.exams import ExamCreate, ExamUpdate
+
+logger = logging.getLogger(__name__)
 
 class ExamsRepository:
     def __init__(self, db: Session):
@@ -49,7 +52,13 @@ class ExamsRepository:
 
     # ВИПРАВЛЕНО: Замінено 'Exam | None' на 'Optional[Exam]'
     def get(self, exam_id: UUID) -> Optional[Exam]:
-        return self.db.query(Exam).filter(Exam.id == exam_id).first()
+        if not exam_id:
+            logger.warning("get() called with None or empty exam_id")
+            return None
+        exam = self.db.query(Exam).filter(Exam.id == exam_id).first()
+        if not exam:
+            logger.debug(f"Exam with id {exam_id} not found")
+        return exam
     
     def get_with_questions(self, exam_id: UUID) -> Optional[Exam]:
         """Отримує іспит разом з питаннями, опціями та matching_data"""
@@ -83,6 +92,20 @@ class ExamsRepository:
 
     # --- Question & Option management ---
     def create_question(self, exam_id: UUID, payload) -> Question:
+        # Валідація вхідних даних
+        if not payload:
+            raise ValueError("Payload cannot be None or empty")
+        if not isinstance(payload, dict):
+            raise TypeError(f"Payload must be a dict, got {type(payload).__name__}")
+        if not exam_id:
+            raise ValueError("exam_id cannot be None or empty")
+        
+        # Перевірка обов'язкових полів
+        if 'title' not in payload or not payload.get('title'):
+            raise ValueError("Question title is required")
+        if 'question_type' not in payload:
+            raise ValueError("Question type is required")
+        
         # Видаляємо options та matching_data з payload перед створенням питання
         question_data = {k: v for k, v in payload.items() if k not in ('options', 'matching_data')}
         q = Question(**question_data)
@@ -93,14 +116,25 @@ class ExamsRepository:
         
         # add options if provided (for single_choice, multi_choice, short_answer)
         options = payload.get('options') or []
+        if not isinstance(options, list):
+            raise TypeError(f"Options must be a list, got {type(options).__name__}")
         for opt in options:
+            if not isinstance(opt, dict):
+                raise TypeError(f"Each option must be a dict, got {type(opt).__name__}")
             o = Option(question_id=q.id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
             self.db.add(o)
         
         # add matching options if provided (for matching questions)
         matching_data = payload.get('matching_data')
-        if matching_data and matching_data.get('prompts'):
-            for prompt_data in matching_data['prompts']:
+        if matching_data:
+            if not isinstance(matching_data, dict):
+                raise TypeError(f"Matching data must be a dict, got {type(matching_data).__name__}")
+            prompts = matching_data.get('prompts', [])
+            if not isinstance(prompts, list):
+                raise TypeError(f"Prompts must be a list, got {type(prompts).__name__}")
+            for prompt_data in prompts:
+                if not isinstance(prompt_data, dict):
+                    raise TypeError(f"Each prompt must be a dict, got {type(prompt_data).__name__}")
                 matching_option = MatchingOption(
                     question_id=q.id,
                     prompt=prompt_data.get('text', ''),
@@ -114,8 +148,15 @@ class ExamsRepository:
         return q
 
     def update_question(self, question_id: UUID, patch: dict) -> Optional[Question]:
+        if not question_id:
+            logger.warning("update_question() called with None or empty question_id")
+            return None
+        if not patch:
+            logger.warning("update_question() called with None or empty patch")
+            return None
         q = self.db.query(Question).filter(Question.id == question_id).first()
         if not q:
+            logger.debug(f"Question with id {question_id} not found for update")
             return None
         for k, v in patch.items():
             if k == 'options':
@@ -161,8 +202,12 @@ class ExamsRepository:
 
     # ВИПРАВЛЕНО: Замінено 'Exam | None' на 'Optional[Exam]'
     def update(self, exam_id: UUID, patch: ExamUpdate) -> Optional[Exam]:
+        if not exam_id:
+            logger.warning("update() called with None or empty exam_id")
+            return None
         exam = self.get(exam_id)
         if not exam:
+            logger.debug(f"Exam with id {exam_id} not found for update")
             return None
         
         patch_data = patch.model_dump(exclude_unset=True)
@@ -196,11 +241,23 @@ class ExamsRepository:
         if not exam:
             return False
         
-        # Видаляємо всі спроби перед видаленням іспиту, щоб уникнути проблем з foreign key
-        # Це гарантує, що спроби будуть видалені перед видаленням іспиту
-        from src.models.attempts import Attempt
+        # Видаляємо в правильному порядку, щоб уникнути проблем з foreign key:
+        # 1. Спочатку видаляємо plagiarism_checks (вони посилаються на attempts)
+        # 2. Потім видаляємо attempts (вони посилаються на exams)
+        # 3. Нарешті видаляємо exam
+        from src.models.attempts import Attempt, PlagiarismCheck
+        
+        # Отримуємо всі attempt_id для цього іспиту
+        attempt_ids = [attempt.id for attempt in self.db.query(Attempt.id).filter(Attempt.exam_id == exam_id).all()]
+        
+        # Видаляємо plagiarism_checks для цих attempts
+        if attempt_ids:
+            self.db.query(PlagiarismCheck).filter(PlagiarismCheck.attempt_id.in_(attempt_ids)).delete()
+        
+        # Видаляємо attempts
         self.db.query(Attempt).filter(Attempt.exam_id == exam_id).delete()
         
+        # Видаляємо exam
         self.db.delete(exam)
         self.db.commit()
         return True

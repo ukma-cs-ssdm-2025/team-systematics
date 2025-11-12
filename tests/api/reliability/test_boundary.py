@@ -1,20 +1,22 @@
 from typing import Optional
 from fastapi.responses import JSONResponse
 import pytest
-from fastapi import APIRouter, Depends, FastAPI, status
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
+from types import SimpleNamespace
 
 from src.api.schemas.exams import Exam, ExamCreate
 from src.api.services.exams_service import ExamsService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.versioning import require_api_version
 from src.api.database import get_db
+from src.utils.auth import get_current_user
 
 
 class MockExamService:
-    def create(self, db: pytest.Session, payload: ExamCreate) -> dict:
+    def create(self, db: pytest.Session, payload: ExamCreate, owner_id=None) -> dict:
         if payload.end_at <= payload.start_at:
             raise ValueError("end_at must be after start_at")
 
@@ -61,6 +63,8 @@ def test_create_exam_end_at_before_start_returns_422():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
+    dummy_user = SimpleNamespace(id=uuid4())
+    app.dependency_overrides[get_current_user] = lambda: dummy_user
     client = TestClient(app)
 
     now = datetime.now(timezone.utc)
@@ -82,7 +86,7 @@ def test_create_exam_with_minimum_title_length_accepted():
     app.dependency_overrides[require_api_version] = lambda: None
 
     class DummyService:
-        def create(self, db, payload):
+        def create(self, db, payload, owner_id=None):
             exam_id = str(uuid4())
             now = datetime.now(timezone.utc)
             return {
@@ -96,7 +100,7 @@ def test_create_exam_with_minimum_title_length_accepted():
                 "pass_threshold": payload.pass_threshold,
                 "owner_id": payload.owner_id,
                 "created_at": now,
-                "updated_at": now
+                "updated_at": now,
             }
             
     controller = ExamsController(DummyService())
@@ -106,6 +110,8 @@ def test_create_exam_with_minimum_title_length_accepted():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
+    dummy_user = SimpleNamespace(id=uuid4())
+    app.dependency_overrides[get_current_user] = lambda: dummy_user
     client = TestClient(app)
 
     payload = _create_exam_payload(title="Abc", instructions="")

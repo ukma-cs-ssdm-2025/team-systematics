@@ -5,6 +5,31 @@
             <div v-if="isReviewMode" class="question-meta">
                 <span class="review-question-label">Питання {{ question.position }}</span>
                 
+                <!-- Флажок для перевірки на плагіат (тільки для long_answer та вчителя) -->
+                <button 
+                    v-if="isReviewMode && isTeacher && question.question_type === 'long_answer'"
+                    type="button"
+                    class="plagiarism-flag-button"
+                    :class="{ 'flagged': isFlagged, 'no-answer': !question.answer_id && !answerId }"
+                    @click.stop="handleFlagClick"
+                    :disabled="isFlagging"
+                    :title="isFlagged ? 'Зняти позначення для перевірки на плагіат' : 'Позначити для перевірки на плагіат'"
+                    :aria-label="isFlagged ? 'Зняти позначення для перевірки на плагіат' : 'Позначити для перевірки на плагіат'"
+                >
+                    <svg 
+                        class="flag-icon"
+                        xmlns="http://www.w3.org/2000/svg" 
+                        width="20" 
+                        height="20" 
+                        viewBox="0 0 24 24" 
+                        fill="none"
+                        aria-hidden="true"
+                    >
+                        <path d="M5 2V22" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                        <path d="M5 2L19 2L13 8L19 14L5 14V2Z" fill="currentColor" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </button>
+                
                 <Tooltip v-if="isReviewMode && question.earned_points === null">
                     <template #trigger>
                         <span class="info-icon">!</span>
@@ -56,6 +81,9 @@
                     placeholder="Введіть відповідь..."
                     :is-review-mode="isReviewMode"
                     :question-data="question"
+                    :is-teacher="isTeacher"
+                    :attempt-id="attemptId"
+                    @score-updated="(newScore) => emit('score-updated', question.id, newScore)"
                 />
             </div>
 
@@ -80,6 +108,7 @@ import ShortAnswer from './ShortAnswer.vue'
 import LongAnswer from './LongAnswer.vue'
 import Matching from './Matching.vue'
 import Tooltip from '../global/CTooltip.vue'
+import { flagAnswerForPlagiarism, unflagAnswer, getFlaggedAnswers, getAnswerId } from '../../api/attempts.js'
 
 const props = defineProps({
     question: {
@@ -101,12 +130,22 @@ const props = defineProps({
     points: {
         type: Number,
         default: 0
+    },
+    isTeacher: {
+        type: Boolean,
+        default: false
+    },
+    attemptId: {
+        type: String,
+        default: null
     }
 })
 
-const emit = defineEmits(['answer-changed'])
+const emit = defineEmits(['answer-changed', 'score-updated'])
 
 const localAnswer = ref(null)
+const isFlagged = ref(false)
+const isFlagging = ref(false)
 
 // Функція для правильної ініціалізації стану відповіді
 function initializeAnswerState() {
@@ -164,6 +203,147 @@ watch(localAnswer, (newValue) => {
     // Відстежуємо зміни всередині масивів (для multi_choice) та об'єктів (для matching)
     deep: true
 })
+
+// Зберігаємо answer_id окремо, якщо він не переданий в question
+const answerId = ref(null)
+
+// Перевіряємо, чи позначена відповідь при завантаженні (тільки для long_answer)
+onMounted(async () => {
+    if (props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
+        // Спочатку перевіряємо, чи є answer_id в question
+        if (props.question.answer_id) {
+            answerId.value = props.question.answer_id
+            // Використовуємо is_flagged з review даних, якщо воно є
+            if (props.question.is_flagged !== undefined) {
+                isFlagged.value = props.question.is_flagged
+            } else {
+                // Якщо is_flagged не передано, перевіряємо через API
+                await checkFlaggedStatus()
+            }
+        } else if (props.attemptId && props.question.id) {
+            // Якщо answer_id немає, спробуємо отримати його через API
+            try {
+                const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id)
+                if (fetchedAnswerId) {
+                    answerId.value = fetchedAnswerId
+                    // Оновлюємо question об'єкт
+                    props.question.answer_id = fetchedAnswerId
+                    await checkFlaggedStatus()
+                }
+            } catch (error) {
+                // Мовчазно ігноруємо помилку
+            }
+        }
+    }
+})
+
+async function checkFlaggedStatus() {
+    const currentAnswerId = props.question.answer_id || answerId.value
+    if (!currentAnswerId) return
+    try {
+        const flaggedAnswers = await getFlaggedAnswers()
+        isFlagged.value = flaggedAnswers.some(fa => fa.answer_id === currentAnswerId)
+    } catch (error) {
+        console.error('Failed to check flagged status:', error)
+    }
+}
+
+function logButtonState() {
+    console.log('Button state:', {
+        answer_id: props.question.answer_id,
+        isFlagging: isFlagging.value,
+        isFlagged: isFlagged.value,
+        question_id: props.question.id,
+        question_type: props.question.question_type
+    })
+}
+
+async function handleFlagClick(event) {
+    event.stopPropagation()
+    
+    // Отримуємо answer_id з різних джерел
+    let currentAnswerId = props.question.answer_id || answerId.value
+    
+    console.log('Flag button clicked! Initial state:', {
+        question_answer_id: props.question.answer_id,
+        answerId_value: answerId.value,
+        currentAnswerId: currentAnswerId,
+        attemptId: props.attemptId,
+        question_id: props.question.id,
+        question_type: props.question.question_type
+    })
+    
+    // Якщо answer_id все ще немає, спробуємо отримати його через API
+    if (!currentAnswerId && props.attemptId && props.question.id) {
+        console.log('Fetching answer_id from API...', {
+            attemptId: props.attemptId,
+            questionId: props.question.id
+        })
+        try {
+            currentAnswerId = await getAnswerId(props.attemptId, props.question.id)
+            console.log('Received answer_id from API:', currentAnswerId)
+            if (currentAnswerId) {
+                answerId.value = currentAnswerId
+                // Не змінюємо props напряму, це може викликати проблеми
+            }
+        } catch (error) {
+            console.error('Failed to fetch answer_id:', error)
+            if (error.response?.status === 404) {
+                alert('Відповідь не знайдена. Можливо, студент ще не відповів на це питання.')
+                return
+            }
+        }
+    }
+    
+    if (!currentAnswerId) {
+        console.error('No answer_id found for question:', {
+            question_id: props.question.id,
+            question_type: props.question.question_type,
+            attemptId: props.attemptId
+        })
+        alert('Неможливо позначити: відсутній ID відповіді. Можливо, студент ще не відповів на це питання.')
+        return
+    }
+    
+    // Перевіряємо формат UUID
+    const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+    if (!uuidRegex.test(currentAnswerId)) {
+        console.error('Invalid UUID format:', currentAnswerId)
+        alert('Невірний формат ID відповіді. Спробуйте оновити сторінку.')
+        return
+    }
+    
+    if (isFlagging.value) {
+        console.log('Already flagging, ignoring click')
+        return // Вже виконується запит
+    }
+    
+    isFlagging.value = true
+    try {
+        if (isFlagged.value) {
+            console.log('Unflagging answer:', currentAnswerId)
+            await unflagAnswer(currentAnswerId)
+            isFlagged.value = false
+        } else {
+            console.log('Flagging answer:', currentAnswerId)
+            const result = await flagAnswerForPlagiarism(currentAnswerId)
+            console.log('Flagging successful:', result)
+            isFlagged.value = true
+        }
+    } catch (error) {
+        console.error('Error flagging/unflagging:', error)
+        console.error('Error details:', {
+            message: error.message,
+            response: error.response?.data,
+            status: error.response?.status
+        })
+        // Відновлюємо попереднє значення при помилці
+        const errorMessage = error.response?.data?.error?.message || error.message || 'Не вдалося змінити статус позначення'
+        alert(errorMessage)
+    } finally {
+        isFlagging.value = false
+    }
+}
 </script>
 
 <style scoped>
@@ -182,8 +362,10 @@ watch(localAnswer, (newValue) => {
 
 .question-meta {
     display: flex;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
+    flex-wrap: wrap;
+    gap: 8px;
 }
 
 .info-icon {
@@ -201,5 +383,87 @@ watch(localAnswer, (newValue) => {
     user-select: none;
     margin-left: 8px;
     margin-bottom: 2px;
+}
+
+.plagiarism-flag-button {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    margin-left: 12px;
+    padding: 4px;
+    background: transparent;
+    border: 2px solid transparent;
+    border-radius: 6px;
+    cursor: pointer !important;
+    transition: all 0.2s ease;
+    user-select: none;
+    position: relative;
+    z-index: 10;
+    pointer-events: auto !important;
+}
+
+.plagiarism-flag-button:not(:disabled):hover {
+    background-color: rgba(128, 0, 128, 0.1);
+    border-color: var(--color-purple);
+}
+
+.plagiarism-flag-button:focus-visible {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
+}
+
+.plagiarism-flag-button.flagged {
+    background-color: rgba(220, 53, 69, 0.1);
+    border-color: #dc3545;
+}
+
+.plagiarism-flag-button.flagged:not(:disabled):hover {
+    background-color: rgba(220, 53, 69, 0.2);
+}
+
+.plagiarism-flag-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed !important;
+    pointer-events: none !important;
+}
+
+.plagiarism-flag-button:not(:disabled) {
+    cursor: pointer !important;
+    pointer-events: auto !important;
+}
+
+/* Переконаємося, що кнопка завжди клікабельна, якщо не disabled */
+.plagiarism-flag-button:not(:disabled):active {
+    transform: scale(0.95);
+}
+
+.plagiarism-flag-button.no-answer {
+    opacity: 0.5;
+}
+
+.plagiarism-flag-button.no-answer:hover {
+    opacity: 0.7;
+}
+
+.flag-icon {
+    width: 20px;
+    height: 20px;
+    display: block;
+    transition: all 0.2s ease;
+    color: #6c757d; /* Сірий колір за замовчуванням */
+}
+
+.plagiarism-flag-button.flagged .flag-icon {
+    color: #dc3545; /* Червоний колір коли позначено */
+}
+
+.plagiarism-flag-button:not(.flagged) .flag-icon {
+    color: #6c757d; /* Сірий колір коли не позначено */
+}
+
+.plagiarism-flag-button:not(:disabled):hover:not(.flagged) .flag-icon {
+    color: #dc3545; /* Червоний колір при наведенні */
 }
 </style>

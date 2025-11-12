@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, load_only, joinedload
+from sqlalchemy.orm import Session, load_only, joinedload, defer, selectinload
 from sqlalchemy import func
 from uuid import UUID
 import json
@@ -16,13 +16,11 @@ class AttemptsRepository:
         self.db = db
 
     def create_attempt(self, exam_id: UUID, user_id: UUID, duration_minutes: int) -> Attempt:
-        print(f"DEBUG: Received duration_minutes={duration_minutes}, type={type(duration_minutes)}")
         if not isinstance(duration_minutes, int) or duration_minutes <= 0:
             raise ValueError(f"Invalid duration_minutes: {duration_minutes}")
             
         started_at = datetime.now(timezone.utc)
         due_at = started_at + timedelta(minutes=duration_minutes)
-        print(f"Creating attempt: started_at={started_at.isoformat()}, due_at={due_at.isoformat()}, duration={duration_minutes}")
         new_attempt = Attempt(
             exam_id=exam_id,
             user_id=user_id,
@@ -43,7 +41,9 @@ class AttemptsRepository:
         if not question:
             raise ValueError("Question not found")
 
-        answer = self.db.query(Answer).filter(
+        answer = self.db.query(Answer).options(
+            joinedload(Answer.selected_options)
+        ).filter(
             Answer.attempt_id == attempt_id,
             Answer.question_id == payload.question_id,
         ).first()
@@ -97,6 +97,12 @@ class AttemptsRepository:
 
         self.db.commit()
         self.db.refresh(answer)
+        
+        # Перезавантажуємо answer з selected_options після commit
+        answer = self.db.query(Answer).options(
+            joinedload(Answer.selected_options)
+        ).filter(Answer.id == answer.id).first()
+        
         return answer
 
     def submit_attempt(self, attempt_id: UUID) -> Optional[Attempt]:
@@ -222,10 +228,15 @@ class AttemptsRepository:
 
     def get_attempt_result_raw(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         attempt = self.db.query(Attempt).options(
-            joinedload(Attempt.exam)
+            joinedload(Attempt.exam),
+            selectinload(Attempt.answers)  # Завантажуємо answers для підрахунку
         ).filter(Attempt.id == attempt_id).first()
         if not attempt:
             return None
+
+        # Рахуємо реальну кількість відповідей з таблиці answers
+        # а не з полів correct_answers + incorrect_answers + pending_count
+        actual_answers_count = len(attempt.answers) if attempt.answers else 0
 
         return {
             "exam_title": attempt.exam.title,
@@ -233,7 +244,7 @@ class AttemptsRepository:
             "score": attempt.earned_points or 0,
             "time_spent_seconds": attempt.time_spent_seconds or 0,
             "total_questions": len(attempt.exam.questions),
-            "answers_given": (attempt.correct_answers or 0) + (attempt.incorrect_answers or 0) + (attempt.pending_count or 0),
+            "answers_given": actual_answers_count,  # Використовуємо реальну кількість відповідей
             "correct_answers": attempt.correct_answers or 0,
             "incorrect_answers": attempt.incorrect_answers or 0,
             "pending_count": attempt.pending_count or 0,
@@ -253,9 +264,29 @@ class AttemptsRepository:
         """
         Завантажує спробу з усіма необхідними пов'язаними даними для
         побудови сторінки детального огляду (review).
+        Оцінки розраховуються нальоту, тому не завантажуємо earned_points з БД.
+        Використовуємо load_only для Answer, щоб завантажити тільки потрібні стовпчики.
         """
         return self.db.query(Attempt).options(
             joinedload(Attempt.exam).joinedload(Exam.questions).joinedload(Question.options),
             joinedload(Attempt.exam).joinedload(Exam.questions).joinedload(Question.matching_options),
-            joinedload(Attempt.answers).joinedload(Answer.selected_options)
+            selectinload(Attempt.answers),
+            selectinload(Attempt.answers).selectinload(Answer.selected_options)
         ).filter(Attempt.id == attempt_id).first()
+
+    def update_answer_score(self, attempt_id: UUID, answer_id: UUID, earned_points: float) -> Optional[Answer]:
+        """
+        Оновлює оцінку для конкретної відповіді.
+        """
+        answer = self.db.query(Answer).filter(
+            Answer.id == answer_id,
+            Answer.attempt_id == attempt_id
+        ).first()
+        
+        if not answer:
+            return None
+        
+        answer.earned_points = earned_points
+        self.db.commit()
+        self.db.refresh(answer)
+        return answer

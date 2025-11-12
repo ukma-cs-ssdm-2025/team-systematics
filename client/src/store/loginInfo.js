@@ -51,6 +51,22 @@ export function useAuth() {
     localStorage.removeItem('userMajor')
     localStorage.removeItem('avatarUrl')
 
+    // Видаляємо всі збережені чернетки створення іспитів
+    try {
+      const keysToRemove = []
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i)
+        if (key?.startsWith('exam-draft-')) {
+          keysToRemove.push(key)
+        }
+      }
+      for (const key of keysToRemove) {
+        localStorage.removeItem(key)
+      }
+    } catch (err) {
+      console.error('Не вдалося видалити чернетки іспитів з localStorage:', err)
+    }
+
     clearTimeout(inactivityTimer)
     router.push('/login')
   }
@@ -61,7 +77,6 @@ export function useAuth() {
     const timeoutDuration = 25 * 60 * 1000 // 25 хвилин
 
     inactivityTimer = setTimeout(() => {
-      console.log('Сесію завершено через 25 хвилин бездіяльності.')
       logout()
     }, timeoutDuration)
 
@@ -69,7 +84,6 @@ export function useAuth() {
     globalThis.onmousemove = globalThis.onkeydown = () => {
       clearTimeout(inactivityTimer)
       inactivityTimer = setTimeout(() => {
-        console.log('Сесію завершено через 25 хвилин бездіяльності.')
         logout()
       }, timeoutDuration)
     }

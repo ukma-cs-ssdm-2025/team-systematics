@@ -101,8 +101,8 @@ export async function createExam(examData) {
             try {
                 await linkExamToCourse(exam.id, examData.course_id)
             } catch (linkError) {
-                console.warn('Could not link exam to course:', linkError)
                 // Продовжуємо, навіть якщо зв'язок не вдався
+                console.warn('Failed to link exam to course:', linkError)
             }
         }
         
@@ -187,7 +187,8 @@ export async function updateExam(examId, examData) {
                 try {
                     await http.delete(`/api/exams/${examId}/questions/${question.id}`)
                 } catch (deleteError) {
-                    console.warn(`Could not delete question ${question.id}:`, deleteError)
+                    // Ігноруємо помилки видалення окремих питань
+                    console.warn(`Failed to delete question ${question.id}:`, deleteError)
                 }
             }
         }
