@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження профілю...
@@ -14,7 +15,7 @@
 
             <!-- 3. Основний контент -->
             <div v-else class="profile-layout">
-                <section class="profile-section">
+                <div class="profile-section">
                     <h2 class="section-title">Мій профіль</h2>
                     <div class="profile-details">
                         <div class="avatar-container">
@@ -41,9 +42,9 @@
                             <div class="info-value">{{ userProfile.major_name }}</div>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section class="notification-section">
+                <div class="notification-section">
                     <h2 class="section-title">Сповіщення</h2>
                     <div class="notification-toggle-row">
                         <p>Я хочу отримувати сповіщення на свою електронну пошту з нагадуванням про майбутні іспити.</p>
@@ -80,7 +81,7 @@
                             </label>
                         </div>
                     </transition>
-                </section>
+                </div>
 
                 <div class="actions">
                     <CButton @click="saveSettings" :disabled="isSaving" class="save-button">
@@ -95,6 +96,7 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import * as userModule from '../api/users'
 import defaultAvatar from '../assets/icons/user-avatar-default.svg'

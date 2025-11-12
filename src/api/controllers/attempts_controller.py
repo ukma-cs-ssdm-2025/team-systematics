@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, load_only, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, AddTimeRequest, ActiveAttemptInfo
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
 from src.api.services.exam_review_service import ExamReviewService
@@ -10,7 +10,7 @@ from src.api.repositories.weights_repository import WeightsRepository
 from src.models.attempts import Answer as AnswerModel, Attempt as AttemptModel
 from src.models.exams import QuestionType, Question
 from src.utils.largest_remainder import distribute_largest_remainder
-from src.utils.auth import get_current_user_with_role
+from src.utils.auth import get_current_user_with_role, require_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -337,3 +337,36 @@ class AttemptsController:
                     detail="Відповідь не знайдена"
                 )
             return {"answer_id": str(answer.id)}
+        
+        @self.router.post(
+            "/{attempt_id}/add-time",
+            response_model=AttemptSchema,
+            status_code=status.HTTP_200_OK,
+            summary="Додати додатковий час до спроби студента (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
+        )
+        async def add_time_to_attempt(
+            attempt_id: UUID = Path(..., description="ID спроби"),
+            payload: AddTimeRequest = ...,
+            db: Session = Depends(get_db),
+        ):
+            return self.service.add_time_to_attempt(
+                db=db,
+                attempt_id=attempt_id,
+                payload=payload,
+            )
+        
+        @self.router.get(
+            "/exam/{exam_id}/active-attempts",
+            response_model=List[ActiveAttemptInfo],
+            summary="Отримати список активних спроб для іспиту (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
+        )
+        async def get_active_attempts(
+            exam_id: UUID = Path(..., description="ID іспиту"),
+            db: Session = Depends(get_db),
+        ):
+            return self.service.get_active_attempts_for_exam(
+                db=db,
+                exam_id=exam_id,
+            )

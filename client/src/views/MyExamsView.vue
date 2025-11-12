@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container" v-if="!loading">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження списку іспитів...
@@ -15,7 +16,7 @@
             <!-- 3. Основний контент, коли дані завантажено -->
             <div v-if="!loading && !error">
                 <!-- Секція для майбутніх іспитів -->
-                <section class="exams-section">
+                <div class="exams-section">
                     <h2>Майбутні іспити</h2>
                     <table v-if="futureExams.length" class="exams-table">
                         <thead>
@@ -44,10 +45,10 @@
                         </tbody>
                     </table>
                     <p v-else class="empty-list-message">Немає запланованих іспитів.</p>
-                </section>
+                </div>
 
                 <!-- Секція для виконаних іспитів -->
-                <section class="exams-section">
+                <div class="exams-section">
                     <h2>Вже виконано</h2>
                     <table v-if="completedExams.length" class="exams-table">
                         <thead>
@@ -72,7 +73,7 @@
                         </tbody>
                     </table>
                     <p v-else class="empty-list-message">Ще немає виконаних іспитів.</p>
-                </section>
+                </div>
 
                 <div class="page-end-deco">
                     <img src="../assets/icons/graduate-hat.svg" alt="Decorative graduate hat">
@@ -96,6 +97,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CPopup from '../components/global/CPopup.vue'
 import { getExams } from '../api/exams.js'
 import { startExamAttempt } from '../api/attempts.js'

@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <h2 class="page-title">Перевірка плагіату</h2>
             
             <div v-if="loading" class="status-message">Завантаження...</div>
@@ -66,6 +67,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import { getFlaggedAnswers } from '../api/attempts.js'
 

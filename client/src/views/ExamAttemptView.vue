@@ -1,6 +1,7 @@
     <template>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження іспиту...
@@ -30,7 +31,7 @@
                             </CButton>
                         </div>
                         <div class="exam-timer">
-                            <CTimer :durationMinutes="durationMinutes" :startedAt="startedAt" @time-up="finalizeAndLeave" />
+                            <CTimer :durationMinutes="durationMinutes" :startedAt="startedAt" :dueAt="dueAt" @time-up="finalizeAndLeave" />
                         </div>
                     </div>
                 </div>
@@ -45,9 +46,10 @@
     </template>
 
     <script setup>
-    import { onMounted, ref, computed } from 'vue'
+    import { onMounted, onUnmounted, ref, computed } from 'vue'
     import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
     import Header from '../components/global/Header.vue'
+    import Breadcrumbs from '../components/global/Breadcrumbs.vue'
     import CButton from '../components/global/CButton.vue'
     import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
     import CPopup from '../components/global/CPopup.vue'
@@ -106,6 +108,22 @@
     })
 
 
+    async function refreshAttemptDetails() {
+        try {
+            const data = await getExamAttemptDetails(attemptId)
+            // Оновлюємо тільки dueAt, щоб таймер реагував на зміни
+            if (data.due_at) {
+                dueAt.value = data.due_at
+            }
+            // Оновлюємо статус, якщо він змінився
+            if (data.status) {
+                status.value = data.status
+            }
+        } catch (err) {
+            console.error('Помилка оновлення даних спроби:', err)
+        }
+    }
+
     onMounted(async () => {
         if (!attemptId) {
             error.value = "Помилка: Відсутній ID спроби."
@@ -133,6 +151,20 @@
                     currentQuestionIndex.value = parsedIndex
                 }
             }
+
+            // Оновлюємо дані спроби кожні 30 секунд, щоб таймер реагував на зміни часу
+            const refreshInterval = setInterval(() => {
+                if (status.value === 'in_progress') {
+                    refreshAttemptDetails()
+                } else {
+                    clearInterval(refreshInterval)
+                }
+            }, 30000) // 30 секунд
+
+            // Очищаємо інтервал при розмонтуванні компонента
+            onUnmounted(() => {
+                clearInterval(refreshInterval)
+            })
 
         } catch (err) {
             console.error(err)

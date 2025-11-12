@@ -215,7 +215,7 @@ class CoursesController:
         @self.router.get(
             "/{course_id}/exams",
             response_model=CourseExamsPage,
-            summary="Список іспитів для курсу (лише для викладача)",
+            summary="Список іспитів для курсу (для викладача та наглядача)",
         )
         async def list_course_exams(
             course_id: UUID,
@@ -225,12 +225,12 @@ class CoursesController:
             """
             Отримує список всіх іспитів, пов'язаних з конкретним курсом,
             разом з розширеною статистикою по кожному іспиту.
-            Лише для вчителів.
+            Доступно для викладачів та наглядачів.
             """
-            if current_user.role != 'teacher':
+            if current_user.role not in ['teacher', 'supervisor']:
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail="Цей функціонал доступний лише для викладачів та наглядачів",
                 )
             
             return self.exams_service.get_exams_for_course(db, course_id=course_id)

@@ -2,8 +2,8 @@
     <div>
         <Header />
         <main class="container">
-            <section class="content-section">
-                <div class="page-header">
+            <Breadcrumbs />
+            <div class="page-header">
                     <h2> {{ header }}</h2>
                     <CButton v-if="auth.isTeacher.value" @click="createNewCourse">+ Створити новий курс</CButton>
                 </div>
@@ -158,83 +158,8 @@
                     <p v-if="(auth.isStudent.value || auth.isSupervisor.value) && hasActiveFilters">Спробуйте змінити фільтри пошуку</p>
                     <CButton v-if="auth.isTeacher.value" @click="createNewCourse">+ Створити свій перший курс</CButton>
                 </div>
-            </section>
         </main>
 
-        <!-- Модальне вікно з деталями курсу (тільки для наглядача) -->
-        <div v-if="auth.isSupervisor.value && selectedCourse" class="modal-overlay" @click="closeModal">
-            <div class="modal-content" @click.stop>
-                <div class="modal-header">
-                    <h3>{{ selectedCourse.name }} ({{ selectedCourse.code }})</h3>
-                    <button class="close-button" @click="closeModal">×</button>
-                </div>
-                <div class="modal-body">
-                    <div v-if="selectedCourse.description" class="course-description">
-                        <p>{{ selectedCourse.description }}</p>
-                    </div>
-
-                    <!-- Студенти -->
-                    <div class="participants-section">
-                        <h4>Студенти ({{ selectedCourse.students?.length || 0 }})</h4>
-                        <div v-if="selectedCourse.students && selectedCourse.students.length > 0">
-                            <table class="exams-table">
-                                <colgroup>
-                                    <col style="width: 40%">
-                                    <col style="width: 40%">
-                                    <col style="width: 20%">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th class="left"><span class="pill">ПІБ студента</span></th>
-                                        <th class="left"><span class="pill">Email</span></th>
-                                        <th class="left"><span class="pill">Статус</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="student in selectedCourse.students" :key="student.id">
-                                        <td class="left">{{ student.full_name }}</td>
-                                        <td class="left">{{ student.email }}</td>
-                                        <td class="left">
-                                            <span class="status-pill enrolled">{{ student.status }}</span>
-                                        </td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p v-else class="empty-list-message">Немає зареєстрованих студентів</p>
-                    </div>
-
-                    <!-- Викладачі -->
-                    <div class="participants-section">
-                        <h4>Викладачі ({{ selectedCourse.teachers?.length || 0 }})</h4>
-                        <div v-if="selectedCourse.teachers && selectedCourse.teachers.length > 0">
-                            <table class="exams-table">
-                                <colgroup>
-                                    <col style="width: 50%">
-                                    <col style="width: 50%">
-                                </colgroup>
-                                <thead>
-                                    <tr>
-                                        <th class="left"><span class="pill">ПІБ викладача</span></th>
-                                        <th class="left"><span class="pill">Email</span></th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                                    <tr v-for="teacher in selectedCourse.teachers" :key="teacher.id">
-                                        <td class="left">{{ teacher.full_name }}</td>
-                                        <td class="left">{{ teacher.email }}</td>
-                                    </tr>
-                                </tbody>
-                            </table>
-                        </div>
-                        <p v-else class="empty-list-message">Немає зареєстрованих викладачів</p>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <CButton @click="closeModal">Закрити</CButton>
-                </div>
-            </div>
-        </div>
     </div>
 </template>
 
@@ -242,8 +167,9 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
-import { getMyCourses, getAllCourses, enrollInCourse, getCoursesForSupervisor, getCourseDetailsForSupervisor } from '../api/courses.js'
+import { getMyCourses, getAllCourses, enrollInCourse, getCoursesForSupervisor } from '../api/courses.js'
 import { useAuth } from '../store/loginInfo.js'
 
 const router = useRouter()
@@ -251,7 +177,6 @@ const courses = ref([])
 const loading = ref(true)
 const error = ref(null)
 const isEnrolling = ref({})
-const selectedCourse = ref(null)
 
 const filters = ref({
     name: '',
@@ -373,33 +298,9 @@ function clearFilters() {
     loadCourses()
 }
 
-async function viewCourseDetails(courseId) {
+function viewCourseDetails(courseId) {
     if (!auth.isSupervisor.value) return
-    
-    loading.value = true
-    try {
-        const details = await getCourseDetailsForSupervisor(courseId)
-        if (details && details.message) {
-            selectedCourse.value = {
-                id: courseId,
-                name: courses.value.find(c => c.id === courseId)?.name || '',
-                code: courses.value.find(c => c.id === courseId)?.code || '',
-                students: [],
-                teachers: [],
-                message: details.message
-            }
-        } else {
-            selectedCourse.value = details
-        }
-    } catch (err) {
-        error.value = err.message || 'Не вдалося завантажити деталі курсу.'
-    } finally {
-        loading.value = false
-    }
-}
-
-function closeModal() {
-    selectedCourse.value = null
+    router.push(`/courses/${courseId}/details`)
 }
 </script>
 
@@ -553,153 +454,4 @@ function closeModal() {
     color: var(--color-dark-gray);
 }
 
-.modal-overlay {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
-    bottom: 0;
-    background-color: rgba(0, 0, 0, 0.5);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 1000;
-}
-
-.modal-content {
-    background-color: white;
-    border-radius: 12px;
-    max-width: 900px;
-    max-height: 90vh;
-    width: 90%;
-    display: flex;
-    flex-direction: column;
-    overflow: hidden;
-}
-
-.modal-header {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 20px 24px;
-    border-bottom: 1px solid var(--color-gray);
-    background-color: var(--color-violet);
-    color: white;
-}
-
-.modal-header h3 {
-    margin: 0;
-    font-size: 1.5rem;
-}
-
-.close-button {
-    background: none;
-    border: none;
-    color: white;
-    font-size: 2rem;
-    cursor: pointer;
-    padding: 0;
-    width: 32px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: 4px;
-    line-height: 1;
-}
-
-.close-button:hover {
-    background-color: rgba(255, 255, 255, 0.2);
-}
-
-.modal-body {
-    padding: 24px;
-    overflow-y: auto;
-    flex: 1;
-}
-
-.course-description {
-    margin-bottom: 24px;
-    color: var(--color-dark-gray);
-    line-height: 1.6;
-}
-
-.participants-section {
-    margin-bottom: 32px;
-}
-
-.participants-section:last-child {
-    margin-bottom: 0;
-}
-
-.participants-section h4 {
-    margin-bottom: 16px;
-    font-size: 1.2rem;
-}
-
-.exams-table {
-    width: 100%;
-    border-collapse: collapse;
-    margin-bottom: 16px;
-}
-
-.exams-table thead {
-    background-color: var(--color-violet);
-    color: white;
-}
-
-.exams-table th {
-    padding: 12px 16px;
-    text-align: left;
-    font-weight: bold;
-}
-
-.exams-table th.left {
-    text-align: left;
-}
-
-.exams-table th.right {
-    text-align: right;
-}
-
-.exams-table td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--color-gray);
-}
-
-.exams-table tbody tr:hover {
-    background-color: #f5f5f5;
-}
-
-.pill {
-    display: inline-block;
-    padding: 4px 8px;
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 4px;
-}
-
-.status-pill {
-    padding: 4px 12px;
-    border-radius: 12px;
-    white-space: nowrap;
-    display: inline-block;
-}
-
-.status-pill.enrolled {
-    background-color: var(--color-green-half-opacity);
-}
-
-.empty-list-message {
-    text-align: center;
-    padding: 24px;
-    color: var(--color-dark-gray);
-    font-style: italic;
-}
-
-.modal-footer {
-    padding: 16px 24px;
-    border-top: 1px solid var(--color-gray);
-    display: flex;
-    justify-content: flex-end;
-}
 </style>

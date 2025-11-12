@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <div v-if="loading" class="status-message">Завантаження...</div>
             <div v-else-if="error" class="status-message error">{{ error }}</div>
 
@@ -33,6 +34,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
 import { getExamAttemptReview, getExamAttemptDetails } from '../api/attempts.js'

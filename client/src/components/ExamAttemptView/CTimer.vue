@@ -18,12 +18,18 @@ import { ref, computed, onUnmounted, watch } from 'vue'
 const props = defineProps({
     durationMinutes: {
         type: Number,
-        required: true,
-        validator: (value) => value > 0
+        required: false,
+        default: null,
+        validator: (value) => value === null || value > 0
     },
     startedAt: {
         type: String,
          // Робимо його не required, бо він може прийти з затримкою
+        required: false,
+        default: null
+    },
+    dueAt: {
+        type: String,
         required: false,
         default: null
     }
@@ -58,10 +64,19 @@ const formattedTime = computed(() => {
 const isWarningTime = computed(() => remainingSeconds.value <= 300)
 
 function startTimer() {
-    // Обчислюємо час закінчення на основі часу початку та тривалості
-    const startTimeMs = new Date(props.startedAt).getTime()
-    const durationMs = props.durationMinutes * 60 * 1000
-    const endTimeMs = startTimeMs + durationMs
+    // Якщо є dueAt, використовуємо його напряму (для підтримки додавання часу наглядачем)
+    // Інакше обчислюємо час закінчення на основі часу початку та тривалості
+    let endTimeMs
+    
+    if (props.dueAt) {
+        endTimeMs = new Date(props.dueAt).getTime()
+    } else if (props.startedAt && props.durationMinutes) {
+        const startTimeMs = new Date(props.startedAt).getTime()
+        const durationMs = props.durationMinutes * 60 * 1000
+        endTimeMs = startTimeMs + durationMs
+    } else {
+        return // Немає достатньо даних для запуску таймера
+    }
 
     const updateRemainingTime = () => {
         const nowMs = new Date().getTime()
@@ -74,15 +89,20 @@ function startTimer() {
         }
     }
 
+    // Очищаємо попередній таймер, якщо він існує
+    if (timerId.value) {
+        clearInterval(timerId.value)
+    }
+
     updateRemainingTime()
     timerId.value = setInterval(updateRemainingTime, 1000)
 }
 
-// Запускаємо таймер, тільки якщо обидва значення існують і валідні
+// Запускаємо таймер, якщо є необхідні дані
 watch(
-    () => [props.startedAt, props.durationMinutes],
-    ([newStartedAt, newDurationMinutes]) => {
-        if (newStartedAt && newDurationMinutes > 0) {
+    () => [props.startedAt, props.durationMinutes, props.dueAt],
+    () => {
+        if (props.dueAt || (props.startedAt && props.durationMinutes)) {
             startTimer()
         }
     },

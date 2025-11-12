@@ -240,3 +240,29 @@ export async function getAnswerId(attemptId, questionId) {
         throw new Error('Не вдалося отримати ID відповіді.')
     }
 }
+
+export async function getActiveAttemptsForExam(examId) {
+    try {
+        const response = await http.get(`/api/attempts/exam/${examId}/active-attempts`)
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити список активних спроб.')
+    }
+}
+
+export async function addTimeToAttempt(attemptId, additionalMinutes) {
+    try {
+        const response = await http.post(`/api/attempts/${attemptId}/add-time`, {
+            additional_minutes: additionalMinutes
+        })
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося додати час до спроби.')
+    }
+}

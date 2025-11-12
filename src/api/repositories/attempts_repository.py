@@ -290,3 +290,30 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(answer)
         return answer
+
+    def add_time_to_attempt(self, attempt_id: UUID, additional_minutes: int) -> Optional[Attempt]:
+        """
+        Додає додатковий час до спроби, оновлюючи due_at.
+        """
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+        
+        if attempt.status != AttemptStatus.in_progress:
+            raise ValueError("Можна додавати час тільки до активних спроб")
+        
+        attempt.due_at = attempt.due_at + timedelta(minutes=additional_minutes)
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt
+
+    def get_active_attempts_for_exam(self, exam_id: UUID) -> List[Attempt]:
+        """
+        Отримує список активних спроб для конкретного іспиту.
+        """
+        return self.db.query(Attempt).options(
+            joinedload(Attempt.user)
+        ).filter(
+            Attempt.exam_id == exam_id,
+            Attempt.status == AttemptStatus.in_progress
+        ).all()
