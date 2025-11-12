@@ -1,3 +1,5 @@
+from fastapi import HTTPException
+from scipy import stats
 from sqlalchemy.orm import Session
 from uuid import UUID
 import uuid as uuid_lib
@@ -11,6 +13,8 @@ from src.api.schemas.attempts import AttemptStartRequest, Attempt
 from .courses_service import CoursesService
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
+from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
+from src.models.exam_participants import AttendanceStatusEnum
 
 EXAM_NOT_FOUND_MESSAGE = "Exam not found"
 
@@ -195,6 +199,16 @@ class ExamsService:
         if not exam:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
 
+        participants_repo = ExamParticipantsRepository(db)
+        ep = participants_repo.get(exam_id, user_id)
+        if not ep or not ep.is_active:
+            from src.api.errors.app_errors import ConflictError
+            raise ConflictError("Користувач не зареєстрований як учасник іспиту")
+
+        if ep.attendance_status == AttendanceStatusEnum.absent:
+            from src.api.errors.app_errors import ConflictError
+            raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
+
         user_attempts_count = attempts_repo.get_user_attempt_count(
             user_id=user_id,
             exam_id=exam_id
@@ -208,12 +222,12 @@ class ExamsService:
             user_id=user_id,
             duration_minutes=exam.duration_minutes
         )
-    
+
     def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
         course_repo = CoursesRepository(db)
         course = course_repo.get(course_id)
         if not course:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
+            raise HTTPException(status_code=stats.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
         
         total_students = course_repo.get_student_count(course_id)
 
