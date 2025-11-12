@@ -46,3 +46,18 @@ class CoursesPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+class CourseSupervisorListItem(BaseModel):
+    id: UUID
+    name: str
+    code: str
+    students_count: int
+    teachers: list[str]
+
+class CourseSupervisorDetails(BaseModel):
+    id: UUID
+    name: str
+    code: str
+    description: Optional[str]
+    students: list[dict]
+    teachers: list[dict]
