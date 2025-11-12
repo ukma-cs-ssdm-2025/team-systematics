@@ -189,38 +189,37 @@ class ExamsService:
         if not ok:
             raise NotFoundError("Exam not found for delete")
 
-    def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
-        exams_repo = ExamsRepository(db)
-        exam = exams_repo.get(exam_id)
+def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
+    exams_repo = ExamsRepository(db)
+    exam = exams_repo.get(exam_id)
+    attempts_repo = AttemptsRepository(db)
 
-        attempts_repo = AttemptsRepository(db)
-        
-        if not exam:
-            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
+    if not exam:
+        raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
 
-        participants_repo = ExamParticipantsRepository(db)
-        ep = participants_repo.get(exam_id, user_id)
-        if not ep or not ep.is_active:
-            from src.api.errors.app_errors import ConflictError
-            raise ConflictError("Користувач не зареєстрований як учасник іспиту")
+    # Дозвіл лише для учасників іспиту та не "відсутніх"
+    participants_repo = ExamParticipantsRepository(db)
+    ep = participants_repo.get(exam_id, user_id)
+    if not ep or not ep.is_active:
+        raise ConflictError("Користувач не зареєстрований як учасник іспиту")
 
-        if ep.attendance_status == AttendanceStatusEnum.absent:
-            from src.api.errors.app_errors import ConflictError
-            raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
+    if ep.attendance_status == AttendanceStatusEnum.absent:
+        raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
 
-        user_attempts_count = attempts_repo.get_user_attempt_count(
-            user_id=user_id,
-            exam_id=exam_id
-        )
-        # Перевіряємо, чи не перевищено ліміт спроб
-        if user_attempts_count >= exam.max_attempts:
-            raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
+    # Перевірка ліміту спроб
+    user_attempts_count = attempts_repo.get_user_attempt_count(
+        user_id=user_id,
+        exam_id=exam_id
+    )
+    if user_attempts_count >= exam.max_attempts:
+        raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
 
-        return attempts_repo.create_attempt(
-            exam_id=exam_id,
-            user_id=user_id,
-            duration_minutes=exam.duration_minutes
-        )
+    # Створення спроби
+    return attempts_repo.create_attempt(
+        exam_id=exam_id,
+        user_id=user_id,
+        duration_minutes=exam.duration_minutes
+    )
 
 def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
     course_repo = CoursesRepository(db)
