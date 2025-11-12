@@ -25,9 +25,9 @@ class AttemptsRepository:
             exam_id=exam_id,
             user_id=user_id,
             status="in_progress",
-            started_at=to_utc_iso(started_at),
-            due_at=to_utc_iso(due_at),
-        )
+            started_at=started_at,
+            due_at=due_at,
+        ) 
         self.db.add(new_attempt)
         self.db.commit()
         self.db.refresh(new_attempt)
@@ -121,6 +121,35 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(attempt)
         return attempt
+    
+    def extend_attempt_time(self, attempt_id: UUID, extra_minutes: int) -> Optional[Attempt]:
+        """
+        Подовжує дедлайн (due_at) для спроби іспиту на вказану кількість хвилин.
+
+        Args:
+            attempt_id: ID спроби, яку потрібно подовжити.
+            extra_minutes: Кількість додаткових хвилин (> 0).
+
+        Returns:
+            Оновлений об'єкт Attempt або None, якщо спробу не знайдено.
+        """
+        if extra_minutes <= 0:
+            raise ValueError("extra_minutes must be positive")
+
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+
+        if not attempt.due_at:
+            # Якщо з якоїсь причини due_at немає, просто не змінюємо нічого
+            return attempt
+
+        # Подовжуємо дедлайн
+        attempt.due_at = attempt.due_at + timedelta(minutes=extra_minutes)
+
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt    
 
     def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         """Збирає та форматує всю інформацію для сторінки складання іспиту.
