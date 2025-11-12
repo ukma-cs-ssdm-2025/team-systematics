@@ -14,7 +14,6 @@ from src.utils.auth import get_current_user_with_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
-from src.models.users import User
 from src.api.dependencies import get_current_user
 from typing import List, Optional
 from src.api.schemas.plagiarism import PlagiarismCheckSummary, PlagiarismComparisonResponse
@@ -74,9 +73,8 @@ class AttemptsController:
         async def read_attempt_result(
             attempt_id: UUID,
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
         ):
-            return self.service.get_attempt_result(db, attempt_id=attempt_id, current_user=current_user)
+            return self.service.get_attempt_result(db, attempt_id=attempt_id)
 
         @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
             summary="Отримати детальний огляд спроби іспиту")
