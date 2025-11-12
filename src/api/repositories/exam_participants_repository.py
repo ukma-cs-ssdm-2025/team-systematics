@@ -1,11 +1,12 @@
 from __future__ import annotations
 from typing import List, Optional
 from uuid import UUID
-from sqlalchemy.orm import Session
-from sqlalchemy import and_
 from datetime import datetime, timezone
 
-from src.models.exam_participants import ExamParticipant
+from sqlalchemy.orm import Session
+from sqlalchemy import and_
+
+from src.models.exam_participants import ExamParticipant, AttendanceStatusEnum
 from src.models.attempts import Attempt, AttemptStatus
 from src.models.courses import CourseEnrollment
 
@@ -13,7 +14,7 @@ class ExamParticipantsRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    # --- participants CRUD ---
+    # --- CRUD / списки ---
     def list_active(self, exam_id: UUID) -> List[ExamParticipant]:
         return (
             self.db.query(ExamParticipant)
@@ -31,7 +32,6 @@ class ExamParticipantsRepository:
     def add(self, exam_id: UUID, user_id: UUID) -> ExamParticipant:
         ep = self.get(exam_id, user_id)
         if ep:
-            # якщо вже був і видалений — реактівуємо
             ep.is_active = True
             ep.removed_at = None
         else:
@@ -50,8 +50,17 @@ class ExamParticipantsRepository:
         self.db.commit()
         return True
 
-    # --- guards / checks ---
+    # Відвідуваність
+    def set_attendance(self, exam_id: UUID, user_id: UUID, status: AttendanceStatusEnum) -> Optional[ExamParticipant]:
+        ep = self.get(exam_id, user_id)
+        if not ep:
+            return None
+        ep.attendance_status = status
+        self.db.commit()
+        self.db.refresh(ep)
+        return ep
 
+    # Перевірки
     def is_user_enrolled_to_course(self, course_id: UUID, user_id: UUID) -> bool:
         exists = (
             self.db.query(CourseEnrollment)
@@ -74,8 +83,8 @@ class ExamParticipantsRepository:
                 )
             )
             .first()
+            is not None
         )
-        return q is not None
 
     def get_active_attempt_for_exam(self, exam_id: UUID, user_id: UUID) -> Optional[Attempt]:
         return (
