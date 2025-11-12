@@ -15,19 +15,17 @@
             <div v-else class="flagged-answers-container">
                 <div class="selection-info" v-if="selectedAnswers.length > 0">
                     <span>Вибрано: {{ selectedAnswers.length }} робіт</span>
-                    <button 
+                    <CButton 
                         v-if="selectedAnswers.length === 2"
-                        class="compare-button"
                         @click="goToComparison"
                     >
                         Порівняти вибрані роботи
-                    </button>
-                    <button 
-                        class="clear-button"
+                    </CButton>
+                    <CButton 
                         @click="clearSelection"
                     >
                         Очистити вибір
-                    </button>
+                    </CButton>
                 </div>
                 
                 <div class="flagged-answers-list">
@@ -68,6 +66,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import CButton from '../components/global/CButton.vue'
 import { getFlaggedAnswers } from '../api/attempts.js'
 
 const router = useRouter()
@@ -172,33 +171,6 @@ function goToComparison() {
     border-radius: 8px;
 }
 
-.compare-button {
-    padding: 8px 16px;
-    background-color: var(--color-purple);
-    color: white;
-    border: none;
-    border-radius: 6px;
-    cursor: pointer;
-    font-weight: bold;
-}
-
-.compare-button:hover {
-    background-color: #6a006a;
-}
-
-.clear-button {
-    padding: 8px 16px;
-    background-color: transparent;
-    color: var(--color-purple);
-    border: 2px solid var(--color-purple);
-    border-radius: 6px;
-    cursor: pointer;
-}
-
-.clear-button:hover {
-    background-color: var(--color-purple);
-    color: white;
-}
 
 .flagged-answer-item {
     background: var(--color-gray);

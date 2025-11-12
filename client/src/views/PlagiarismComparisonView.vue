@@ -16,21 +16,19 @@
                         <div class="answer-header">
                             <h3>{{ comparisonData.student1_name }}</h3>
                         </div>
-                        <textarea 
-                            class="answer-textarea"
-                            :value="comparisonData.answer1_text"
-                            readonly
-                        ></textarea>
+                        <CTextarea 
+                            :model-value="comparisonData.answer1_text"
+                            :disabled="true"
+                        />
                     </div>
                     
                     <div class="comparison-controls">
-                        <button 
-                            class="compare-button"
+                        <CButton 
                             @click="runComparison"
                             :disabled="isComparing"
                         >
                             {{ isComparing ? 'Перевірка...' : 'Перевірити на плагіат' }}
-                        </button>
+                        </CButton>
                         
                         <div v-if="comparisonResult" class="comparison-result">
                             <div class="similarity-score">
@@ -49,16 +47,15 @@
                         <div class="answer-header">
                             <h3>{{ comparisonData.student2_name }}</h3>
                         </div>
-                        <textarea 
-                            class="answer-textarea"
-                            :value="comparisonData.answer2_text"
-                            readonly
-                        ></textarea>
+                        <CTextarea 
+                            :model-value="comparisonData.answer2_text"
+                            :disabled="true"
+                        />
                     </div>
                 </div>
                 
                 <div class="comparison-actions">
-                    <button class="back-button" @click="goBack">Назад до списку</button>
+                    <CButton @click="goBack">Назад до списку</CButton>
                 </div>
             </div>
         </main>
@@ -69,6 +66,8 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import CTextarea from '../components/global/CTextarea.vue'
+import CButton from '../components/global/CButton.vue'
 import { compareAnswers, getFlaggedAnswers } from '../api/attempts.js'
 
 const route = useRoute()
@@ -166,15 +165,10 @@ function goBack() {
     font-size: 0.9rem;
 }
 
-.comparison-container {
-    max-width: 1400px;
-    margin: 0 auto;
-}
-
 .comparison-content {
     display: grid;
     grid-template-columns: 1fr auto 1fr;
-    gap: 24px;
+    gap: 100px;
     margin-bottom: 24px;
 }
 
@@ -193,22 +187,8 @@ function goBack() {
     font-weight: bold;
 }
 
-.answer-textarea {
-    width: 100%;
+.answer-panel :deep(.custom-textarea) {
     height: 500px;
-    padding: 16px;
-    background-color: var(--color-gray);
-    border: 3px solid var(--color-gray);
-    border-radius: 12px;
-    font-family: inherit;
-    font-size: inherit;
-    resize: none;
-    line-height: 1.6;
-}
-
-.answer-textarea:focus {
-    outline: 3px solid var(--color-purple);
-    outline-offset: 2px;
 }
 
 .comparison-controls {
@@ -218,27 +198,6 @@ function goBack() {
     justify-content: flex-start;
     gap: 16px;
     padding-top: 60px;
-}
-
-.compare-button {
-    padding: 12px 24px;
-    background-color: var(--color-purple);
-    color: white;
-    border: none;
-    border-radius: 8px;
-    font-size: 1rem;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.2s;
-}
-
-.compare-button:hover:not(:disabled) {
-    background-color: #6a006a;
-}
-
-.compare-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
 }
 
 .comparison-result {
@@ -280,22 +239,6 @@ function goBack() {
     display: flex;
     justify-content: center;
     margin-top: 24px;
-}
-
-.back-button {
-    padding: 10px 20px;
-    background-color: transparent;
-    color: var(--color-purple);
-    border: 2px solid var(--color-purple);
-    border-radius: 8px;
-    font-size: 1rem;
-    cursor: pointer;
-    transition: all 0.2s;
-}
-
-.back-button:hover {
-    background-color: var(--color-purple);
-    color: white;
 }
 
 @media (max-width: 1200px) {
