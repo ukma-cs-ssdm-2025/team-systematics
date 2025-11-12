@@ -7,6 +7,8 @@ from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.courses import CourseCreate, CourseUpdate
 from src.models.users import User
+from src.models.user_roles import UserRole
+from src.models.roles import Role
 
 class CoursesRepository:
     def __init__(self, db: Session):
@@ -244,11 +246,16 @@ class CoursesRepository:
         if not course:
             return None
 
-        # Студенти (enrolled)
+        # Студенти (enrolled) - тільки користувачі з роллю 'student'
         stu_rows = (
             self.db.query(User.id, User.first_name, User.last_name, User.email)
             .join(CourseEnrollment, CourseEnrollment.user_id == User.id)
-            .filter(CourseEnrollment.course_id == course_id)
+            .join(UserRole, UserRole.user_id == User.id)
+            .join(Role, Role.id == UserRole.role_id)
+            .filter(
+                CourseEnrollment.course_id == course_id,
+                Role.name == 'student'
+            )
             .order_by(User.last_name, User.first_name)
             .all()
         )

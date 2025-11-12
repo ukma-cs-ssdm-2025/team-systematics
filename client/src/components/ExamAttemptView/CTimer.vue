@@ -99,10 +99,22 @@ function startTimer() {
 }
 
 // Запускаємо таймер, якщо є необхідні дані
+// Використовуємо deep watch для dueAt, щоб реагувати на зміни об'єкта
 watch(
-    () => [props.startedAt, props.durationMinutes, props.dueAt],
+    () => props.dueAt,
+    (newDueAt) => {
+        if (newDueAt) {
+            startTimer()
+        }
+    },
+    { immediate: true }
+)
+
+// Також стежимо за startedAt і durationMinutes
+watch(
+    () => [props.startedAt, props.durationMinutes],
     () => {
-        if (props.dueAt || (props.startedAt && props.durationMinutes)) {
+        if (props.startedAt && props.durationMinutes && !props.dueAt) {
             startTimer()
         }
     },

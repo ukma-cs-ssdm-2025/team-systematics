@@ -176,7 +176,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import Breadcrumbs from '../components/global/Breadcrumbs.vue'
@@ -296,7 +296,6 @@ async function addTime(attemptId) {
         await loadActiveAttempts()
         // Очищаємо вибір
         selectedAdditionalTime.value[attemptId] = null
-        alert(`Додано ${additionalMinutes} хвилин до спроби студента`)
     } catch (err) {
         console.error('Помилка додавання часу:', err)
         error.value = err.message || 'Не вдалося додати час'
@@ -394,6 +393,9 @@ const removeConfirmMessage = computed(() => {
     return `Ви впевнені, що хочете видалити студента "${studentName}" зі списку учасників іспиту? Якщо студент проходить іспит зараз, його сесія буде автоматично завершена.`
 })
 
+// Зберігаємо інтервал для автоматичного оновлення
+let refreshInterval = null
+
 onMounted(async () => {
     try {
         loading.value = true
@@ -402,11 +404,25 @@ onMounted(async () => {
         // Завантажуємо активні спроби, якщо іспит відкритий
         if (examStatus.value === 'open') {
             await loadActiveAttempts()
+            
+            // Автоматично оновлюємо список активних спроб кожні 10 секунд
+            refreshInterval = setInterval(() => {
+                if (examStatus.value === 'open' && !loadingActiveAttempts.value) {
+                    loadActiveAttempts()
+                }
+            }, 10000) // 10 секунд
         }
     } catch (err) {
         error.value = err.message || 'Сталася невідома помилка.'
     } finally {
         loading.value = false
+    }
+})
+
+onUnmounted(() => {
+    // Очищаємо інтервал при розмонтуванні компонента
+    if (refreshInterval) {
+        clearInterval(refreshInterval)
     }
 })
 </script>
