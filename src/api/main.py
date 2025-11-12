@@ -22,6 +22,10 @@ from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
 from src.core.cloudinary import configure_cloudinary
+from src.models import exam_participants, course_exams
+from src.api.services.exam_participants_service import ExamParticipantsService
+from src.api.controllers.exam_participants_controller import ExamParticipantsController
+
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -33,6 +37,8 @@ def create_app() -> FastAPI:
     majors.Base.metadata.create_all(bind=engine)
     user_majors.Base.metadata.create_all(bind=engine)
     attempts.Base.metadata.create_all(bind=engine)
+    course_exams.Base.metadata.create_all(bind=engine)
+    exam_participants.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
@@ -70,6 +76,7 @@ def create_app() -> FastAPI:
     auth_service = AuthService()
     users_service = UsersService()
     transcript_service = TranscriptService()
+    exam_participants_service = ExamParticipantsService()
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
@@ -78,6 +85,7 @@ def create_app() -> FastAPI:
     courses_controller = CoursesController(CoursesService())
     transcript_controller = TranscriptController(transcript_service)
     users_controller = UsersController(users_service)
+    exam_participants_controller = ExamParticipantsController(exam_participants_service)
 
     #Ініціалізуємо конфігурацію cloudinary
     configure_cloudinary()
@@ -89,6 +97,7 @@ def create_app() -> FastAPI:
     app.include_router(courses_controller.router, prefix="/api")
     app.include_router(transcript_controller.router, prefix="/api")
     app.include_router(users_controller.router, prefix="/api")
+    app.include_router(exam_participants_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))

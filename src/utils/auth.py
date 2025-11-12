@@ -139,3 +139,22 @@ def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = De
     
     user.role = get_user_role(db, user_id)
     return user
+
+
+def require_role(role_name: str):
+    """
+    Return a FastAPI dependency that ensures the current user has the given role.
+
+    Usage:
+        current_user: User = Depends(require_role('supervisor'))
+    """
+    def _require(user: User = Depends(get_current_user_with_role)) -> User:
+        user_role = str(user.role).lower().strip() if getattr(user, 'role', None) else None
+        if user_role != role_name.lower().strip():
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This endpoint requires role '{role_name}'",
+            )
+        return user
+
+    return _require

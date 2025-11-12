@@ -10,8 +10,9 @@ from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpda
 from src.api.services.courses_service import CoursesService
 from src.api.services.exams_service import ExamsService 
 from src.api.database import get_db
-from src.utils.auth import get_current_user_with_role, get_current_user
+from src.utils.auth import get_current_user_with_role, get_current_user, require_role
 from .versioning import require_api_version
+from src.api.schemas.courses import CourseSupervisorListItem, CourseSupervisorDetails
 
 class CoursesController:
     def __init__(self, service: CoursesService) -> None:
@@ -148,3 +149,54 @@ class CoursesController:
                 )
             
             return self.exams_service.get_exams_for_course(db, course_id=course_id)
+        
+        @self.router.get(
+            "/supervisor",
+            response_model=list[CourseSupervisorListItem],
+            summary="Список курсів для наглядача",
+        )
+        async def list_courses_for_supervisor(
+            name: Optional[str] = Query(None, description="Фільтр за назвою/кодом курсу"),
+            teacher_name: Optional[str] = Query(
+                None, description="Фільтр за ПІБ або email викладача (owner)"
+            ),
+            min_students: Optional[int] = Query(None, ge=0, description="Мін. к-сть студентів"),
+            max_students: Optional[int] = Query(None, ge=0, description="Макс. к-сть студентів"),
+            limit: int = Query(50, ge=1, le=200),
+            offset: int = Query(0, ge=0),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(require_role('supervisor')),
+        ):
+            """
+            Повертає список курсів для наглядача з фільтрами (назва/викладач/к-сть студентів).
+            Перевірка ролі 'supervisor' виконується в сервісі.
+            """
+            items, _ = self.service.list_for_supervisor(
+                db=db,
+                current_user=current_user,
+                title_filter=name,
+                teacher_filter=teacher_name,
+                min_students=min_students,
+                max_students=max_students,
+                limit=limit,
+                offset=offset,
+            )
+            return items
+
+        @self.router.get(
+            "/supervisor/{course_id}",
+            response_model=CourseSupervisorDetails,
+            summary="Деталі курсу для наглядача",
+        )
+        async def get_course_details_for_supervisor(
+            course_id: UUID,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(require_role('supervisor')),
+        ):
+            """
+            Повертає детальну інформацію про курс для наглядача:
+            списки студентів (ім'я, email, статус) та викладачів.
+            Якщо немає зареєстрованих користувачів — повертається повідомлення.
+            Перевірка ролі 'supervisor' виконується в сервісі.
+            """
+            return self.service.get_course_details_for_supervisor(db, current_user, course_id)

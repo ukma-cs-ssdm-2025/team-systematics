@@ -139,6 +139,17 @@ CREATE TYPE public.questiontype AS ENUM (
 
 ALTER TYPE public.questiontype OWNER TO postgres;
 
+
+-- Тип статусу відвідуваності
+CREATE TYPE public.attendance_status_enum AS ENUM (
+    'unknown',
+    'present',
+    'absent'
+);
+
+ALTER TYPE public.attendance_status_enum OWNER TO postgres;
+
+
 --
 -- TOC entry 249 (class 1255 OID 16734)
 -- Name: reorder_questions_on_delete(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -292,6 +303,29 @@ CREATE TABLE public.plagiarism_checks (
 );
 
 ALTER TABLE public.plagiarism_checks OWNER TO postgres;
+
+
+-- Таблиця учасників іспиту
+CREATE TABLE public.exam_participants (
+    exam_id uuid NOT NULL,
+    user_id uuid NOT NULL,
+    joined_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
+    removed_at timestamp with time zone,
+    is_active boolean DEFAULT TRUE NOT NULL,
+    CONSTRAINT exam_participants_pkey PRIMARY KEY (exam_id, user_id),
+    CONSTRAINT exam_participants_exam_id_fkey FOREIGN KEY (exam_id) REFERENCES public.exams(id) ON DELETE CASCADE,
+    CONSTRAINT exam_participants_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE
+);
+
+ALTER TABLE public.exam_participants OWNER TO postgres;
+
+ALTER TABLE public.exam_participants
+    ADD COLUMN attendance_status public.attendance_status_enum
+        DEFAULT 'unknown'::public.attendance_status_enum
+        NOT NULL;
+
+CREATE INDEX IF NOT EXISTS idx_exam_participants_exam ON public.exam_participants (exam_id);
+CREATE INDEX IF NOT EXISTS idx_exam_participants_user ON public.exam_participants (user_id);
 
 
 CREATE TABLE public.course_enrollments (

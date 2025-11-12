@@ -1,3 +1,4 @@
+from fastapi import HTTPException, status
 from sqlalchemy.orm import Session
 from uuid import UUID
 import uuid as uuid_lib
@@ -11,6 +12,8 @@ from src.api.schemas.attempts import AttemptStartRequest, Attempt
 from .courses_service import CoursesService
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
+from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
+from src.models.exam_participants import AttendanceStatusEnum
 
 EXAM_NOT_FOUND_MESSAGE = "Exam not found"
 
@@ -186,57 +189,66 @@ class ExamsService:
         if not ok:
             raise NotFoundError("Exam not found for delete")
 
-    def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
-        exams_repo = ExamsRepository(db)
-        exam = exams_repo.get(exam_id)
+def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
+    exams_repo = ExamsRepository(db)
+    exam = exams_repo.get(exam_id)
+    attempts_repo = AttemptsRepository(db)
 
-        attempts_repo = AttemptsRepository(db)
-        
-        if not exam:
-            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
+    if not exam:
+        raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
 
-        user_attempts_count = attempts_repo.get_user_attempt_count(
-            user_id=user_id,
-            exam_id=exam_id
-        )
-        # Перевіряємо, чи не перевищено ліміт спроб
-        if user_attempts_count >= exam.max_attempts:
-            raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
+    # Дозвіл лише для учасників іспиту та не "відсутніх"
+    participants_repo = ExamParticipantsRepository(db)
+    ep = participants_repo.get(exam_id, user_id)
+    if not ep or not ep.is_active:
+        raise ConflictError("Користувач не зареєстрований як учасник іспиту")
 
-        return attempts_repo.create_attempt(
-            exam_id=exam_id,
-            user_id=user_id,
-            duration_minutes=exam.duration_minutes
-        )
+    if ep.attendance_status == AttendanceStatusEnum.absent:
+        raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
+
+    # Перевірка ліміту спроб
+    user_attempts_count = attempts_repo.get_user_attempt_count(
+        user_id=user_id,
+        exam_id=exam_id
+    )
+    if user_attempts_count >= exam.max_attempts:
+        raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
+
+    # Створення спроби
+    return attempts_repo.create_attempt(
+        exam_id=exam_id,
+        user_id=user_id,
+        duration_minutes=exam.duration_minutes
+    )
+
+def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
+    course_repo = CoursesRepository(db)
+    course = course_repo.get(course_id)
+    if not course:
+        # було: stats.HTTP_404_NOT_FOUND
+        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
     
-    def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
-        course_repo = CoursesRepository(db)
-        course = course_repo.get(course_id)
-        if not course:
-            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
-        
-        total_students = course_repo.get_student_count(course_id)
+    total_students = course_repo.get_student_count(course_id)
 
-        exams_repo = ExamsRepository(db)
-        exam_stats = exams_repo.get_exams_stats_for_course(course_id)
+    exams_repo = ExamsRepository(db)
+    exam_stats = exams_repo.get_exams_stats_for_course(course_id)
 
-        exams_list = []
-        for exam, q_count, s_completed, avg_grade, p_reviews in exam_stats:
-            exams_list.append(
-                ExamInList(
-                    id=exam.id,
-                    title=exam.title,
-                    status=exam.status,
-                    questions_count=q_count or 0,
-                    students_completed=f"{s_completed or 0} / {total_students}",
-                    average_grade=avg_grade if avg_grade else None,
-                    pending_reviews=p_reviews or 0
-                )
+    exams_list = []
+    for exam, q_count, s_completed, avg_grade, p_reviews in exam_stats:
+        exams_list.append(
+            ExamInList(
+                id=exam.id,
+                title=exam.title,
+                status=exam.status,
+                questions_count=q_count or 0,
+                students_completed=f"{s_completed or 0} / {total_students}",
+                average_grade=avg_grade if avg_grade else None,
+                pending_reviews=p_reviews or 0
             )
-
-        return CourseExamsPage(
-            course_id=course.id,
-            course_name=course.name,
-            exams=exams_list
         )
-    
+
+    return CourseExamsPage(
+        course_id=course.id,
+        course_name=course.name,
+        exams=exams_list
+    )
