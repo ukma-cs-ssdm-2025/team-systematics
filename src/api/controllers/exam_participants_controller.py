@@ -12,6 +12,8 @@ from src.models.users import User
 
 from .versioning import require_api_version
 
+SUPERVISOR_ACCESS_DENIED = "Доступ дозволений лише наглядачам"
+
 class ExamParticipantsController:
     def __init__(self, service: ExamParticipantsService):
         self.service = service
@@ -30,7 +32,7 @@ class ExamParticipantsController:
             # доступ: supervisor
             roles = UserRepository(db).get_user_roles(current_user.id)
             if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ дозволений лише наглядачам")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
             return self.service.list(db, exam_id)
 
         @self.router.post("", response_model=ExamParticipantResponse, status_code=status.HTTP_201_CREATED,
@@ -43,7 +45,7 @@ class ExamParticipantsController:
         ):
             roles = UserRepository(db).get_user_roles(current_user.id)
             if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ дозволений лише наглядачам")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
             return self.service.add(db, exam_id, payload)
 
         @self.router.delete("/{user_id}", summary="Видалити студента (завершити активну спробу, якщо йде тест)",
@@ -56,5 +58,5 @@ class ExamParticipantsController:
         ):
             roles = UserRepository(db).get_user_roles(current_user.id)
             if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Доступ дозволений лише наглядачам")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
             return self.service.remove(db, exam_id, user_id)
