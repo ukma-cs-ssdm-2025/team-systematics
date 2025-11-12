@@ -54,6 +54,7 @@ class LongAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["long_answer"]
     student_answer_text: str
     answer_id: Optional[str] = None  # ID відповіді для позначення на плагіат
+    is_flagged: bool = False  # Чи позначена відповідь для перевірки на плагіат
 
 class ShortAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["short_answer"]

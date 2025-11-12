@@ -62,6 +62,24 @@ class AttemptsController:
 
     def _setup_routes(self):
         """Setup all route handlers for the attempts router."""
+        # Важливо: специфічні роути (без параметрів шляху) мають бути визначені ПЕРЕД роутами з параметрами
+        # інакше FastAPI спробує зіставити їх з параметрами
+        
+        @self.router.get(
+            "/flagged-answers",
+            response_model=List[FlaggedAnswerResponse],
+            summary="Отримати список позначених відповідей (лише викладач)",
+        )
+        async def list_flagged_answers(
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            # Перевірка ролі виконується всередині сервісу
+            return self.service.list_flagged_answers(
+                db=db,
+                current_user=current_user,
+            )
+        
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
         async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.add_answer(db, attempt_id, payload)
@@ -225,26 +243,6 @@ class AttemptsController:
                 current_user=current_user,
             )
             return None
-        
-        @self.router.get(
-            "/flagged-answers",
-            response_model=List[FlaggedAnswerResponse],
-            summary="Отримати список позначених відповідей (лише викладач)",
-        )
-        async def list_flagged_answers(
-            db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user_with_role),
-        ):
-            user_role = str(current_user.role).lower().strip() if current_user.role else None
-            if user_role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для вчителів"
-                )
-            return self.service.list_flagged_answers(
-                db=db,
-                current_user=current_user,
-            )
         
         @self.router.post(
             "/answers/{answer1_id}/compare/{answer2_id}",

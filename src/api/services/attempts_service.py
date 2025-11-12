@@ -22,7 +22,7 @@ from src.api.schemas.plagiarism import (
 
 from src.models.attempts import Attempt, AttemptStatus, Answer
 from src.models.exams import Exam, Question, QuestionType
-from src.api.errors.app_errors import NotFoundError, ConflictError
+from src.api.errors.app_errors import NotFoundError, ConflictError, ForbiddenError
 from src.utils.largest_remainder import distribute_largest_remainder
 
 from src.api.services.plagiarism_service import PlagiarismService
@@ -434,7 +434,7 @@ class AttemptsService:
     ) -> FlaggedAnswerResponse:
         """Позначити відповідь для перевірки на плагіат (тільки для вчителя)"""
         if not self._is_teacher(db, current_user):
-            raise ConflictError("Only teachers can flag answers for plagiarism check")
+            raise ForbiddenError("Only teachers can flag answers for plagiarism check")
         
         # Перевіряємо, чи існує відповідь та чи це long_answer
         answer = (
@@ -484,7 +484,7 @@ class AttemptsService:
     ) -> None:
         """Зняти позначення з відповіді (тільки для вчителя)"""
         if not self._is_teacher(db, current_user):
-            raise ConflictError("Only teachers can unflag answers")
+            raise ForbiddenError("Only teachers can unflag answers")
         
         repo = FlaggedAnswersRepository()
         if not repo.delete(db, answer_id):
@@ -498,7 +498,7 @@ class AttemptsService:
     ) -> List[FlaggedAnswerResponse]:
         """Отримати список всіх позначених відповідей (тільки для вчителя)"""
         if not self._is_teacher(db, current_user):
-            raise ConflictError("Only teachers can view flagged answers")
+            raise ForbiddenError("Only teachers can view flagged answers")
         
         repo = FlaggedAnswersRepository()
         flagged_list = repo.list_all(db)
@@ -532,7 +532,7 @@ class AttemptsService:
     ) -> AnswerComparisonResponse:
         """Порівняти дві конкретні відповіді на плагіат (тільки для вчителя)"""
         if not self._is_teacher(db, current_user):
-            raise ConflictError("Only teachers can compare answers")
+            raise ForbiddenError("Only teachers can compare answers")
         
         # Отримуємо відповіді з повною інформацією
         answer1 = (

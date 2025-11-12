@@ -213,10 +213,15 @@ onMounted(async () => {
         // Спочатку перевіряємо, чи є answer_id в question
         if (props.question.answer_id) {
             answerId.value = props.question.answer_id
-            await checkFlaggedStatus()
+            // Використовуємо is_flagged з review даних, якщо воно є
+            if (props.question.is_flagged !== undefined) {
+                isFlagged.value = props.question.is_flagged
+            } else {
+                // Якщо is_flagged не передано, перевіряємо через API
+                await checkFlaggedStatus()
+            }
         } else if (props.attemptId && props.question.id) {
             // Якщо answer_id немає, спробуємо отримати його через API
-            console.log('answer_id not found in question, fetching from API...')
             try {
                 const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id)
                 if (fetchedAnswerId) {
@@ -224,21 +229,11 @@ onMounted(async () => {
                     // Оновлюємо question об'єкт
                     props.question.answer_id = fetchedAnswerId
                     await checkFlaggedStatus()
-                } else {
-                    console.warn('⚠️ No answer found for question:', props.question.id)
                 }
             } catch (error) {
-                console.error('Failed to fetch answer_id:', error)
+                // Мовчазно ігноруємо помилку
             }
         }
-        
-        console.log('Question data:', {
-            question_id: props.question.id,
-            question_type: props.question.question_type,
-            answer_id: props.question.answer_id || answerId.value,
-            isTeacher: props.isTeacher,
-            isReviewMode: props.isReviewMode
-        })
     }
 })
 

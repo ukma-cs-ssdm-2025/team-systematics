@@ -6,6 +6,7 @@ from src.models.attempts import Attempt, Answer
 from src.models.exams import Exam, Question, Option, MatchingOption, QuestionType
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.weights_repository import WeightsRepository
+from src.api.repositories.flagged_answers_repository import FlaggedAnswersRepository
 from src.api.errors.app_errors import NotFoundError
 from src.utils.largest_remainder import distribute_largest_remainder
 
@@ -71,7 +72,8 @@ class ExamReviewService:
             question_data = self._build_question_review_data(
                 question, 
                 student_answer, 
-                final_question_points
+                final_question_points,
+                db
             )
             review_questions.append(question_data)
             
@@ -85,7 +87,8 @@ class ExamReviewService:
             self,
             question: Question,
             student_answer: Answer | None,
-            true_question_points: float
+            true_question_points: float,
+            db: Session
         ) -> dict:
         """Допоміжна функція для побудови структури одного питання."""
         
@@ -107,7 +110,7 @@ class ExamReviewService:
             return self._build_multi_choice_data(base_data, question, student_answer)
             
         elif q_type == QuestionType.long_answer:
-            return self._build_long_answer_data(base_data, student_answer)
+            return self._build_long_answer_data(base_data, student_answer, db)
             
         elif q_type == QuestionType.short_answer:
             return self._build_short_answer_data(base_data, question, student_answer)
@@ -174,7 +177,7 @@ class ExamReviewService:
             earned_points=total_earned_points
         )
 
-    def _build_long_answer_data(self, base_data, student_answer):
+    def _build_long_answer_data(self, base_data, student_answer, db: Session = None):
         # earned_points може бути встановлено вчителем вручну
         # Якщо earned_points встановлено в Answer, використовуємо його
         answer_id = str(student_answer.id) if student_answer else None
@@ -184,11 +187,18 @@ class ExamReviewService:
             # earned_points вже в правильному масштабі (final_points)
             earned_points = student_answer.earned_points
         
+        # Перевіряємо, чи позначена відповідь для перевірки на плагіат
+        is_flagged = False
+        if answer_id and db:
+            repo = FlaggedAnswersRepository()
+            is_flagged = repo.is_flagged(db, UUID(answer_id))
+        
         return LongAnswerQuestionReview(
             **base_data,
             earned_points=earned_points, 
             student_answer_text=student_answer.answer_text if student_answer else "",
-            answer_id=answer_id
+            answer_id=answer_id,
+            is_flagged=is_flagged
         )
         
     def _build_short_answer_data(self, base_data, question, student_answer):
