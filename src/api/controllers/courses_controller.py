@@ -171,7 +171,7 @@ class CoursesController:
             Повертає список курсів для наглядача з фільтрами (назва/викладач/к-сть студентів).
             Перевірка ролі 'supervisor' виконується в сервісі.
             """
-            items, total = self.service.list_for_supervisor(
+            items, _ = self.service.list_for_supervisor(
                 db=db,
                 current_user=current_user,
                 title_filter=name,
