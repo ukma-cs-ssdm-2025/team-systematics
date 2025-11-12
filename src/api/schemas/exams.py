@@ -175,6 +175,11 @@ class Exam(BaseModel):
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
     published: bool = Field(False, description="Whether exam is published")
+    status: str = Field(
+        ...,
+        description="Exam status: draft, published, open, or closed",
+        example="draft"
+    )
     question_count: int = Field(
         0,
         description="Number of available questions",

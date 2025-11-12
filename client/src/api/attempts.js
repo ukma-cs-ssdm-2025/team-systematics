@@ -16,11 +16,15 @@ export async function startExamAttempt(examId) {
         const response = await http.post(`/api/exams/${examId}/attempts`)
         return response.data
     } catch (error) {
-        // Simplify Conditional method
-        const detail = error?.response?.data?.detail;
-        if (detail) throw new Error(detail);
-     throw new Error(error?.message ?? 'Request failed');
-      }
+        // Зберігаємо оригінальну помилку з response для правильної обробки на фронтенді
+        if (error.response) {
+            const detail = error.response?.data?.detail || error.response?.data?.message || error.message
+            const httpError = new Error(detail)
+            httpError.response = error.response // Зберігаємо response для перевірки статусу
+            throw httpError
+        }
+        throw new Error(error?.message ?? 'Request failed')
+    }
 }
 
 /* Завантажуємо деталі спроби іспиту за її ID

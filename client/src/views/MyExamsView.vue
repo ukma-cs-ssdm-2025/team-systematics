@@ -86,9 +86,9 @@
                 :visible="isPopupVisible" 
                 :header="popupHeader"
                 :disclaimer="popupDisclaimer"
-                :fstButton="isWarningPopup ? 'Закрити' : 'Розпочати'"
-                :sndButton="isWarningPopup ? null : 'Скасувати'"
-                @fstAction="isWarningPopup ? closePopup() : handleStartExam()"
+                :fstButton="(isWarningPopup || isErrorPopup) ? 'Закрити' : 'Розпочати'"
+                :sndButton="(isWarningPopup || isErrorPopup) ? null : 'Скасувати'"
+                @fstAction="(isWarningPopup || isErrorPopup) ? closePopup() : handleStartExam()"
                 @sndAction="closePopup" />
         </div>
     </div>
@@ -116,9 +116,15 @@ const error = ref(null)
 const isPopupVisible = ref(false)
 const selectedExam = ref(null)
 const isWarningPopup = ref(false) // Попап з попередженням про час початку
+const isErrorPopup = ref(false) // Попап з помилкою
+const errorMessage = ref('') // Повідомлення про помилку
 
 const popupHeader = computed(() => {
     if (!selectedExam.value) return ''
+    
+    if (isErrorPopup.value) {
+        return 'Неможливо розпочати іспит'
+    }
     
     if (isWarningPopup.value) {
         return `Іспит ще не розпочався`
@@ -129,6 +135,10 @@ const popupHeader = computed(() => {
 
 const popupDisclaimer = computed(() => {
     if (!selectedExam.value) return ''
+    
+    if (isErrorPopup.value) {
+        return errorMessage.value || 'Сталася невідома помилка.'
+    }
     
     if (isWarningPopup.value) {
         const formattedTime = formatDateTime(selectedExam.value.start_at)
@@ -168,6 +178,8 @@ function closePopup() {
     selectedExam.value = null
     isPopupVisible.value = false
     isWarningPopup.value = false
+    isErrorPopup.value = false
+    errorMessage.value = ''
 }
 
 // розпочинаємо спробу іспиту, натиснувши на кнопку в поп-апі
@@ -178,12 +190,28 @@ async function handleStartExam() {
         const attemptData = await startExamAttempt(selectedExam.value.id)
         const attemptId = attemptData.id
         router.push(`/exam/${attemptId}`)
+        closePopup()
     } catch (err) {
         console.error("Помилка при спробі розпочати іспит:", err)
-        const errorMsg = err.response?.data?.detail || err.message || 'Не вдалося розпочати іспит. Спробуйте ще раз.'
-        alert(errorMsg)
-    } finally {
-        closePopup()
+        
+        // Перевіряємо, чи це помилка про те, що студент не зареєстрований
+        const errorDetail = err.response?.data?.detail || err.message || ''
+        const isNotRegistered = errorDetail.includes('не зареєстрований') || 
+                                errorDetail.includes('зареєстрований як учасник') ||
+                                err.response?.status === 409
+        
+        if (isNotRegistered) {
+            // Показуємо попап з повідомленням про необхідність звернутися до наглядача
+            errorMessage.value = 'Ви не зареєстровані на цей іспит. Будь ласка, зверніться до наглядача для реєстрації.'
+            isErrorPopup.value = true
+            isWarningPopup.value = false
+            // Не закриваємо попап, щоб користувач міг прочитати повідомлення
+        } else {
+            // Для інших помилок також показуємо попап
+            errorMessage.value = errorDetail || 'Не вдалося розпочати іспит. Спробуйте ще раз.'
+            isErrorPopup.value = true
+            isWarningPopup.value = false
+        }
     }
 }
 
