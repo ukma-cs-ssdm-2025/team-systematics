@@ -48,7 +48,6 @@ export async function updateUserNotificationSettings(settings) {
 // Завантажує новий аватар користувача на сервер
 export async function uploadAvatar(file) {
     if (USE_MOCK_DATA) {
-        console.log("MOCK: Uploading avatar:", file.name)
         return newAvatarMock
     }
 

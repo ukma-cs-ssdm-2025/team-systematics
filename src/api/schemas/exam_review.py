@@ -53,6 +53,8 @@ class MultiChoiceQuestionReview(BaseQuestionReview):
 class LongAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["long_answer"]
     student_answer_text: str
+    answer_id: Optional[str] = None  # ID відповіді для позначення на плагіат
+    is_flagged: bool = False  # Чи позначена відповідь для перевірки на плагіат
 
 class ShortAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["short_answer"]
@@ -76,6 +78,7 @@ QuestionReview = Union[
 
 # Це головна модель, яку повертатиме API
 class ExamAttemptReviewResponse(BaseModel):
+    exam_id: str  # Додаємо exam_id для навігації до журналу
     exam_title: str
     questions: List[
         Annotated[QuestionReview, Field(discriminator="question_type")]

@@ -17,6 +17,7 @@ from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
 from src.api.controllers.users_controller import UsersController
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
+from src.models import attempts
 from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     courses.Base.metadata.create_all(bind=engine)
     majors.Base.metadata.create_all(bind=engine)
     user_majors.Base.metadata.create_all(bind=engine)
+    attempts.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
@@ -103,7 +105,7 @@ def create_app() -> FastAPI:
             if os.path.exists(index_path):
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
-
+ 
     return app
 
 app = create_app()

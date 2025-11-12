@@ -8,12 +8,12 @@
             </div>
 
             <!-- 2. Стан помилки -->
-            <div v-else-if="error" class="status-message error">
+            <div v-if="error" class="status-message error">
                 Помилка завантаження: {{ error }}
             </div>
 
             <!-- 3. Основний контент, коли дані завантажено -->
-            <div v-else>
+            <div v-if="!loading && !error">
                 <!-- Секція для майбутніх іспитів -->
                 <section class="exams-section">
                     <h2>Майбутні іспити</h2>
@@ -30,7 +30,11 @@
                         </thead>
                         <tbody>
                             <tr v-for="exam in futureExams" :key="exam.id">
-                                <td class="exam-title left" @click="openStartExamPopup(exam)">{{ exam.title }}</td>
+                                <td 
+                                    class="exam-title left"
+                                    @click="openStartExamPopup(exam)">
+                                    {{ exam.title }}
+                                </td>
                                 <td class="left">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left">{{ formatDateTime(exam.end_at) }}</td>
                                 <td class="right">{{ exam.duration_minutes }} хв</td>
@@ -77,9 +81,14 @@
             </div>
         </main>
         <div class="start-test-popup" v-if="isPopupVisible">
-            <CPopup :visible="isPopupVisible" :header="popupHeader"
-                disclaimer="Як тільки екзамен розпочнеться, його не можна буде зупинити." fstButton="Розпочати"
-                sndButton="Скасувати" @fstAction="handleStartExam" @sndAction="closePopup" />
+            <CPopup 
+                :visible="isPopupVisible" 
+                :header="popupHeader"
+                :disclaimer="popupDisclaimer"
+                :fstButton="isWarningPopup ? 'Закрити' : 'Розпочати'"
+                :sndButton="isWarningPopup ? null : 'Скасувати'"
+                @fstAction="isWarningPopup ? closePopup() : handleStartExam()"
+                @sndAction="closePopup" />
         </div>
     </div>
 </template>
@@ -104,21 +113,59 @@ const error = ref(null)
 // керуємо поп-апом з підтвердженням готовності почати іспит
 const isPopupVisible = ref(false)
 const selectedExam = ref(null)
+const isWarningPopup = ref(false) // Попап з попередженням про час початку
 
 const popupHeader = computed(() => {
-    return selectedExam.value
-        ? `Розпочати іспит: ${selectedExam.value.title}?`
-        : ''
+    if (!selectedExam.value) return ''
+    
+    if (isWarningPopup.value) {
+        return `Іспит ще не розпочався`
+    }
+    
+    return `Розпочати іспит: ${selectedExam.value.title}?`
 })
+
+const popupDisclaimer = computed(() => {
+    if (!selectedExam.value) return ''
+    
+    if (isWarningPopup.value) {
+        const formattedTime = formatDateTime(selectedExam.value.start_at)
+        return `Іспит "${selectedExam.value.title}" можна розпочати тільки після ${formattedTime}.`
+    }
+    
+    return 'Як тільки екзамен розпочнеться, його не можна буде зупинити.'
+})
+
+// Перевіряє, чи можна почати іспит (чи час початку вже настав)
+function canStartExam(exam) {
+    if (!exam || !exam.start_at) {
+        return false
+    }
+    const startTime = new Date(exam.start_at)
+    const now = new Date()
+    return now >= startTime
+}
 
 function openStartExamPopup(exam) {
     selectedExam.value = exam
-    isPopupVisible.value = true
+    
+    // Перевіряємо, чи час початку вже настав
+    const canStart = canStartExam(exam)
+    if (canStart === false) {
+        // Показуємо попап з попередженням (тільки з кнопкою "Закрити")
+        isWarningPopup.value = true
+        isPopupVisible.value = true
+    } else {
+        // Показуємо звичайний попап з підтвердженням
+        isWarningPopup.value = false
+        isPopupVisible.value = true
+    }
 }
 
 function closePopup() {
     selectedExam.value = null
     isPopupVisible.value = false
+    isWarningPopup.value = false
 }
 
 // розпочинаємо спробу іспиту, натиснувши на кнопку в поп-апі
@@ -131,6 +178,8 @@ async function handleStartExam() {
         router.push(`/exam/${attemptId}`)
     } catch (err) {
         console.error("Помилка при спробі розпочати іспит:", err)
+        const errorMsg = err.response?.data?.detail || err.message || 'Не вдалося розпочати іспит. Спробуйте ще раз.'
+        alert(errorMsg)
     } finally {
         closePopup()
     }
@@ -193,9 +242,5 @@ function formatDateTime(dateString) {
 
 .exam-title {
     cursor: pointer;
-}
-
-.exam-title.inactive {
-    cursor: default;
 }
 </style>

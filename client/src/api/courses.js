@@ -33,16 +33,16 @@ export async function getAllCourses() {
 }
 
 // Створює новий курс.
-export async function createNewCourse(courseId) {
+export async function createNewCourse(payload) {
     if (USE_MOCK_DATA) {
         // ...
     }
     try {
-        const response = await http.post(`/api/courses`)
+        const response = await http.post('/api/courses', payload)
         return response.data
     } catch (error) {
-        console.error(`API Error fetching students for course ${courseId}:`, error)
-        throw new Error('Не вдалося створити новий курс.')
+        console.error(`API Error fetching students for course:`, error)
+        throw error
     }
 }
 

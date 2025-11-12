@@ -53,18 +53,32 @@ def install_exception_handlers(app: FastAPI) -> None:
     async def app_error_handler(_: Request, exc: AppError):
         return exc.to_response()
 
+    # Обробка для непередбачених помилок
+    @app.exception_handler(Exception)
+    async def generic_error_handler(_: Request, exc: Exception):
+        return JSONResponse(status_code=500, content={
+            "error": {"code": ErrorCode.INTERNAL_ERROR, "message": "An unexpected error occurred", "details": None}
+        })
+
     @app.exception_handler(StarletteHTTPException)
     async def starlette_exc_handler(_: Request, exc: StarletteHTTPException):
-        # Map to our envelope but keep original status
-        code = ErrorCode.INTERNAL_ERROR
+        # Обробка лише конкретних статусів помилок
         if exc.status_code == 404:
-            code = ErrorCode.NOT_FOUND
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.NOT_FOUND, "message": "Resource not found", "details": None}
+            })
         elif exc.status_code == 403:
-            code = ErrorCode.FORBIDDEN
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.FORBIDDEN, "message": "Access forbidden", "details": None}
+            })
         elif exc.status_code == 401:
-            code = ErrorCode.UNAUTHORIZED
+            return JSONResponse(status_code=exc.status_code, content={
+                "error": {"code": ErrorCode.UNAUTHORIZED, "message": "Unauthorized access", "details": None}
+            })
+    
+        # Для всіх інших статусів — загальний код помилки
         return JSONResponse(status_code=exc.status_code, content={
-            "error": {"code": code, "message": str(exc.detail), "details": None}
+            "error": {"code": ErrorCode.INTERNAL_ERROR, "message": "A specific error occurred", "details": None}
         })
 
     @app.exception_handler(RequestValidationError)

@@ -13,9 +13,10 @@
 
                 <div v-else-if="courses.length > 0" class="courses-grid">
                     <div v-for="course in courses" :key="course.id" class="course-card">
-                        <div class="card-header">
-                            <span class="course-code">{{ course.code }}</span>
-                            <h3>{{ course.name }}</h3>
+                        <span class="course-code">{{ course.code }}</span>
+                        <h3 class="course-name">{{ course.name }}</h3>
+                        <div v-if="course.description" class="card-description">
+                            <p>{{ course.description }}</p>
                         </div>
                         <div class="card-stats">
                             <span>👩‍🎓 {{ course.student_count }} студентів</span>
@@ -64,12 +65,9 @@ const header = computed(() => {
     return auth.isTeacher.value ? 'Мої курси' : 'Каталог курсів'
 })
 
-console.log(auth.isTeacher.value)
-
 onMounted(async () => {
     try {
         if (auth.isTeacher.value) {
-            console.log("HERE")
             const response = await getMyCourses()    
             courses.value = response.items
         }
@@ -128,9 +126,29 @@ function createNewCourse() {
     gap: 16px;
 }
 
-.card-header .course-code {
+.course-code {
     color: var(--color-dark-gray);
     display: block;
+}
+
+.course-name {
+    margin: 0;
+}
+
+.card-description {
+    color: var(--color-dark-gray);
+    font-size: 0.9rem;
+    line-height: 1.5;
+}
+
+.card-description p {
+    margin: 0;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .card-stats {

@@ -51,10 +51,161 @@ export async function getExamJournal(examId) {
     }
     try {
         // Ендпоінт тепер прив'язаний до іспиту
-        const response = await http.get(`/api/teacher/exams/${examId}/journal`)
+        const response = await http.get(`/api/exams/${examId}/journal`)
         return response.data
     } catch (error) {
         console.error(`API Error fetching exam journal for ${examId}:`, error)
         throw new Error('Не вдалося завантажити дані журналу.')
+    }
+}
+
+// Створює зв'язок між екзаменом та курсом
+async function linkExamToCourse(examId, courseId) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/courses/${courseId}`)
+        return response.data
+    } catch (error) {
+        console.error('Error linking exam to course:', error)
+        throw error
+    }
+}
+
+// Створює питання для екзамену
+async function createQuestion(examId, questionData) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/questions`, questionData)
+        return response.data
+    } catch (error) {
+        console.error(`API Error creating question:`, error)
+        throw error
+    }
+}
+
+export async function createExam(examData) {
+    try {
+        // Створюємо екзамен
+        const examResponse = await http.post(`/api/exams`, {
+            title: examData.title,
+            instructions: examData.instructions || null,
+            start_at: examData.start_at,
+            end_at: examData.end_at,
+            duration_minutes: examData.duration_minutes,
+            max_attempts: examData.max_attempts,
+            pass_threshold: examData.pass_threshold,
+            owner_id: examData.owner_id
+        })
+        const exam = examResponse.data
+        
+        // Зв'язуємо з курсом (якщо є course_id)
+        if (examData.course_id) {
+            try {
+                await linkExamToCourse(exam.id, examData.course_id)
+            } catch (linkError) {
+                // Продовжуємо, навіть якщо зв'язок не вдався
+                console.warn('Failed to link exam to course:', linkError)
+            }
+        }
+        
+        // Створюємо питання
+        if (examData.questions && examData.questions.length > 0) {
+            for (const question of examData.questions) {
+                await createQuestion(exam.id, question)
+            }
+        }
+        
+        return exam
+    } catch (error) {
+        console.error(`API Error creating a new exam`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося створити новий іспит.')
+    }
+}
+
+// Отримує іспит з питаннями для редагування
+export async function getExamForEdit(examId) {
+    try {
+        const response = await http.get(`/api/exams/${examId}/edit`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error fetching exam for edit:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося завантажити іспит для редагування.')
+    }
+}
+
+// Публікує іспит (змінює статус з draft на published)
+export async function publishExam(examId) {
+    try {
+        const response = await http.post(`/api/exams/${examId}/publish`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error publishing exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося опублікувати іспит.')
+    }
+}
+
+// Видаляє іспит
+export async function deleteExam(examId) {
+    try {
+        await http.delete(`/api/exams/${examId}`)
+    } catch (error) {
+        console.error(`API Error deleting exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося видалити іспит.')
+    }
+}
+
+// Оновлює іспит
+export async function updateExam(examId, examData) {
+    try {
+        // Оновлюємо основні дані іспиту
+        const examResponse = await http.patch(`/api/exams/${examId}`, {
+            title: examData.title,
+            instructions: examData.instructions || null,
+            start_at: examData.start_at,
+            end_at: examData.end_at,
+            duration_minutes: examData.duration_minutes,
+            max_attempts: examData.max_attempts,
+            pass_threshold: examData.pass_threshold
+        })
+        const exam = examResponse.data
+        
+        // Видаляємо всі старі питання та створюємо нові
+        // Спочатку отримуємо список існуючих питань
+        const existingExam = await getExamForEdit(examId)
+        if (existingExam.questions) {
+            for (const question of existingExam.questions) {
+                try {
+                    await http.delete(`/api/exams/${examId}/questions/${question.id}`)
+                } catch (deleteError) {
+                    // Ігноруємо помилки видалення окремих питань
+                    console.warn(`Failed to delete question ${question.id}:`, deleteError)
+                }
+            }
+        }
+        
+        // Створюємо нові питання
+        if (examData.questions && examData.questions.length > 0) {
+            for (const question of examData.questions) {
+                await createQuestion(examId, question)
+            }
+        }
+        
+        return exam
+    } catch (error) {
+        console.error(`API Error updating exam:`, error)
+        if (error.response?.data?.detail) {
+            throw error
+        }
+        throw new Error('Не вдалося оновити іспит.')
     }
 }

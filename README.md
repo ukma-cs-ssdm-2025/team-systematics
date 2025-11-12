@@ -6,12 +6,12 @@
 Розроблений командою _Systematics_, проєкт передбачає створення платформи для проведення онлайн-іспитів на базі веб-застосунку, що забезпечує __підтримку різних типів завдань, організацію сесій із обмеженням у часі та інструменти для виявлення плагіату__. Система передбачає ролі студента, викладача та наглядача, надає інструменти для автоматичного оцінювання, формування звітів, контролю доброчесності.
 
 ## Наші учасники:
-| Прізвище Ім'я           | GitHub                                                 | Ролі
-| ----------------------- | ------------------------------------------------------ |---------------------|
-| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Release Manager     |
-| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | Code Analyst        |
-| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | QA Engineer         |
-| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | Refactoring Lead    |
+| Прізвище Ім'я        | GitHub                                             | Ролі
+| ---------------------| ---------------------------------------------------|----------------------|
+| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Reliability Explorer |
+| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Risk Documentarian   |
+| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Resilience Engineer  |
+| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Fault Classifier     |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
@@ -40,6 +40,11 @@
  - [Прогрес розробки](/docs/code-quality/progress.md)
  - [Рев'ю коду](/docs/code-quality/review-report.md)
  - [Статичний аналіз бекенду](/docs/code-quality/static-analysis.md)
+
+ **Рефакторинг**
+ - [Стан коду до](/docs/refactoring/screen_after.jpg)
+ - [Стан коду після](/docs/refactoring/screen_before.jpg)
+ - [Звіт про рефакторинг](/docs/refactoring/sonarcloud-report.md)
 
  **Вимоги**
  - [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
@@ -92,6 +97,16 @@ DB_PORT=5432
 POSTGRES_DB=${DB_NAME}
 POSTGRES_USER=${DB_USER}
 POSTGRES_PASSWORD=${DB_PASSWORD}
+
+CLOUDINARY_CLOUD_NAME=dsiiuchan
+CLOUDINARY_API_KEY=394654662846574
+CLOUDINARY_API_SECRET=Mf5wPAIS_e_aQpSTCSAmy3LZmHg
+
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="t.systematics@gmail.com"
+SMTP_PASSWORD="prib hrjf azlh xkcv"
+SMTP_FROM="t.systematics@gmail.com"
 ```
 
 ### 2. Активувати  віртуальне середовище Python
@@ -112,7 +127,6 @@ http://localhost:3000/
 
 ### 4. Запустити тести
 ``` bash
-$env:PYTHONPATH = "$PWD"
 pytest tests
 ```
 - подивитись покриття

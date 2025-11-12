@@ -25,6 +25,12 @@ class QuestionTypeWeight(Base):
     )
     weight = Column(Integer, nullable=False, default=1)
 
+class ExamStatusEnum(str, enum.Enum):
+    draft = "draft"
+    published = "published"
+    open = "open"
+    closed = "closed"
+
 class Exam(Base):
     __tablename__ = "exams"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -35,12 +41,18 @@ class Exam(Base):
     duration_minutes = Column(Integer, nullable=False, default=60)
     max_attempts = Column(Integer, default=1)
     pass_threshold = Column(Integer, default=60)
+    question_count = Column(Integer, nullable=False, default=0)
+    status = Column(SQLAlchemyEnum(
+        ExamStatusEnum,
+        name="exam_status_enum",
+        create_type=False
+    ), nullable=False, default=ExamStatusEnum.draft)
     
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("User")
     
     questions = relationship("Question", back_populates="exam", cascade=CASCADE_ALL_DELETE_ORPHAN)
-    attempts = relationship("Attempt", back_populates="exam")
+    attempts = relationship("Attempt", back_populates="exam", cascade="all, delete-orphan")
     courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):

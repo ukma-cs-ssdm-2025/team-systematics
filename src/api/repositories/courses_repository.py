@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, literal
+from sqlalchemy import func, or_, literal
 from uuid import UUID
 from fastapi import Query
 from src.models.courses import Course, CourseEnrollment
@@ -11,6 +11,19 @@ class CoursesRepository:
     def __init__(self, db: Session):
         self.db = db
     
+    def get_by_code_or_name(self, code: str, name: str) -> Optional[Course]:
+        """
+        Знаходить курс за кодом або назвою, ігноруючи регістр.
+        Використовується для перевірки на унікальність.
+        """
+        return self.db.query(Course).filter(
+            or_(
+                func.lower(Course.code) == func.lower(code),
+                func.lower(Course.name) == func.lower(name)
+            )
+        ).first()
+
+
     def _build_courses_with_stats_query(self, current_user_id: Optional[UUID] = None) -> Query:
         """
         Створює базовий запит для отримання курсів зі статистикою.
@@ -90,8 +103,12 @@ class CoursesRepository:
     def get(self, course_id: UUID) -> Optional[Course]:
         return self.db.query(Course).filter(Course.id == course_id).first()
 
-    def create(self, payload: CourseCreate) -> Course:
-        entity = Course(**payload.model_dump())
+    def create(self, payload: CourseCreate, owner_id: UUID) -> Course:
+        course_data = payload.model_dump()
+        course_data['owner_id'] = owner_id
+        
+        entity = Course(**course_data)
+        
         self.db.add(entity)
         self.db.commit()
         self.db.refresh(entity)
@@ -114,10 +131,7 @@ class CoursesRepository:
             self.db.delete(entity)
             self.db.commit()
 
-
-
     def enroll(self, user_id, course_id: UUID) -> None:
-        # idempotent: do nothing if already enrolled
         exists = (
             self.db.query(CourseEnrollment)
             .filter(CourseEnrollment.user_id == user_id, CourseEnrollment.course_id == course_id)
@@ -127,3 +141,7 @@ class CoursesRepository:
             return
         self.db.add(CourseEnrollment(user_id=user_id, course_id=course_id))
         self.db.commit()
+
+    def get_student_count(self, course_id: UUID) -> int:
+        """Підраховує кількість студентів, записаних на курс."""
+        return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0

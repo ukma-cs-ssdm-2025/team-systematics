@@ -12,6 +12,10 @@ import CoursesCatalogueView from '../views/CoursesCatalogueView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
+import PlagiarismCheckView from '../views/PlagiarismCheckView.vue'
+import PlagiarismComparisonView from '../views/PlagiarismComparisonView.vue'
+import CreateCourseView from '../views/CreateCourseView.vue'
+import CreateExamView from '../views/CreateExamView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -56,6 +60,26 @@ const router = createRouter({
         requiresAuth: true,  // доступ лише для авторизованих
         requiresRole: 'student',
         title: 'Мої іспити'
+      }
+    },
+    {
+      path: '/courses/:courseId/exams/create',
+      name: 'CreateExam',
+      component: CreateExamView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Створити новий іспит'
+      }
+    },
+    {
+      path: '/courses/:courseId/exams/:examId/edit',
+      name: 'EditExam',
+      component: CreateExamView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Редагувати іспит'
       }
     },
     {
@@ -107,6 +131,16 @@ const router = createRouter({
       }
     },
     {
+      path: '/courses/create',
+      name: 'CreateNewCourse',
+      component: CreateCourseView,
+         meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Створити новий курс'
+      }
+    },
+    {
       path: '/courses',
       name: 'CoursesCatalogue',
       component: CoursesCatalogueView,
@@ -145,6 +179,26 @@ const router = createRouter({
         title: 'Мій профіль'
       }
     },
+    {
+      path: '/plagiarism-check',
+      name: 'PlagiarismCheck',
+      component: PlagiarismCheckView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Перевірка плагіату'
+      }
+    },
+    {
+      path: '/plagiarism-check/compare/:answer1Id/:answer2Id',
+      name: 'PlagiarismComparison',
+      component: PlagiarismComparisonView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Порівняння робіт'
+      }
+    },
   ]
 })
 
@@ -163,6 +217,11 @@ router.beforeEach((to, from, next) => {
       hasAccess = true
     }
     if (to.meta.requiresRole === 'student' && auth.isStudent.value) {
+      hasAccess = true
+    }
+    // Дозволяємо доступ до /exams як для студентів, так і для вчителів
+    // Вчителі можуть переглядати список іспитів
+    if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
       hasAccess = true
     }
 

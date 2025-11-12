@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict sLRf3WUlP1HI521GifPWgMxSFHJEHnjzv81p6lrguBzKDjrdk1b2shZl8n8ZfO0
+\restrict C3cpGgLXXXTDc6iabPwkGJLjJpaZAIQU1Bzzef1DdRSksEgNB3G7pprDeRR5hhR
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
 
--- Started on 2025-11-05 00:29:09
+-- Started on 2025-11-06 16:30:05
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -29,7 +29,7 @@ CREATE EXTENSION IF NOT EXISTS "uuid-ossp" WITH SCHEMA public;
 
 
 --
--- TOC entry 5092 (class 0 OID 0)
+-- TOC entry 5096 (class 0 OID 0)
 -- Dependencies: 2
 -- Name: EXTENSION "uuid-ossp"; Type: COMMENT; Schema: -; Owner: 
 --
@@ -52,7 +52,7 @@ CREATE TYPE public.attempt_status_enum AS ENUM (
 ALTER TYPE public.attempt_status_enum OWNER TO postgres;
 
 --
--- TOC entry 937 (class 1247 OID 16830)
+-- TOC entry 943 (class 1247 OID 16952)
 -- Name: attemptstatus; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -64,6 +64,32 @@ CREATE TYPE public.attemptstatus AS ENUM (
 
 
 ALTER TYPE public.attemptstatus OWNER TO postgres;
+
+--
+-- TOC entry 937 (class 1247 OID 16931)
+-- Name: exam_status_enum; Type: TYPE; Schema: public; Owner: postgres
+--
+
+
+-- Тип статусу перевірки на плагіат
+CREATE TYPE public.plagiarism_status_enum AS ENUM (
+    'ok',
+    'suspicious',
+    'high_risk'
+);
+
+ALTER TYPE public.plagiarism_status_enum OWNER TO postgres;
+
+
+CREATE TYPE public.exam_status_enum AS ENUM (
+    'draft',
+    'published',
+    'open',
+    'closed'
+);
+
+
+ALTER TYPE public.exam_status_enum OWNER TO postgres;
 
 --
 -- TOC entry 907 (class 1247 OID 16618)
@@ -82,7 +108,7 @@ CREATE TYPE public.question_type_enum AS ENUM (
 ALTER TYPE public.question_type_enum OWNER TO postgres;
 
 --
--- TOC entry 934 (class 1247 OID 16819)
+-- TOC entry 931 (class 1247 OID 16819)
 -- Name: question_type_enum_weights; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -98,7 +124,7 @@ CREATE TYPE public.question_type_enum_weights AS ENUM (
 ALTER TYPE public.question_type_enum_weights OWNER TO postgres;
 
 --
--- TOC entry 922 (class 1247 OID 16737)
+-- TOC entry 940 (class 1247 OID 16941)
 -- Name: questiontype; Type: TYPE; Schema: public; Owner: postgres
 --
 
@@ -253,6 +279,21 @@ ALTER TABLE public.attempts OWNER TO postgres;
 -- Name: course_enrollments; Type: TABLE; Schema: public; Owner: postgres
 --
 
+
+-- Таблиця з результатом перевірки на плагіат
+CREATE TABLE public.plagiarism_checks (
+    id uuid DEFAULT public.uuid_generate_v4() NOT NULL,
+    attempt_id uuid NOT NULL,
+    uniqueness_percent real NOT NULL,
+    max_similarity real NOT NULL,
+    status public.plagiarism_status_enum NOT NULL,
+    details jsonb,
+    created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+);
+
+ALTER TABLE public.plagiarism_checks OWNER TO postgres;
+
+
 CREATE TABLE public.course_enrollments (
     user_id uuid NOT NULL,
     course_id uuid NOT NULL
@@ -305,7 +346,8 @@ CREATE TABLE public.exams (
     pass_threshold integer NOT NULL,
     owner_id uuid NOT NULL,
     question_count integer NOT NULL,
-    duration_minutes integer NOT NULL
+    duration_minutes integer NOT NULL,
+    status public.exam_status_enum DEFAULT 'draft'::public.exam_status_enum NOT NULL
 );
 
 
@@ -342,7 +384,7 @@ CREATE SEQUENCE public.login_history_id_seq
 ALTER SEQUENCE public.login_history_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5093 (class 0 OID 0)
+-- TOC entry 5097 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: login_history_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -393,7 +435,7 @@ CREATE SEQUENCE public.majors_id_seq
 ALTER SEQUENCE public.majors_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5094 (class 0 OID 0)
+-- TOC entry 5098 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: majors_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -492,7 +534,7 @@ CREATE SEQUENCE public.roles_id_seq
 ALTER SEQUENCE public.roles_id_seq OWNER TO postgres;
 
 --
--- TOC entry 5095 (class 0 OID 0)
+-- TOC entry 5099 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: postgres
 --
@@ -547,7 +589,7 @@ CREATE TABLE public.users (
 ALTER TABLE public.users OWNER TO postgres;
 
 --
--- TOC entry 4839 (class 2604 OID 16466)
+-- TOC entry 4842 (class 2604 OID 16466)
 -- Name: login_history id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -555,7 +597,7 @@ ALTER TABLE ONLY public.login_history ALTER COLUMN id SET DEFAULT nextval('publi
 
 
 --
--- TOC entry 4835 (class 2604 OID 16414)
+-- TOC entry 4838 (class 2604 OID 16414)
 -- Name: majors id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -563,7 +605,7 @@ ALTER TABLE ONLY public.majors ALTER COLUMN id SET DEFAULT nextval('public.major
 
 
 --
--- TOC entry 4834 (class 2604 OID 16403)
+-- TOC entry 4837 (class 2604 OID 16403)
 -- Name: roles id; Type: DEFAULT; Schema: public; Owner: postgres
 --
 
@@ -571,37 +613,57 @@ ALTER TABLE ONLY public.roles ALTER COLUMN id SET DEFAULT nextval('public.roles_
 
 
 --
--- TOC entry 5084 (class 0 OID 16702)
+-- TOC entry 5088 (class 0 OID 16702)
 -- Dependencies: 234
 -- Data for Name: answer_options; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.answer_options (answer_id, selected_option_id) FROM stdin;
+bb9b8726-f64a-4f3c-9068-4cd2e48cb575	f647eada-e8f6-4b36-addf-d515c90f5f20
+6ea78ed6-6f7a-4126-b13d-06df09b18fe7	4edda94c-9829-4b56-8e35-da5ed1caf619
+6ea78ed6-6f7a-4126-b13d-06df09b18fe7	9c907df1-13f5-49a2-8704-a650363aab44
+6ea78ed6-6f7a-4126-b13d-06df09b18fe7	92a348c8-585f-4f5a-a7b0-ac221f6ae778
+616b70fa-7209-4b22-940d-d036c7a5dca9	666603fc-f9b2-46f5-be9d-937cdad43290
+17fe0023-559c-4d67-8311-c13b7b6776be	4edda94c-9829-4b56-8e35-da5ed1caf619
+17fe0023-559c-4d67-8311-c13b7b6776be	9c907df1-13f5-49a2-8704-a650363aab44
+17fe0023-559c-4d67-8311-c13b7b6776be	92a348c8-585f-4f5a-a7b0-ac221f6ae778
 \.
 
 
 --
--- TOC entry 5083 (class 0 OID 16682)
+-- TOC entry 5087 (class 0 OID 16682)
 -- Dependencies: 233
 -- Data for Name: answers; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.answers (id, attempt_id, question_id, answer_text, answer_json, saved_at) FROM stdin;
+bb9b8726-f64a-4f3c-9068-4cd2e48cb575	ba15d2d1-d969-44ca-a505-2aafdd02e785	e28e0389-23dc-4ab6-a39c-dddc4069ca3c	\N	null	2025-11-05 14:41:43.812044+02
+6ea78ed6-6f7a-4126-b13d-06df09b18fe7	ba15d2d1-d969-44ca-a505-2aafdd02e785	71ac8795-7cc9-4c83-92f8-3ee825b5b0fd	\N	null	2025-11-05 14:41:45.227425+02
+e34bbd0d-bc67-44e8-9c4e-06f78070cd9c	ba15d2d1-d969-44ca-a505-2aafdd02e785	2c66cef6-afd7-4f5d-bb5b-96c620aa7793	43	43	2025-11-05 14:41:47.039612+02
+d7f2e347-6736-4a15-91aa-db27ac10fbf7	ba15d2d1-d969-44ca-a505-2aafdd02e785	1b6385a8-24fa-4ebe-b5af-de81753bc39a	dfsdf	null	2025-11-05 14:41:48.278034+02
+acc2ea64-0317-45be-9c1e-8240bc803608	ba15d2d1-d969-44ca-a505-2aafdd02e785	6120b797-2115-4599-90ca-9f05581c5480	\N	{"261f5ba3-89df-4e3e-b474-0e691f3e1fd9": "3f23539d-14e3-44a0-99f6-28b174b79a25", "3f23539d-14e3-44a0-99f6-28b174b79a25": "261f5ba3-89df-4e3e-b474-0e691f3e1fd9", "ed813700-6b7f-40b5-9e18-600fd528d6d2": "3f23539d-14e3-44a0-99f6-28b174b79a25"}	2025-11-05 14:41:52.104396+02
+616b70fa-7209-4b22-940d-d036c7a5dca9	db1bfde1-b377-47a9-9169-20bd236b24a3	e28e0389-23dc-4ab6-a39c-dddc4069ca3c	\N	null	2025-11-05 14:46:45.395721+02
+17fe0023-559c-4d67-8311-c13b7b6776be	db1bfde1-b377-47a9-9169-20bd236b24a3	71ac8795-7cc9-4c83-92f8-3ee825b5b0fd	\N	null	2025-11-05 14:46:46.612587+02
+51cd8020-9ef2-4e20-a496-eb03a2e3d981	db1bfde1-b377-47a9-9169-20bd236b24a3	2c66cef6-afd7-4f5d-bb5b-96c620aa7793	1	1	2025-11-05 14:46:48.079012+02
+e1b426c7-a411-4f19-85be-22faec65983c	db1bfde1-b377-47a9-9169-20bd236b24a3	1b6385a8-24fa-4ebe-b5af-de81753bc39a	sdfdsf	null	2025-11-05 14:46:49.016143+02
+d7104937-594c-4204-ae75-46d349c82c2c	db1bfde1-b377-47a9-9169-20bd236b24a3	6120b797-2115-4599-90ca-9f05581c5480	\N	{"261f5ba3-89df-4e3e-b474-0e691f3e1fd9": "3f23539d-14e3-44a0-99f6-28b174b79a25", "3f23539d-14e3-44a0-99f6-28b174b79a25": "ed813700-6b7f-40b5-9e18-600fd528d6d2", "ed813700-6b7f-40b5-9e18-600fd528d6d2": "261f5ba3-89df-4e3e-b474-0e691f3e1fd9"}	2025-11-05 14:46:53.437754+02
 \.
 
 
 --
--- TOC entry 5082 (class 0 OID 16670)
+-- TOC entry 5086 (class 0 OID 16670)
 -- Dependencies: 232
 -- Data for Name: attempts; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.attempts (id, exam_id, user_id, status, started_at, submitted_at, due_at, time_spent_seconds, earned_points, correct_answers, incorrect_answers, pending_count) FROM stdin;
+ba15d2d1-d969-44ca-a505-2aafdd02e785	d3408018-7653-4c3f-9bd9-d195af55ae4b	2d47491e-d1e2-412d-bb81-3d8ff0174bf1	submitted	2025-11-05 14:41:42.934127+02	2025-11-05 14:41:52.130348+02	2025-11-05 15:26:42.934127+02	9	23.076923	1	3	1
+db1bfde1-b377-47a9-9169-20bd236b24a3	d3408018-7653-4c3f-9bd9-d195af55ae4b	bed7d3a1-8461-41fa-9610-03db8bc58a85	submitted	2025-11-05 14:46:44.336048+02	2025-11-05 14:46:53.452515+02	2025-11-05 15:31:44.336048+02	9	15.384615	0	4	1
 \.
 
 
 --
--- TOC entry 5086 (class 0 OID 16838)
+-- TOC entry 5090 (class 0 OID 16838)
 -- Dependencies: 236
 -- Data for Name: course_enrollments; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -614,17 +676,18 @@ COPY public.course_enrollments (user_id, course_id) FROM stdin;
 bed7d3a1-8461-41fa-9610-03db8bc58a85	f389f888-74e6-4156-90ec-b4c25e3dbb57
 bed7d3a1-8461-41fa-9610-03db8bc58a85	5e7f62e0-e724-4659-8bd8-7602561eeb54
 bed7d3a1-8461-41fa-9610-03db8bc58a85	3662a170-ee7b-48d0-bb61-1261e0ce0162
-bed7d3a1-8461-41fa-9610-03db8bc58a85	6dbb1528-7882-4a45-9eb0-39e9fde5f097
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	8922f9e7-1f71-4a06-93fd-270066eb5850
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	652ab3bf-a87b-49fc-825b-9139994c8b43
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	6dbb1528-7882-4a45-9eb0-39e9fde5f097
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	f389f888-74e6-4156-90ec-b4c25e3dbb57
-bed7d3a1-8461-41fa-9610-03db8bc58a85	8ed0a5c0-78e3-463e-9975-b2d5053aaeba
+2d47491e-d1e2-412d-bb81-3d8ff0174bf1	5e7f62e0-e724-4659-8bd8-7602561eeb54
+bed7d3a1-8461-41fa-9610-03db8bc58a85	44ea4bed-2a79-4d2a-ac13-bf425e80ba96
+bed7d3a1-8461-41fa-9610-03db8bc58a85	1e419816-d2fe-4908-80a1-7ae6dfd88559
 \.
 
 
 --
--- TOC entry 5078 (class 0 OID 16541)
+-- TOC entry 5082 (class 0 OID 16541)
 -- Dependencies: 228
 -- Data for Name: course_exams; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -648,7 +711,7 @@ baba7220-d491-406a-9b8e-10223855b8a6	3662a170-ee7b-48d0-bb61-1261e0ce0162
 
 
 --
--- TOC entry 5075 (class 0 OID 16505)
+-- TOC entry 5079 (class 0 OID 16505)
 -- Dependencies: 225
 -- Data for Name: courses; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -667,28 +730,28 @@ COPY public.courses (name, description, code, id, owner_id) FROM stdin;
 
 
 --
--- TOC entry 5077 (class 0 OID 16534)
+-- TOC entry 5081 (class 0 OID 16534)
 -- Dependencies: 227
 -- Data for Name: exams; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
-COPY public.exams (id, title, instructions, start_at, end_at, max_attempts, pass_threshold, owner_id, question_count, duration_minutes) FROM stdin;
-6bb179b1-85c8-4c51-aad4-6a8fcff85e1e	Підсумковий іспит з "Диференціальних рівнянь"	\N	2026-01-20 10:00:00+02	2026-01-20 12:00:00+02	1	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120
-c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f	Іспит з "Організації баз даних"	Дозволено користуватися власними нотатками, зробленими від руки.	2026-01-15 14:00:00+02	2026-01-15 16:00:00+02	1	70	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	120
-d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a	Залік з "Основ тестування програмного забезпечення"	Залік складається з тестової частини (20 питань) та практичного завдання (написання тест-кейсів).	2026-01-18 11:00:00+02	2026-01-18 13:00:00+02	3	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	120
-26ebb6c2-9c0e-4d3e-97fe-68e00ce7f87e	Модульний контроль з "Чисельних методів"	\N	2025-12-10 14:00:00+02	2025-12-10 15:30:00+02	2	65	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	90
-e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b	Іспит з "Лінійної алгебри та аналітичної геометрії"	При собі мати калькулятор. Використання мобільних телефонів заборонено.	2025-12-22 16:00:00+02	2025-12-22 18:00:00+02	1	55	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120
-28e62b05-02d1-45fb-8df1-e6361c6d96d3	Залік з "Теорії ймовірностей"	\N	2026-01-25 09:00:00+02	2026-01-25 11:00:00+02	3	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120
-509638e8-468c-423d-b115-c547cbf74e4c	Практичний іспит з "Патернів проектування"	\N	2025-12-15 16:00:00+02	2025-12-15 18:00:00+02	1	70	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120
-d3408018-7653-4c3f-9bd9-d195af55ae4b	Тест №1 з "Основ QA"	\N	2025-11-30 10:00:00+02	2025-11-30 10:45:00+02	2	75	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	45
-b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e	Модульний контроль №2 з "Математичного аналізу"	\N	2025-11-25 12:00:00+02	2025-11-25 13:30:00+02	2	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	90
-a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d	Підсумковий іспит з "Алгоритми та структури даних"	Іспит складається з 30 теоретичних питань та 2 практичних завдань. Час на виконання - 120 хвилин.	2025-10-15 12:00:00+03	2025-12-20 13:00:00+02	1	65	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	4	120
-baba7220-d491-406a-9b8e-10223855b8a6	Підсумковий тест з "Управління вимогами"	\N	2026-01-10 12:00:00+02	2026-01-10 13:00:00+02	1	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	60
+COPY public.exams (id, title, instructions, start_at, end_at, max_attempts, pass_threshold, owner_id, question_count, duration_minutes, status) FROM stdin;
+6bb179b1-85c8-4c51-aad4-6a8fcff85e1e	Підсумковий іспит з "Диференціальних рівнянь"	\N	2026-01-20 10:00:00+02	2026-01-20 12:00:00+02	1	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120	published
+c3d4e5f6-a7b8-4c9d-0e1f-2a3b4c5d6e7f	Іспит з "Організації баз даних"	Дозволено користуватися власними нотатками, зробленими від руки.	2026-01-15 14:00:00+02	2026-01-15 16:00:00+02	1	70	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	120	published
+d4e5f6a7-b8c9-4d0e-1f2a-3b4c5d6e7f8a	Залік з "Основ тестування програмного забезпечення"	Залік складається з тестової частини (20 питань) та практичного завдання (написання тест-кейсів).	2026-01-18 11:00:00+02	2026-01-18 13:00:00+02	3	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	120	published
+26ebb6c2-9c0e-4d3e-97fe-68e00ce7f87e	Модульний контроль з "Чисельних методів"	\N	2025-12-10 14:00:00+02	2025-12-10 15:30:00+02	2	65	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	90	published
+e5f6a7b8-c9d0-4e1f-2a3b-4c5d6e7f8a9b	Іспит з "Лінійної алгебри та аналітичної геометрії"	При собі мати калькулятор. Використання мобільних телефонів заборонено.	2025-12-22 16:00:00+02	2025-12-22 18:00:00+02	1	55	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120	published
+28e62b05-02d1-45fb-8df1-e6361c6d96d3	Залік з "Теорії ймовірностей"	\N	2026-01-25 09:00:00+02	2026-01-25 11:00:00+02	3	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120	published
+509638e8-468c-423d-b115-c547cbf74e4c	Практичний іспит з "Патернів проектування"	\N	2025-12-15 16:00:00+02	2025-12-15 18:00:00+02	1	70	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	120	published
+d3408018-7653-4c3f-9bd9-d195af55ae4b	Тест №1 з "Основ QA"	\N	2025-11-30 10:00:00+02	2025-11-30 10:45:00+02	2	75	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	45	published
+b2c3d4e5-f6a7-4b8c-9d0e-1f2a3b4c5d6e	Модульний контроль №2 з "Математичного аналізу"	\N	2025-11-25 12:00:00+02	2025-11-25 13:30:00+02	2	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	3	90	published
+a1b2c3d4-e5f6-4a7b-8c9d-0e1f2a3b4c5d	Підсумковий іспит з "Алгоритми та структури даних"	Іспит складається з 30 теоретичних питань та 2 практичних завдань. Час на виконання - 120 хвилин.	2025-10-15 12:00:00+03	2025-12-20 13:00:00+02	1	65	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	4	120	published
+baba7220-d491-406a-9b8e-10223855b8a6	Підсумковий тест з "Управління вимогами"	\N	2026-01-10 12:00:00+02	2026-01-10 13:00:00+02	1	60	a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	5	60	published
 \.
 
 
 --
--- TOC entry 5074 (class 0 OID 16463)
+-- TOC entry 5078 (class 0 OID 16463)
 -- Dependencies: 224
 -- Data for Name: login_history; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -698,7 +761,7 @@ COPY public.login_history (id, user_id, login_timestamp, ip_address) FROM stdin;
 
 
 --
--- TOC entry 5076 (class 0 OID 16515)
+-- TOC entry 5080 (class 0 OID 16515)
 -- Dependencies: 226
 -- Data for Name: major_courses; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -717,7 +780,7 @@ COPY public.major_courses (major_id, course_id) FROM stdin;
 
 
 --
--- TOC entry 5069 (class 0 OID 16411)
+-- TOC entry 5073 (class 0 OID 16411)
 -- Dependencies: 219
 -- Data for Name: majors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -730,7 +793,7 @@ COPY public.majors (id, name) FROM stdin;
 
 
 --
--- TOC entry 5081 (class 0 OID 16657)
+-- TOC entry 5085 (class 0 OID 16657)
 -- Dependencies: 231
 -- Data for Name: matching_pairs; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -764,7 +827,7 @@ ed813700-6b7f-40b5-9e18-600fd528d6d2	6120b797-2115-4599-90ca-9f05581c5480	Мод
 
 
 --
--- TOC entry 5080 (class 0 OID 16643)
+-- TOC entry 5084 (class 0 OID 16643)
 -- Dependencies: 230
 -- Data for Name: options; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -860,7 +923,7 @@ c05c87f1-bd83-448a-bf01-68f51394272e	1bae96f3-ac14-436f-8384-901cb93d5115	4	f
 
 
 --
--- TOC entry 5085 (class 0 OID 16723)
+-- TOC entry 5089 (class 0 OID 16723)
 -- Dependencies: 235
 -- Data for Name: question_type_weights; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -875,7 +938,7 @@ long_answer	5
 
 
 --
--- TOC entry 5079 (class 0 OID 16629)
+-- TOC entry 5083 (class 0 OID 16629)
 -- Dependencies: 229
 -- Data for Name: questions; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -933,7 +996,7 @@ e28e0389-23dc-4ab6-a39c-dddc4069ca3c	d3408018-7653-4c3f-9bd9-d195af55ae4b	single
 
 
 --
--- TOC entry 5067 (class 0 OID 16400)
+-- TOC entry 5071 (class 0 OID 16400)
 -- Dependencies: 217
 -- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -946,7 +1009,7 @@ COPY public.roles (id, name) FROM stdin;
 
 
 --
--- TOC entry 5072 (class 0 OID 16447)
+-- TOC entry 5076 (class 0 OID 16447)
 -- Dependencies: 222
 -- Data for Name: user_majors; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -959,7 +1022,7 @@ ccc38203-c5e2-4924-bb5e-d754f8fc28d1	2
 
 
 --
--- TOC entry 5071 (class 0 OID 16432)
+-- TOC entry 5075 (class 0 OID 16432)
 -- Dependencies: 221
 -- Data for Name: user_roles; Type: TABLE DATA; Schema: public; Owner: postgres
 --
@@ -973,21 +1036,21 @@ ccc38203-c5e2-4924-bb5e-d754f8fc28d1	1
 
 
 --
--- TOC entry 5070 (class 0 OID 16421)
+-- TOC entry 5074 (class 0 OID 16421)
 -- Dependencies: 220
 -- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: postgres
 --
 
 COPY public.users (id, email, hashed_password, created_at, first_name, last_name, patronymic, notification_settings, avatar_url) FROM stdin;
-bed7d3a1-8461-41fa-9610-03db8bc58a85	chulano10@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:14:50.302061+03	Владислава	Колінько	Володимирівна	{"enabled": true, "remind_before_hours": [1, 8, 24]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943437/user_avatars/bed7d3a1-8461-41fa-9610-03db8bc58a85.jpg
-2d47491e-d1e2-412d-bb81-3d8ff0174bf1	miroslava.flom@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:27.673607+03	Мирослава	Фломбойм	Олексіївна	{"enabled": false, "remind_before_hours": []}	\N
+2d47491e-d1e2-412d-bb81-3d8ff0174bf1	miroslava.flom@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:27.673607+03	Мирослава	Фломбойм	Олексіївна	{"enabled": true, "remind_before_hours": [8, 24, 1]}	\N
+bed7d3a1-8461-41fa-9610-03db8bc58a85	chulano10@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:14:50.302061+03	Владислава	Колінько	Володимирівна	{"enabled": true, "remind_before_hours": [24, 1, 8]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1762346905/user_avatars/bed7d3a1-8461-41fa-9610-03db8bc58a85.jpg
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	anastasiabakalyna@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:06.219423+03	Анастасія	Бакалина	Ярославівна	{"enabled": false, "remind_before_hours": []}	\N
 a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	minelenova1@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:01:19.539414+03	Олександра	Малій	Михайлівна	{"enabled": false, "remind_before_hours": []}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943285/user_avatars/a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5.jpg
 \.
 
 
 --
--- TOC entry 5096 (class 0 OID 0)
+-- TOC entry 5100 (class 0 OID 0)
 -- Dependencies: 223
 -- Name: login_history_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -996,7 +1059,7 @@ SELECT pg_catalog.setval('public.login_history_id_seq', 1, false);
 
 
 --
--- TOC entry 5097 (class 0 OID 0)
+-- TOC entry 5101 (class 0 OID 0)
 -- Dependencies: 218
 -- Name: majors_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -1005,7 +1068,7 @@ SELECT pg_catalog.setval('public.majors_id_seq', 4, true);
 
 
 --
--- TOC entry 5098 (class 0 OID 0)
+-- TOC entry 5102 (class 0 OID 0)
 -- Dependencies: 216
 -- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: postgres
 --
@@ -1014,7 +1077,7 @@ SELECT pg_catalog.setval('public.roles_id_seq', 8, true);
 
 
 --
--- TOC entry 4899 (class 2606 OID 16921)
+-- TOC entry 4903 (class 2606 OID 16921)
 -- Name: course_enrollments course_enrollments_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1023,7 +1086,7 @@ ALTER TABLE ONLY public.course_enrollments
 
 
 --
--- TOC entry 4875 (class 2606 OID 16928)
+-- TOC entry 4879 (class 2606 OID 16928)
 -- Name: course_exams course_exams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1032,7 +1095,7 @@ ALTER TABLE ONLY public.course_exams
 
 
 --
--- TOC entry 4869 (class 2606 OID 16514)
+-- TOC entry 4873 (class 2606 OID 16514)
 -- Name: courses courses_code_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1041,7 +1104,7 @@ ALTER TABLE ONLY public.courses
 
 
 --
--- TOC entry 4871 (class 2606 OID 16902)
+-- TOC entry 4875 (class 2606 OID 16902)
 -- Name: courses courses_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1050,7 +1113,7 @@ ALTER TABLE ONLY public.courses
 
 
 --
--- TOC entry 4886 (class 2606 OID 16676)
+-- TOC entry 4890 (class 2606 OID 16676)
 -- Name: attempts exam_attempts_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1059,7 +1122,7 @@ ALTER TABLE ONLY public.attempts
 
 
 --
--- TOC entry 4873 (class 2606 OID 16540)
+-- TOC entry 4877 (class 2606 OID 16540)
 -- Name: exams exams_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1068,7 +1131,7 @@ ALTER TABLE ONLY public.exams
 
 
 --
--- TOC entry 4867 (class 2606 OID 16471)
+-- TOC entry 4871 (class 2606 OID 16471)
 -- Name: login_history login_history_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1077,7 +1140,7 @@ ALTER TABLE ONLY public.login_history
 
 
 --
--- TOC entry 4855 (class 2606 OID 16420)
+-- TOC entry 4859 (class 2606 OID 16420)
 -- Name: majors majors_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1086,7 +1149,7 @@ ALTER TABLE ONLY public.majors
 
 
 --
--- TOC entry 4857 (class 2606 OID 16418)
+-- TOC entry 4861 (class 2606 OID 16418)
 -- Name: majors majors_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1095,7 +1158,7 @@ ALTER TABLE ONLY public.majors
 
 
 --
--- TOC entry 4884 (class 2606 OID 16664)
+-- TOC entry 4888 (class 2606 OID 16664)
 -- Name: matching_pairs matching_pairs_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1104,7 +1167,7 @@ ALTER TABLE ONLY public.matching_pairs
 
 
 --
--- TOC entry 4881 (class 2606 OID 16651)
+-- TOC entry 4885 (class 2606 OID 16651)
 -- Name: options options_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1113,7 +1176,7 @@ ALTER TABLE ONLY public.options
 
 
 --
--- TOC entry 4897 (class 2606 OID 16728)
+-- TOC entry 4901 (class 2606 OID 16728)
 -- Name: question_type_weights question_type_weights_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1122,7 +1185,7 @@ ALTER TABLE ONLY public.question_type_weights
 
 
 --
--- TOC entry 4878 (class 2606 OID 16637)
+-- TOC entry 4882 (class 2606 OID 16637)
 -- Name: questions questions_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1131,7 +1194,7 @@ ALTER TABLE ONLY public.questions
 
 
 --
--- TOC entry 4851 (class 2606 OID 16409)
+-- TOC entry 4855 (class 2606 OID 16409)
 -- Name: roles roles_name_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1140,7 +1203,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- TOC entry 4853 (class 2606 OID 16407)
+-- TOC entry 4857 (class 2606 OID 16407)
 -- Name: roles roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1149,7 +1212,7 @@ ALTER TABLE ONLY public.roles
 
 
 --
--- TOC entry 4895 (class 2606 OID 16706)
+-- TOC entry 4899 (class 2606 OID 16706)
 -- Name: answer_options student_answer_options_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1158,7 +1221,7 @@ ALTER TABLE ONLY public.answer_options
 
 
 --
--- TOC entry 4891 (class 2606 OID 16691)
+-- TOC entry 4895 (class 2606 OID 16691)
 -- Name: answers student_answers_attempt_id_question_id_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1167,7 +1230,7 @@ ALTER TABLE ONLY public.answers
 
 
 --
--- TOC entry 4893 (class 2606 OID 16689)
+-- TOC entry 4897 (class 2606 OID 16689)
 -- Name: answers student_answers_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1176,16 +1239,33 @@ ALTER TABLE ONLY public.answers
 
 
 --
--- TOC entry 4865 (class 2606 OID 16451)
+-- TOC entry 4869 (class 2606 OID 16451)
 -- Name: user_majors user_majors_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
+
+
+-- Первинний ключ
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_pkey PRIMARY KEY (id);
+
+
+-- Одна перевірка на одну спробу
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_attempt_id_key UNIQUE (attempt_id);
+
+
+-- Зовнішній ключ на attempts
+ALTER TABLE ONLY public.plagiarism_checks
+    ADD CONSTRAINT plagiarism_checks_attempt_id_fkey FOREIGN KEY (attempt_id)
+    REFERENCES public.attempts(id) ON DELETE CASCADE;
+
 
 ALTER TABLE ONLY public.user_majors
     ADD CONSTRAINT user_majors_pkey PRIMARY KEY (user_id);
 
 
 --
--- TOC entry 4863 (class 2606 OID 16436)
+-- TOC entry 4867 (class 2606 OID 16436)
 -- Name: user_roles user_roles_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1194,7 +1274,7 @@ ALTER TABLE ONLY public.user_roles
 
 
 --
--- TOC entry 4859 (class 2606 OID 16431)
+-- TOC entry 4863 (class 2606 OID 16431)
 -- Name: users users_email_key; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1203,7 +1283,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4861 (class 2606 OID 16429)
+-- TOC entry 4865 (class 2606 OID 16429)
 -- Name: users users_pkey; Type: CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1212,7 +1292,7 @@ ALTER TABLE ONLY public.users
 
 
 --
--- TOC entry 4887 (class 1259 OID 16721)
+-- TOC entry 4891 (class 1259 OID 16721)
 -- Name: idx_exam_attempts_on_exam_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1220,7 +1300,7 @@ CREATE INDEX idx_exam_attempts_on_exam_id ON public.attempts USING btree (exam_i
 
 
 --
--- TOC entry 4888 (class 1259 OID 16720)
+-- TOC entry 4892 (class 1259 OID 16720)
 -- Name: idx_exam_attempts_on_user_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1228,7 +1308,7 @@ CREATE INDEX idx_exam_attempts_on_user_id ON public.attempts USING btree (user_i
 
 
 --
--- TOC entry 4882 (class 1259 OID 16719)
+-- TOC entry 4886 (class 1259 OID 16719)
 -- Name: idx_matching_pairs_on_question_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1236,7 +1316,7 @@ CREATE INDEX idx_matching_pairs_on_question_id ON public.matching_pairs USING bt
 
 
 --
--- TOC entry 4879 (class 1259 OID 16718)
+-- TOC entry 4883 (class 1259 OID 16718)
 -- Name: idx_options_on_question_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1244,7 +1324,7 @@ CREATE INDEX idx_options_on_question_id ON public.options USING btree (question_
 
 
 --
--- TOC entry 4876 (class 1259 OID 16717)
+-- TOC entry 4880 (class 1259 OID 16717)
 -- Name: idx_questions_on_exam_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
@@ -1252,15 +1332,19 @@ CREATE INDEX idx_questions_on_exam_id ON public.questions USING btree (exam_id);
 
 
 --
--- TOC entry 4889 (class 1259 OID 16722)
+-- TOC entry 4893 (class 1259 OID 16722)
 -- Name: idx_student_answers_on_attempt_id; Type: INDEX; Schema: public; Owner: postgres
 --
 
 CREATE INDEX idx_student_answers_on_attempt_id ON public.answers USING btree (attempt_id);
 
 
+CREATE INDEX idx_plagiarism_checks_attempt_id
+    ON public.plagiarism_checks USING btree (attempt_id);
+
+
 --
--- TOC entry 4920 (class 2620 OID 16731)
+-- TOC entry 4924 (class 2620 OID 16731)
 -- Name: questions questions_count_update_trigger; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1268,7 +1352,7 @@ CREATE TRIGGER questions_count_update_trigger AFTER INSERT OR DELETE ON public.q
 
 
 --
--- TOC entry 4921 (class 2620 OID 16735)
+-- TOC entry 4925 (class 2620 OID 16735)
 -- Name: questions questions_reorder_after_delete; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1276,7 +1360,7 @@ CREATE TRIGGER questions_reorder_after_delete AFTER DELETE ON public.questions F
 
 
 --
--- TOC entry 4922 (class 2620 OID 16733)
+-- TOC entry 4926 (class 2620 OID 16733)
 -- Name: questions questions_set_position_before_insert; Type: TRIGGER; Schema: public; Owner: postgres
 --
 
@@ -1284,7 +1368,7 @@ CREATE TRIGGER questions_set_position_before_insert BEFORE INSERT ON public.ques
 
 
 --
--- TOC entry 4918 (class 2606 OID 16851)
+-- TOC entry 4922 (class 2606 OID 16851)
 -- Name: course_enrollments course_enrollments_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1293,7 +1377,7 @@ ALTER TABLE ONLY public.course_enrollments
 
 
 --
--- TOC entry 4908 (class 2606 OID 16551)
+-- TOC entry 4912 (class 2606 OID 16551)
 -- Name: course_exams course_exams_exam_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1302,7 +1386,7 @@ ALTER TABLE ONLY public.course_exams
 
 
 --
--- TOC entry 4905 (class 2606 OID 16922)
+-- TOC entry 4909 (class 2606 OID 16922)
 -- Name: courses courses_owner_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1311,7 +1395,7 @@ ALTER TABLE ONLY public.courses
 
 
 --
--- TOC entry 4913 (class 2606 OID 16677)
+-- TOC entry 4917 (class 2606 OID 16677)
 -- Name: attempts exam_attempts_exam_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1320,7 +1404,7 @@ ALTER TABLE ONLY public.attempts
 
 
 --
--- TOC entry 4919 (class 2606 OID 16903)
+-- TOC entry 4923 (class 2606 OID 16903)
 -- Name: course_enrollments fk_course_enrollments_course_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1329,7 +1413,7 @@ ALTER TABLE ONLY public.course_enrollments
 
 
 --
--- TOC entry 4909 (class 2606 OID 16908)
+-- TOC entry 4913 (class 2606 OID 16908)
 -- Name: course_exams fk_course_exams_course_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1338,7 +1422,7 @@ ALTER TABLE ONLY public.course_exams
 
 
 --
--- TOC entry 4906 (class 2606 OID 16913)
+-- TOC entry 4910 (class 2606 OID 16913)
 -- Name: major_courses fk_major_courses_course_id; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1347,7 +1431,7 @@ ALTER TABLE ONLY public.major_courses
 
 
 --
--- TOC entry 4904 (class 2606 OID 16472)
+-- TOC entry 4908 (class 2606 OID 16472)
 -- Name: login_history login_history_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1356,7 +1440,7 @@ ALTER TABLE ONLY public.login_history
 
 
 --
--- TOC entry 4907 (class 2606 OID 16520)
+-- TOC entry 4911 (class 2606 OID 16520)
 -- Name: major_courses major_courses_major_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1365,7 +1449,7 @@ ALTER TABLE ONLY public.major_courses
 
 
 --
--- TOC entry 4912 (class 2606 OID 16665)
+-- TOC entry 4916 (class 2606 OID 16665)
 -- Name: matching_pairs matching_pairs_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1374,7 +1458,7 @@ ALTER TABLE ONLY public.matching_pairs
 
 
 --
--- TOC entry 4911 (class 2606 OID 16652)
+-- TOC entry 4915 (class 2606 OID 16652)
 -- Name: options options_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1383,7 +1467,7 @@ ALTER TABLE ONLY public.options
 
 
 --
--- TOC entry 4910 (class 2606 OID 16638)
+-- TOC entry 4914 (class 2606 OID 16638)
 -- Name: questions questions_exam_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1392,7 +1476,7 @@ ALTER TABLE ONLY public.questions
 
 
 --
--- TOC entry 4916 (class 2606 OID 16712)
+-- TOC entry 4920 (class 2606 OID 16712)
 -- Name: answer_options student_answer_options_selected_option_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1401,7 +1485,7 @@ ALTER TABLE ONLY public.answer_options
 
 
 --
--- TOC entry 4917 (class 2606 OID 16707)
+-- TOC entry 4921 (class 2606 OID 16707)
 -- Name: answer_options student_answer_options_student_answer_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1410,7 +1494,7 @@ ALTER TABLE ONLY public.answer_options
 
 
 --
--- TOC entry 4914 (class 2606 OID 16692)
+-- TOC entry 4918 (class 2606 OID 16692)
 -- Name: answers student_answers_attempt_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1419,7 +1503,7 @@ ALTER TABLE ONLY public.answers
 
 
 --
--- TOC entry 4915 (class 2606 OID 16697)
+-- TOC entry 4919 (class 2606 OID 16697)
 -- Name: answers student_answers_question_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1428,7 +1512,7 @@ ALTER TABLE ONLY public.answers
 
 
 --
--- TOC entry 4902 (class 2606 OID 16457)
+-- TOC entry 4906 (class 2606 OID 16457)
 -- Name: user_majors user_majors_major_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1437,7 +1521,7 @@ ALTER TABLE ONLY public.user_majors
 
 
 --
--- TOC entry 4903 (class 2606 OID 16452)
+-- TOC entry 4907 (class 2606 OID 16452)
 -- Name: user_majors user_majors_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1446,7 +1530,7 @@ ALTER TABLE ONLY public.user_majors
 
 
 --
--- TOC entry 4900 (class 2606 OID 16442)
+-- TOC entry 4904 (class 2606 OID 16442)
 -- Name: user_roles user_roles_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1455,7 +1539,7 @@ ALTER TABLE ONLY public.user_roles
 
 
 --
--- TOC entry 4901 (class 2606 OID 16437)
+-- TOC entry 4905 (class 2606 OID 16437)
 -- Name: user_roles user_roles_user_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: postgres
 --
 
@@ -1463,11 +1547,11 @@ ALTER TABLE ONLY public.user_roles
     ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
--- Completed on 2025-11-05 00:29:09
+-- Completed on 2025-11-06 16:30:06
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict sLRf3WUlP1HI521GifPWgMxSFHJEHnjzv81p6lrguBzKDjrdk1b2shZl8n8ZfO0
+\unrestrict C3cpGgLXXXTDc6iabPwkGJLjJpaZAIQU1Bzzef1DdRSksEgNB3G7pprDeRR5hhR
 

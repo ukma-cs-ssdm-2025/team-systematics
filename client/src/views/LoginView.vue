@@ -138,8 +138,6 @@ const handleLogin = async (e) => {
     }
     auth.login(adaptedData)
 
-    console.log(auth.role)
-
     if (auth.role.value === 'student') {
         router.push('/exams')
     } else if (auth.role.value === 'teacher') {
