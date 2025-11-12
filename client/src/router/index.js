@@ -12,6 +12,8 @@ import CoursesCatalogueView from '../views/CoursesCatalogueView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
+import PlagiarismCheckView from '../views/PlagiarismCheckView.vue'
+import PlagiarismComparisonView from '../views/PlagiarismComparisonView.vue'
 import CreateCourseView from '../views/CreateCourseView.vue'
 import CreateExamView from '../views/CreateExamView.vue'
 
@@ -175,6 +177,26 @@ const router = createRouter({
       meta: {
         requiresAuth: true,
         title: 'Мій профіль'
+      }
+    },
+    {
+      path: '/plagiarism-check',
+      name: 'PlagiarismCheck',
+      component: PlagiarismCheckView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Перевірка плагіату'
+      }
+    },
+    {
+      path: '/plagiarism-check/compare/:answer1Id/:answer2Id',
+      name: 'PlagiarismComparison',
+      component: PlagiarismComparisonView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Порівняння робіт'
       }
     },
   ]

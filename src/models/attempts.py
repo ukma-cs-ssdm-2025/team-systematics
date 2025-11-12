@@ -44,6 +44,7 @@ class Answer(Base):
     attempt = relationship("Attempt", back_populates="answers")
     question = relationship("Question")
     selected_options = relationship("AnswerOption", back_populates="answer", cascade="all, delete-orphan")
+    plagiarism_flag = relationship("FlaggedAnswer", back_populates="answer", uselist=False, cascade="all, delete-orphan")
 
 class AnswerOption(Base):
     __tablename__ = "answer_options"
@@ -69,3 +70,13 @@ class PlagiarismCheck(Base):
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     attempt = relationship("Attempt", back_populates="plagiarism_check")
+
+class FlaggedAnswer(Base):
+    """Модель для зберігання відповідей, позначених вчителем для перевірки на плагіат"""
+    __tablename__ = "flagged_answers"
+
+    id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
+    answer_id = Column(UUID(as_uuid=True), ForeignKey("answers.id"), nullable=False, unique=True)
+    flagged_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
+    
+    answer = relationship("Answer", back_populates="plagiarism_flag")

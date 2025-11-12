@@ -1,14 +1,14 @@
 from sqlalchemy.orm import Session, load_only, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt, AttemptResultResponse, AnswerScoreUpdate
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
 from src.api.services.exam_review_service import ExamReviewService
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.weights_repository import WeightsRepository
-from src.models.attempts import Answer as AnswerModel
-from src.models.exams import QuestionType
+from src.models.attempts import Answer as AnswerModel, Attempt as AttemptModel
+from src.models.exams import QuestionType, Question
 from src.utils.largest_remainder import distribute_largest_remainder
 from src.utils.auth import get_current_user_with_role
 from src.models.users import User
@@ -16,7 +16,12 @@ from .versioning import require_api_version
 from src.api.database import get_db
 from src.api.dependencies import get_current_user
 from typing import List, Optional
-from src.api.schemas.plagiarism import PlagiarismCheckSummary, PlagiarismComparisonResponse
+from src.api.schemas.plagiarism import (
+    PlagiarismCheckSummary, 
+    PlagiarismComparisonResponse,
+    FlaggedAnswerResponse,
+    AnswerComparisonResponse
+)
 
 class AttemptsController:
     def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
@@ -57,11 +62,29 @@ class AttemptsController:
 
     def _setup_routes(self):
         """Setup all route handlers for the attempts router."""
+        # Важливо: специфічні роути (без параметрів шляху) мають бути визначені ПЕРЕД роутами з параметрами
+        # інакше FastAPI спробує зіставити їх з параметрами
+        
+        @self.router.get(
+            "/flagged-answers",
+            response_model=List[FlaggedAnswerResponse],
+            summary="Отримати список позначених відповідей (лише викладач)",
+        )
+        async def list_flagged_answers(
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            # Перевірка ролі виконується всередині сервісу
+            return self.service.list_flagged_answers(
+                db=db,
+                current_user=current_user,
+            )
+        
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
         async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.add_answer(db, attempt_id, payload)
 
-        @self.router.post("/{attempt_id}/submit", response_model=Attempt, summary="Submit attempt")
+        @self.router.post("/{attempt_id}/submit", response_model=AttemptSchema, summary="Submit attempt")
         async def submit(attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.submit(db, attempt_id)
 
@@ -174,3 +197,143 @@ class AttemptsController:
                 other_attempt_id=other_attempt_id,
                 current_user=current_user,
             )
+        
+        @self.router.post(
+            "/answers/{answer_id}/flag",
+            response_model=FlaggedAnswerResponse,
+            status_code=status.HTTP_201_CREATED,
+            summary="Позначити відповідь для перевірки на плагіат (лише викладач)",
+        )
+        async def flag_answer(
+            answer_id: UUID = Path(..., description="ID відповіді"),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            user_role = str(current_user.role).lower().strip() if current_user.role else None
+            if user_role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
+            return self.service.flag_answer_for_plagiarism_check(
+                db=db,
+                answer_id=answer_id,
+                current_user=current_user,
+            )
+        
+        @self.router.delete(
+            "/answers/{answer_id}/flag",
+            status_code=status.HTTP_204_NO_CONTENT,
+            summary="Зняти позначення з відповіді (лише викладач)",
+        )
+        async def unflag_answer(
+            answer_id: UUID = Path(..., description="ID відповіді"),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            user_role = str(current_user.role).lower().strip() if current_user.role else None
+            if user_role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
+            self.service.unflag_answer(
+                db=db,
+                answer_id=answer_id,
+                current_user=current_user,
+            )
+            return None
+        
+        @self.router.post(
+            "/answers/{answer1_id}/compare/{answer2_id}",
+            response_model=AnswerComparisonResponse,
+            summary="Порівняти дві відповіді на плагіат (лише викладач)",
+        )
+        async def compare_answers(
+            answer1_id: UUID = Path(..., description="ID першої відповіді"),
+            answer2_id: UUID = Path(..., description="ID другої відповіді"),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            user_role = str(current_user.role).lower().strip() if current_user.role else None
+            if user_role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
+            return self.service.compare_two_answers(
+                db=db,
+                answer1_id=answer1_id,
+                answer2_id=answer2_id,
+                current_user=current_user,
+            )
+        
+        @self.router.get(
+            "/{attempt_id}/questions/{question_id}/answer-id",
+            summary="Отримати ID відповіді за attempt_id та question_id (лише викладач)",
+        )
+        async def get_answer_id(
+            attempt_id: UUID = Path(..., description="ID спроби"),
+            question_id: UUID = Path(..., description="ID питання"),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            user_role = str(current_user.role).lower().strip() if current_user.role else None
+            if user_role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
+            
+            # Перевіряємо, чи існує спроба та питання
+            attempt = db.query(AttemptModel).filter(AttemptModel.id == attempt_id).first()
+            if not attempt:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Спроба не знайдена"
+                )
+            
+            question = db.query(Question).filter(Question.id == question_id).first()
+            if not question:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Питання не знайдене"
+                )
+            
+            # Перевіряємо, чи питання належить до цього іспиту
+            if question.exam_id != attempt.exam_id:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Питання не належить до цього іспиту"
+                )
+            
+            # Шукаємо відповідь
+            answer = (
+                db.query(AnswerModel)
+                .filter(
+                    AnswerModel.attempt_id == attempt_id,
+                    AnswerModel.question_id == question_id
+                )
+                .first()
+            )
+            
+            # Якщо відповіді немає, але це long_answer питання, можна створити порожню відповідь
+            if not answer and question.question_type == QuestionType.long_answer:
+                # Створюємо порожню відповідь для long_answer питань
+                from datetime import datetime, timezone
+                answer = AnswerModel(
+                    attempt_id=attempt_id,
+                    question_id=question_id,
+                    answer_text="",  # Порожня відповідь
+                    saved_at=datetime.now(timezone.utc)
+                )
+                db.add(answer)
+                db.commit()
+                db.refresh(answer)
+            
+            if not answer:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Відповідь не знайдена"
+                )
+            return {"answer_id": str(answer.id)}
