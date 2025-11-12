@@ -241,11 +241,23 @@ class ExamsRepository:
         if not exam:
             return False
         
-        # Видаляємо всі спроби перед видаленням іспиту, щоб уникнути проблем з foreign key
-        # Це гарантує, що спроби будуть видалені перед видаленням іспиту
-        from src.models.attempts import Attempt
+        # Видаляємо в правильному порядку, щоб уникнути проблем з foreign key:
+        # 1. Спочатку видаляємо plagiarism_checks (вони посилаються на attempts)
+        # 2. Потім видаляємо attempts (вони посилаються на exams)
+        # 3. Нарешті видаляємо exam
+        from src.models.attempts import Attempt, PlagiarismCheck
+        
+        # Отримуємо всі attempt_id для цього іспиту
+        attempt_ids = [attempt.id for attempt in self.db.query(Attempt.id).filter(Attempt.exam_id == exam_id).all()]
+        
+        # Видаляємо plagiarism_checks для цих attempts
+        if attempt_ids:
+            self.db.query(PlagiarismCheck).filter(PlagiarismCheck.attempt_id.in_(attempt_ids)).delete()
+        
+        # Видаляємо attempts
         self.db.query(Attempt).filter(Attempt.exam_id == exam_id).delete()
         
+        # Видаляємо exam
         self.db.delete(exam)
         self.db.commit()
         return True

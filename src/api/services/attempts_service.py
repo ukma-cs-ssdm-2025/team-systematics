@@ -136,11 +136,9 @@ class AttemptsService:
         self,
         db: Session,
         attempt_id: UUID,
-        current_user: User,
     ) -> AttemptResultResponse:
         """
         Отримує вже обчислені результати спроби та форматує їх для відповіді API.
-        Додає звіт про плагіат ТІЛЬКИ якщо поточний користувач є викладачем.
         """
         repo = AttemptsRepository(db)
         data = repo.get_attempt_result_raw(attempt_id)
@@ -150,22 +148,6 @@ class AttemptsService:
         status = data["attempt_status"]
         if data["pending_count"] == 0 and status == "submitted":
             status = "completed"
-
-        # За замовчуванням — без звіту про плагіат (для студентів)
-        plagiarism_report: Optional[PlagiarismReport] = None
-
-        # Якщо користувач — викладач, підтягуємо PlagiarismCheck
-        if self._is_teacher(db, current_user):
-            attempt: Optional[Attempt] = (
-                db.query(Attempt)
-                .options(joinedload(Attempt.plagiarism_check))
-                .filter(Attempt.id == attempt_id)
-                .one_or_none()
-            )
-            if attempt and attempt.plagiarism_check:
-                plagiarism_report = self.plagiarism_service._to_report(
-                    attempt.plagiarism_check
-                )
 
         return AttemptResultResponse(
             exam_title=data["exam_title"],
@@ -193,8 +175,6 @@ class AttemptsService:
         earned_points зберігається в масштабі final_points (масштабованих до 100 балів системи).
         Перераховує загальну оцінку та перевіряє, чи всі long_answer оцінені.
         """
-        repo = AttemptsRepository(db)
-        
         # Валідація оцінки
         if payload.earned_points < 0:
             raise ValueError("Оцінка не може бути від'ємною")
@@ -271,16 +251,11 @@ class AttemptsService:
             saved_at=answer.saved_at
         )
     
-    def _recalculate_attempt_score(self, db: Session, attempt: Attempt) -> None:
-        """
-        Перераховує загальну оцінку для спроби на основі всіх оцінок за питання.
-        Використовує ту саму логіку, що й exam_review_service для консистентності.
-        earned_points зберігається в масштабі points питання (які вже масштабовані до 100 балів).
-        """
+    def _calculate_final_points_map(self, db: Session, attempt: Attempt) -> dict:
+        """Розраховує фінальну мапу балів для питань (масштабовані до 100 балів)."""
         weights_repo = WeightsRepository(db)
         weights_map = weights_repo.get_all_weights()
         
-        # Розраховуємо бали для кожного питання (масштабовані до 100 балів)
         total_exam_weight = sum(
             weights_map.get(q.question_type, 1) for q in attempt.exam.questions
         )
@@ -295,52 +270,70 @@ class AttemptsService:
             for q in attempt.exam.questions
         }
         
-        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
+        return distribute_largest_remainder(true_points_map, target_total=100)
+    
+    def _calculate_long_answer_score(self, answer: Answer) -> float:
+        """Розраховує бали для long_answer питання."""
+        if answer and answer.earned_points is not None:
+            return answer.earned_points
+        return 0.0
+    
+    def _calculate_auto_graded_score(
+        self, 
+        question: Question, 
+        answer: Answer, 
+        question_points: float,
+        grading_service: GradingService,
+        correct_data: dict
+    ) -> float:
+        """Розраховує бали для автоматично оцінюваних питань."""
+        if not answer:
+            return 0.0
         
-        # Збираємо відповіді студента
+        base_question_points = float(question.points or 0.0)
+        if base_question_points == 0:
+            return 0.0
+        
+        # Визначаємо метод оцінювання залежно від типу питання
+        grading_methods = {
+            QuestionType.single_choice: grading_service._grade_single_choice,
+            QuestionType.multi_choice: grading_service._grade_multi_choice,
+            QuestionType.short_answer: grading_service._grade_short_answer,
+            QuestionType.matching: grading_service._grade_matching,
+        }
+        
+        grade_method = grading_methods.get(question.question_type)
+        if not grade_method:
+            return 0.0
+        
+        earned_base, _ = grade_method(question, answer, correct_data.get(question.id, {}))
+        earned_scaled = (earned_base / base_question_points) * question_points
+        return earned_scaled
+    
+    def _recalculate_attempt_score(self, db: Session, attempt: Attempt) -> None:
+        """
+        Перераховує загальну оцінку для спроби на основі всіх оцінок за питання.
+        Використовує ту саму логіку, що й exam_review_service для консистентності.
+        earned_points зберігається в масштабі points питання (які вже масштабовані до 100 балів).
+        """
+        final_points_map = self._calculate_final_points_map(db, attempt)
         answers_map = {ans.question_id: ans for ans in attempt.answers}
         
-        # Рахуємо загальну оцінку
-        total_earned = 0.0
         grading_service = GradingService()
         correct_data = grading_service._build_correct_data(attempt.exam)
         
+        total_earned = 0.0
         for question in attempt.exam.questions:
             answer = answers_map.get(question.id)
             question_points = final_points_map.get(question.id, 0)
             
             if question.question_type == QuestionType.long_answer:
-                # Для long_answer використовуємо збережену оцінку (вже в масштабі question_points)
-                if answer and answer.earned_points is not None:
-                    total_earned += answer.earned_points
+                total_earned += self._calculate_long_answer_score(answer)
             else:
-                # Для інших типів використовуємо стандартну логіку оцінювання
-                if answer:
-                    q_type = question.question_type
-                    base_question_points = float(question.points or 0.0)
-                    
-                    if q_type == QuestionType.single_choice:
-                        earned_base, _ = grading_service._grade_single_choice(question, answer, correct_data.get(question.id, {}))
-                        if base_question_points > 0:
-                            earned_scaled = (earned_base / base_question_points) * question_points
-                            total_earned += earned_scaled
-                    elif q_type == QuestionType.multi_choice:
-                        earned_base, _ = grading_service._grade_multi_choice(question, answer, correct_data.get(question.id, {}))
-                        if base_question_points > 0:
-                            earned_scaled = (earned_base / base_question_points) * question_points
-                            total_earned += earned_scaled
-                    elif q_type == QuestionType.short_answer:
-                        earned_base, _ = grading_service._grade_short_answer(question, answer, correct_data.get(question.id, {}))
-                        if base_question_points > 0:
-                            earned_scaled = (earned_base / base_question_points) * question_points
-                            total_earned += earned_scaled
-                    elif q_type == QuestionType.matching:
-                        earned_base, _ = grading_service._grade_matching(question, answer, correct_data.get(question.id, {}))
-                        if base_question_points > 0:
-                            earned_scaled = (earned_base / base_question_points) * question_points
-                            total_earned += earned_scaled
+                total_earned += self._calculate_auto_graded_score(
+                    question, answer, question_points, grading_service, correct_data
+                )
         
-        # Оновлюємо загальну оцінку
         attempt.earned_points = min(100.0, max(0.0, total_earned))
         db.commit()
     
@@ -370,9 +363,6 @@ class AttemptsService:
             attempt.status = AttemptStatus.completed
             attempt.pending_count = 0
             db.commit()
-            pending_count=data["pending_count"],
-            plagiarism_report=plagiarism_report,
-        )
 
     def _is_teacher(self, db: Session, user: User) -> bool:
         """

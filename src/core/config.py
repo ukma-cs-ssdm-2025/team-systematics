@@ -3,7 +3,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-JWT_SECRET = os.getenv("JWT_SECRET")
+JWT_SECRET = os.getenv("JWT_SECRET", "supersecretkey")
 if not JWT_SECRET:
     raise ValueError("JWT_SECRET environment variable must be set")
 JWT_ALGORITHM = os.getenv("JWT_ALGORITHM", "HS256")
