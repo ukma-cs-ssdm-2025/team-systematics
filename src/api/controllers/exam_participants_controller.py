@@ -10,7 +10,7 @@ from src.api.schemas.exam_participants import (
     ExamParticipantAttendanceUpdate,
 )
 from src.api.services.exam_participants_service import ExamParticipantsService
-from src.utils.auth import get_current_user
+from src.utils.auth import get_current_user, require_role
 from src.api.repositories.user_repository import UserRepository
 from src.models.users import User
 from .versioning import require_api_version
@@ -34,9 +34,8 @@ class ExamParticipantsController:
         async def list_participants(
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
-            self._ensure_supervisor(db, current_user)
             return self.service.list(db, exam_id)
 
         @self.router.post(
@@ -49,11 +48,8 @@ class ExamParticipantsController:
             payload: ExamParticipantCreate,
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
-            roles = UserRepository(db).get_user_roles(current_user.id)
-            if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
             return self.service.add(db, exam_id, payload)
 
         @self.router.delete(
@@ -65,9 +61,8 @@ class ExamParticipantsController:
             user_id: UUID,
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
-            self._ensure_supervisor(db, current_user)
             return self.service.remove(db, exam_id, user_id)
 
         @self.router.patch(
@@ -80,15 +75,8 @@ class ExamParticipantsController:
             update: ExamParticipantAttendanceUpdate,
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
-            self._ensure_supervisor(db, current_user)
             return self.service.set_attendance(db, exam_id, user_id, update)
 
-    def _ensure_supervisor(self, db: Session, current_user: User):
-        roles = UserRepository(db).get_user_roles(current_user.id)
-        if "supervisor" not in roles:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=SUPERVISOR_ACCESS_DENIED
-            )
+    # Supervisor enforcement is provided by the `require_role('supervisor')` dependency
