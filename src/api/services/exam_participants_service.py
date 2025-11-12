@@ -1,15 +1,19 @@
 from __future__ import annotations
 from uuid import UUID
 from sqlalchemy.orm import Session
-from fastapi import HTTPException, status
 
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
 from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.user_repository import UserRepository
 from src.api.services.attempts_service import AttemptsService
-from src.api.schemas.exam_participants import ExamParticipantCreate, ExamParticipantResponse
+from src.api.schemas.exam_participants import (
+    ExamParticipantCreate,
+    ExamParticipantResponse,
+    ExamParticipantAttendanceUpdate,
+)
 from src.api.errors.app_errors import NotFoundError, ConflictError
 
+from src.models.exam_participants import AttendanceStatusEnum
 from src.models.exams import ExamStatusEnum
 
 EXAM_NOT_FOUND = "Іспит не знайдено"
@@ -30,7 +34,6 @@ class ExamParticipantsService:
         if not exam:
             raise NotFoundError(EXAM_NOT_FOUND)
 
-        # (опц.) перевірки статусу іспиту
         if exam.status == ExamStatusEnum.closed:
             raise ConflictError("Іспит зачинено для змін учасників")
 
@@ -39,12 +42,7 @@ class ExamParticipantsService:
         if not user:
             raise NotFoundError(USER_NOT_FOUND)
 
-        # only students should be added as exam participants.
-        target_roles = user_repo.get_user_roles(payload.user_id)
-        if "student" not in target_roles:
-            raise ConflictError("Тільки студенти можуть бути додані як учасники іспиту")
-
-        # Заборонено додавати, якщо студент не записаний на курс
+        # без авто-енролу
         if not ExamParticipantsRepository(db).is_user_enrolled_to_course(payload.course_id, payload.user_id):
             raise ConflictError(COURSE_ENROLL_REQUIRED)
 
@@ -66,7 +64,7 @@ class ExamParticipantsService:
         if not ep or not ep.is_active:
             raise NotFoundError(NOT_A_PARTICIPANT)
 
-        # якщо є активна спроба — завершуємо її
+        # якщо є активна спроба — завершуємо її стандартним шляхом
         active_attempt = repo.get_active_attempt_for_exam(exam_id, user_id)
         if active_attempt:
             AttemptsService().submit(db, active_attempt.id)
@@ -75,3 +73,19 @@ class ExamParticipantsService:
         if not ok:
             raise NotFoundError(NOT_A_PARTICIPANT)
         return {"message": "Користувача видалено зі списку учасників іспиту"}
+
+    def set_attendance(self, db: Session, exam_id: UUID, user_id: UUID, update: ExamParticipantAttendanceUpdate):
+        exams_repo = ExamsRepository(db)
+        exam = exams_repo.get(exam_id)
+        if not exam:
+            raise NotFoundError(EXAM_NOT_FOUND)
+
+        # валідний статус
+        target = AttendanceStatusEnum(update.status)
+
+        repo = ExamParticipantsRepository(db)
+        ep = repo.set_attendance(exam_id, user_id, target)
+        if not ep:
+            raise NotFoundError(NOT_A_PARTICIPANT)
+
+        return ExamParticipantResponse.model_validate(ep)
