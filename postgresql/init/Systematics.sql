@@ -139,6 +139,17 @@ CREATE TYPE public.questiontype AS ENUM (
 
 ALTER TYPE public.questiontype OWNER TO postgres;
 
+
+-- Тип статусу відвідуваності
+CREATE TYPE public.attendance_status_enum AS ENUM (
+    'unknown',
+    'present',
+    'absent'
+);
+
+ALTER TYPE public.attendance_status_enum OWNER TO postgres;
+
+
 --
 -- TOC entry 249 (class 1255 OID 16734)
 -- Name: reorder_questions_on_delete(); Type: FUNCTION; Schema: public; Owner: postgres
@@ -307,6 +318,11 @@ CREATE TABLE public.exam_participants (
 );
 
 ALTER TABLE public.exam_participants OWNER TO postgres;
+
+ALTER TABLE public.exam_participants
+    ADD COLUMN attendance_status public.attendance_status_enum
+        DEFAULT 'unknown'::public.attendance_status_enum
+        NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_exam_participants_exam ON public.exam_participants (exam_id);
 CREATE INDEX IF NOT EXISTS idx_exam_participants_user ON public.exam_participants (user_id);
