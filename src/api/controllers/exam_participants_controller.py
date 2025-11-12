@@ -4,12 +4,15 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 
 from src.api.database import get_db
-from src.api.schemas.exam_participants import ExamParticipantCreate, ExamParticipantResponse
+from src.api.schemas.exam_participants import (
+    ExamParticipantCreate,
+    ExamParticipantResponse,
+    ExamParticipantAttendanceUpdate,
+)
 from src.api.services.exam_participants_service import ExamParticipantsService
 from src.utils.auth import get_current_user
 from src.api.repositories.user_repository import UserRepository
 from src.models.users import User
-
 from .versioning import require_api_version
 
 SUPERVISOR_ACCESS_DENIED = "Доступ дозволений лише наглядачам"
@@ -23,20 +26,25 @@ class ExamParticipantsController:
             dependencies=[Depends(require_api_version)]
         )
 
-        @self.router.get("", response_model=list[ExamParticipantResponse], summary="Список активних учасників іспиту")
+        @self.router.get(
+            "",
+            response_model=list[ExamParticipantResponse],
+            summary="Список активних учасників іспиту"
+        )
         async def list_participants(
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user),
         ):
-            # доступ: supervisor
-            roles = UserRepository(db).get_user_roles(current_user.id)
-            if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
+            self._ensure_supervisor(db, current_user)
             return self.service.list(db, exam_id)
 
-        @self.router.post("", response_model=ExamParticipantResponse, status_code=status.HTTP_201_CREATED,
-                          summary="Додати студента до іспиту (заборонено, якщо не зарахований на курс)")
+        @self.router.post(
+            "",
+            response_model=ExamParticipantResponse,
+            status_code=status.HTTP_201_CREATED,
+            summary="Додати студента до іспиту (заборонено, якщо не зарахований на курс)"
+        )
         async def add_participant(
             payload: ExamParticipantCreate,
             exam_id: UUID = Path(...),
@@ -48,15 +56,39 @@ class ExamParticipantsController:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
             return self.service.add(db, exam_id, payload)
 
-        @self.router.delete("/{user_id}", summary="Видалити студента (завершити активну спробу, якщо йде тест)",
-                            status_code=status.HTTP_200_OK)
+        @self.router.delete(
+            "/{user_id}",
+            summary="Видалити студента (завершити активну спробу, якщо йде тест)",
+            status_code=status.HTTP_200_OK
+        )
         async def remove_participant(
             user_id: UUID,
             exam_id: UUID = Path(...),
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user),
         ):
-            roles = UserRepository(db).get_user_roles(current_user.id)
-            if "supervisor" not in roles:
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=SUPERVISOR_ACCESS_DENIED)
+            self._ensure_supervisor(db, current_user)
             return self.service.remove(db, exam_id, user_id)
+
+        @self.router.patch(
+            "/{user_id}/attendance",
+            response_model=ExamParticipantResponse,
+            summary="Позначити студента як присутнього або відсутнього"
+        )
+        async def set_attendance(
+            user_id: UUID,
+            update: ExamParticipantAttendanceUpdate,
+            exam_id: UUID = Path(...),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user),
+        ):
+            self._ensure_supervisor(db, current_user)
+            return self.service.set_attendance(db, exam_id, user_id, update)
+
+    def _ensure_supervisor(self, db: Session, current_user: User):
+        roles = UserRepository(db).get_user_roles(current_user.id)
+        if "supervisor" not in roles:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=SUPERVISOR_ACCESS_DENIED
+            )
