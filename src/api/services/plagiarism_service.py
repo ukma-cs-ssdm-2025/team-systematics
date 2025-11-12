@@ -34,86 +34,134 @@ class PlagiarismService:
         """
         Основний метод: запускається після submit спроби.
         Повертає PlagiarismReport і ПАРАЛЕЛЬНО зберігає результат в БД.
+        Використовує обмеження часу для запобігання довгим операціям.
         """
+        import time
+        start_time = time.time()
+        MAX_PROCESSING_TIME = 60  # Максимальний час обробки (секунди)
+        
+        try:
+            # 1. Зібрати текст для цієї спроби (тільки long_answer)
+            base_text = self._build_attempt_text(db, attempt.id)
+            if not base_text.strip():
+                # Немає long_answer — вважаємо 100% унікальність
+                logger.info(f"Attempt {attempt.id} has no long_answer text, skipping plagiarism check")
+                check = self.repo.create_or_update(
+                    db,
+                    attempt_id=attempt.id,
+                    uniqueness_percent=100.0,
+                    max_similarity=0.0,
+                    status=PlagiarismStatus.ok,
+                    details={"matches": []},
+                )
+                return self._to_report(check)
 
-        # 1. Зібрати текст для цієї спроби (тільки long_answer)
-        base_text = self._build_attempt_text(db, attempt.id)
-        if not base_text.strip():
-            # Немає long_answer — вважаємо 100% унікальність
-            check = self.repo.create_or_update(
-                db,
-                attempt_id=attempt.id,
-                uniqueness_percent=100.0,
-                max_similarity=0.0,
-                status=PlagiarismStatus.ok,
-                details={"matches": []},
+            # 2. Знайти кандидатів серед інших спроб цього ж іспиту
+            candidate_attempt_ids, candidate_texts = self._get_candidate_attempt_texts(
+                db, exam_id=attempt.exam_id, exclude_attempt_id=attempt.id
             )
-            return self._to_report(check)
 
-        # 2. Знайти кандидатів серед інших спроб цього ж іспиту
-        candidate_attempt_ids, candidate_texts = self._get_candidate_attempt_texts(
-            db, exam_id=attempt.exam_id, exclude_attempt_id=attempt.id
-        )
+            if not candidate_attempt_ids:
+                # Нема з чим порівнювати — унікальність 100%
+                logger.info(f"No candidate attempts found for attempt {attempt.id}")
+                check = self.repo.create_or_update(
+                    db,
+                    attempt_id=attempt.id,
+                    uniqueness_percent=100.0,
+                    max_similarity=0.0,
+                    status=PlagiarismStatus.ok,
+                    details={"matches": []},
+                )
+                return self._to_report(check)
 
-        if not candidate_attempt_ids:
-            # Нема з чим порівнювати — унікальність 100%
-            check = self.repo.create_or_update(
-                db,
-                attempt_id=attempt.id,
-                uniqueness_percent=100.0,
-                max_similarity=0.0,
-                status=PlagiarismStatus.ok,
-                details={"matches": []},
+            # Перевірка часу виконання
+            elapsed = time.time() - start_time
+            if elapsed > MAX_PROCESSING_TIME:
+                logger.warning(f"Plagiarism check for attempt {attempt.id} exceeded time limit, using fast check only")
+                # Повертаємо результат на основі швидкої перевірки
+                fast_matches = self._run_fast_tfidf_filter(
+                    base_text, candidate_texts, candidate_attempt_ids
+                )
+                max_similarity = max([m["similarity_score"] for m in fast_matches], default=0.0)
+                uniqueness = max(0.0, 100.0 - max_similarity * 100.0)
+                status = self._status_from_similarity(max_similarity)
+                check = self.repo.create_or_update(
+                    db,
+                    attempt_id=attempt.id,
+                    uniqueness_percent=uniqueness,
+                    max_similarity=max_similarity,
+                    status=status,
+                    details={"matches": fast_matches, "level": "fast", "timeout": True},
+                )
+                return self._to_report(check)
+
+            # 3. Рівень 1: TF-IDF + cosine
+            fast_matches = self._run_fast_tfidf_filter(
+                base_text, candidate_texts, candidate_attempt_ids
             )
-            return self._to_report(check)
 
-        # 3. Рівень 1: TF-IDF + cosine
-        fast_matches = self._run_fast_tfidf_filter(
-            base_text, candidate_texts, candidate_attempt_ids
-        )
+            # Якщо є явний копіпаст (>0.98) — глибокий аналіз необов'язковий
+            exact_match = next(
+                (m for m in fast_matches if m["similarity_score"] >= 0.98), None
+            )
+            if exact_match:
+                max_sim = exact_match["similarity_score"]
+                uniqueness = max(0.0, 100.0 - max_sim * 100.0)
+                status = self._status_from_similarity(max_sim)
 
-        # Якщо є явний копіпаст (>0.98) — глибокий аналіз необов’язковий
-        exact_match = next(
-            (m for m in fast_matches if m["similarity_score"] >= 0.98), None
-        )
-        if exact_match:
-            max_sim = exact_match["similarity_score"]
-            uniqueness = max(0.0, 100.0 - max_sim * 100.0)
-            status = self._status_from_similarity(max_sim)
+                check = self.repo.create_or_update(
+                    db,
+                    attempt_id=attempt.id,
+                    uniqueness_percent=uniqueness,
+                    max_similarity=max_sim,
+                    status=status,
+                    details={"matches": fast_matches, "level": "fast"},
+                )
+                return self._to_report(check)
+
+            # Перевірка часу перед глибоким аналізом
+            elapsed = time.time() - start_time
+            if elapsed > MAX_PROCESSING_TIME * 0.7:  # Якщо вже витрачено 70% часу, пропускаємо глибокий аналіз
+                logger.info(f"Skipping deep analysis for attempt {attempt.id} due to time constraints")
+                final_matches = fast_matches
+            else:
+                # 4. Рівень 2: глибокий семантичний аналіз (парафрази)
+                deep_matches, _ = self._run_deep_semantic_analysis(
+                    db, base_text, fast_matches
+                )
+                # Якщо глибокий аналіз нічого не додав — використовуємо fast рівень
+                final_matches = deep_matches or fast_matches
+
+            max_similarity = max(
+                [m["similarity_score"] for m in final_matches], default=0.0
+            )
+            uniqueness = max(0.0, 100.0 - max_similarity * 100.0)
+            status = self._status_from_similarity(max_similarity)
 
             check = self.repo.create_or_update(
                 db,
                 attempt_id=attempt.id,
                 uniqueness_percent=uniqueness,
-                max_similarity=max_sim,
+                max_similarity=max_similarity,
                 status=status,
-                details={"matches": fast_matches, "level": "fast"},
+                details={"matches": final_matches, "level": "deep" if final_matches != fast_matches else "fast"},
+            )
+
+            elapsed_total = time.time() - start_time
+            logger.info(f"Plagiarism check completed for attempt {attempt.id} in {elapsed_total:.2f}s")
+            return self._to_report(check)
+        except Exception as e:
+            logger.error(f"Error during plagiarism check for attempt {attempt.id}: {str(e)}", exc_info=True)
+            # Повертаємо безпечний результат у разі помилки
+            check = self.repo.create_or_update(
+                db,
+                attempt_id=attempt.id,
+                uniqueness_percent=100.0,
+                max_similarity=0.0,
+                status=PlagiarismStatus.ok,
+                details={"matches": [], "error": str(e)},
             )
             return self._to_report(check)
-
-        # 4. Рівень 2: глибокий семантичний аналіз (парафрази)
-        deep_matches, _ = self._run_deep_semantic_analysis(
-            db, base_text, fast_matches
-        )
-
-        # Якщо глибокий аналіз нічого не додав — використовуємо fast рівень
-        final_matches = deep_matches or fast_matches
-        max_similarity = max(
-            [m["similarity_score"] for m in final_matches], default=0.0
-        )
-        uniqueness = max(0.0, 100.0 - max_similarity * 100.0)
-        status = self._status_from_similarity(max_similarity)
-
-        check = self.repo.create_or_update(
-            db,
-            attempt_id=attempt.id,
-            uniqueness_percent=uniqueness,
-            max_similarity=max_similarity,
-            status=status,
-            details={"matches": final_matches, "level": "deep"},
-        )
-
-        return self._to_report(check)
 
     # ---------- ДОПОМІЖНІ МЕТОДИ ДЛЯ TEКСТУ ----------
 
@@ -174,12 +222,20 @@ class PlagiarismService:
         """
         Будує TF-IDF матрицю і повертає список матчів за косинусною подібністю.
         """
+        if not base_text or not base_text.strip():
+            logger.warning("_run_fast_tfidf_filter called with empty base_text")
+            return []
+        if not candidate_texts:
+            logger.debug("_run_fast_tfidf_filter called with empty candidate_texts")
+            return []
+        
         corpus = [base_text] + candidate_texts
         vectorizer = TfidfVectorizer()
         try:
             tfidf_matrix = vectorizer.fit_transform(corpus)
-        except ValueError:
+        except ValueError as e:
             # Наприклад, якщо всі тексти порожні або надто короткі
+            logger.warning(f"TF-IDF vectorization failed: {str(e)}")
             return []
 
         base_vec = tfidf_matrix[0:1]

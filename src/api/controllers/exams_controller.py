@@ -67,7 +67,21 @@ class ExamsController:
 
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):
-            return self.service.get(db, exam_id)
+            try:
+                exam = self.service.get(db, exam_id)
+                if not exam:
+                    raise HTTPException(
+                        status_code=status.HTTP_404_NOT_FOUND,
+                        detail="Exam not found"
+                    )
+                return exam
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={"code": "INTERNAL_ERROR", "message": str(e)}
+                )
         
         @self.router.get("/{exam_id}/edit", response_model=ExamWithQuestions, summary="Get exam with questions for editing")
         async def get_exam_for_edit(
