@@ -199,6 +199,16 @@ const router = createRouter({
         title: 'Порівняння робіт'
       }
     },
+    {
+      path: '/courses/supervisor',
+      name: 'CoursesSupervisor',
+      component: CoursesCatalogueView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'supervisor',
+        title: 'Курси'
+      }
+    },
   ]
 })
 
@@ -217,6 +227,9 @@ router.beforeEach((to, from, next) => {
       hasAccess = true
     }
     if (to.meta.requiresRole === 'student' && auth.isStudent.value) {
+      hasAccess = true
+    }
+    if (to.meta.requiresRole === 'supervisor' && auth.isSupervisor.value) {
       hasAccess = true
     }
     // Дозволяємо доступ до /exams як для студентів, так і для вчителів

@@ -142,6 +142,8 @@ const handleLogin = async (e) => {
         router.push('/exams')
     } else if (auth.role.value === 'teacher') {
         router.push('/courses/my')
+    } else if (auth.role.value === 'supervisor') {
+        router.push('/courses/supervisor')
     } else {
         // Якщо роль невідома або відсутня
         router.push('/forbidden')

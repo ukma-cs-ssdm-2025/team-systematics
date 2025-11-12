@@ -6,12 +6,34 @@ import courseExamsMock from '../mocks/courseExams.json'
 const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 
 // Отримує список курсів, які викладає поточний користувач.
-export async function getMyCourses() {
+export async function getMyCourses(filters = {}) {
     if (USE_MOCK_DATA) {
         return coursesMock
     }
     try {
-        const response = await http.get('/api/courses/me')
+        const params = new URLSearchParams()
+        if (filters.name && filters.name.trim()) params.append('name', filters.name.trim())
+        if (filters.min_students !== undefined && filters.min_students !== null && filters.min_students !== '') {
+            params.append('min_students', filters.min_students)
+        }
+        if (filters.max_students !== undefined && filters.max_students !== null && filters.max_students !== '') {
+            params.append('max_students', filters.max_students)
+        }
+        if (filters.min_exams !== undefined && filters.min_exams !== null && filters.min_exams !== '') {
+            params.append('min_exams', filters.min_exams)
+        }
+        if (filters.max_exams !== undefined && filters.max_exams !== null && filters.max_exams !== '') {
+            params.append('max_exams', filters.max_exams)
+        }
+        if (filters.limit) params.append('limit', filters.limit)
+        if (filters.offset) params.append('offset', filters.offset)
+        
+        const queryString = params.toString()
+        const url = queryString 
+            ? `/api/courses/me?${queryString}`
+            : '/api/courses/me'
+        
+        const response = await http.get(url)
         return response.data
     } catch (error) {
         console.error('API Error fetching teacher courses:', error)
@@ -19,15 +41,38 @@ export async function getMyCourses() {
     }
 }
 
-export async function getAllCourses() {
+export async function getAllCourses(filters = {}) {
     if (USE_MOCK_DATA) {
         return coursesMock
     }
     try {
-        const response = await http.get('/api/courses')
+        const params = new URLSearchParams()
+        if (filters.name && filters.name.trim()) params.append('name', filters.name.trim())
+        if (filters.teacher_name && filters.teacher_name.trim()) params.append('teacher_name', filters.teacher_name.trim())
+        if (filters.min_students !== undefined && filters.min_students !== null && filters.min_students !== '') {
+            params.append('min_students', filters.min_students)
+        }
+        if (filters.max_students !== undefined && filters.max_students !== null && filters.max_students !== '') {
+            params.append('max_students', filters.max_students)
+        }
+        if (filters.min_exams !== undefined && filters.min_exams !== null && filters.min_exams !== '') {
+            params.append('min_exams', filters.min_exams)
+        }
+        if (filters.max_exams !== undefined && filters.max_exams !== null && filters.max_exams !== '') {
+            params.append('max_exams', filters.max_exams)
+        }
+        if (filters.limit) params.append('limit', filters.limit)
+        if (filters.offset) params.append('offset', filters.offset)
+        
+        const queryString = params.toString()
+        const url = queryString 
+            ? `/api/courses?${queryString}`
+            : '/api/courses'
+        
+        const response = await http.get(url)
         return response.data
     } catch (error) {
-        console.error('API Error fetching teacher courses:', error)
+        console.error('API Error fetching courses:', error)
         throw new Error('Не вдалося завантажити список усіх курсів.')
     }
 }
@@ -71,5 +116,50 @@ export async function enrollInCourse(courseId) {
     } catch (error) {
         console.error(`API Error enrolling student in course ${courseId}:`, error)
         throw new Error('Не вдалося записати студента на курс.')
+    }
+}
+
+// Отримує список курсів для наглядача з фільтрами
+export async function getCoursesForSupervisor(filters = {}) {
+    if (USE_MOCK_DATA) {
+        return []
+    }
+    try {
+        const params = new URLSearchParams()
+        if (filters.name && filters.name.trim()) params.append('name', filters.name.trim())
+        if (filters.teacher_name && filters.teacher_name.trim()) params.append('teacher_name', filters.teacher_name.trim())
+        if (filters.min_students !== undefined && filters.min_students !== null && filters.min_students !== '') {
+            params.append('min_students', filters.min_students)
+        }
+        if (filters.max_students !== undefined && filters.max_students !== null && filters.max_students !== '') {
+            params.append('max_students', filters.max_students)
+        }
+        if (filters.limit) params.append('limit', filters.limit)
+        if (filters.offset) params.append('offset', filters.offset)
+        
+        const queryString = params.toString()
+        const url = queryString 
+            ? `/api/courses/supervisor?${queryString}`
+            : '/api/courses/supervisor'
+        
+        const response = await http.get(url)
+        return response.data
+    } catch (error) {
+        console.error('API Error fetching courses for supervisor:', error)
+        throw new Error('Не вдалося завантажити список курсів.')
+    }
+}
+
+// Отримує детальну інформацію про курс для наглядача
+export async function getCourseDetailsForSupervisor(courseId) {
+    if (USE_MOCK_DATA) {
+        return null
+    }
+    try {
+        const response = await http.get(`/api/courses/supervisor/${courseId}`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error fetching course details for supervisor ${courseId}:`, error)
+        throw new Error('Не вдалося завантажити деталі курсу.')
     }
 }

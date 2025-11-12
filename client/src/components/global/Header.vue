@@ -18,6 +18,9 @@
                     <li v-if="auth.isStudent.value" class="nav-item" :class="{ active: route.path === '/courses' }">
                         <router-link to="/courses">Каталог курсів</router-link>
                     </li>
+                    <li v-if="auth.isSupervisor.value" class="nav-item" :class="{ active: route.path === '/courses/supervisor' }">
+                        <router-link to="/courses/supervisor">Курси</router-link>
+                    </li>
                 </ul>
             </div>
             <div class="user-container">
