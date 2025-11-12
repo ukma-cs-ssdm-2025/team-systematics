@@ -10,7 +10,7 @@ from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpda
 from src.api.services.courses_service import CoursesService
 from src.api.services.exams_service import ExamsService 
 from src.api.database import get_db
-from src.utils.auth import get_current_user_with_role, get_current_user
+from src.utils.auth import get_current_user_with_role, get_current_user, require_role
 from .versioning import require_api_version
 from src.api.schemas.courses import CourseSupervisorListItem, CourseSupervisorDetails
 
@@ -165,7 +165,7 @@ class CoursesController:
             limit: int = Query(50, ge=1, le=200),
             offset: int = Query(0, ge=0),
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
             """
             Повертає список курсів для наглядача з фільтрами (назва/викладач/к-сть студентів).
@@ -191,7 +191,7 @@ class CoursesController:
         async def get_course_details_for_supervisor(
             course_id: UUID,
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(require_role('supervisor')),
         ):
             """
             Повертає детальну інформацію про курс для наглядача:
