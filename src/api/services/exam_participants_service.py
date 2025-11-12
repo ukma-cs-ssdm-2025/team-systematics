@@ -39,6 +39,11 @@ class ExamParticipantsService:
         if not user:
             raise NotFoundError(USER_NOT_FOUND)
 
+        # only students should be added as exam participants.
+        target_roles = user_repo.get_user_roles(payload.user_id)
+        if "student" not in target_roles:
+            raise ConflictError("Тільки студенти можуть бути додані як учасники іспиту")
+
         # Заборонено додавати, якщо студент не записаний на курс
         if not ExamParticipantsRepository(db).is_user_enrolled_to_course(payload.course_id, payload.user_id):
             raise ConflictError(COURSE_ENROLL_REQUIRED)
