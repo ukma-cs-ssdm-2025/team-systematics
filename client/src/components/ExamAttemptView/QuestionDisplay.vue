@@ -227,7 +227,8 @@ const fetchAnswerId = async () => {
                 await handleFlaggedStatus();
             }
         } catch (error) {
-            // Мовчазно ігноруємо помилку
+            // Логування помилки в консоль або виведення повідомлення
+            console.error("Помилка при отриманні ID відповіді:", error);
         }
     }
 };
