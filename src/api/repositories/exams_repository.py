@@ -92,60 +92,66 @@ class ExamsRepository:
 
     # --- Question & Option management ---
     def create_question(self, exam_id: UUID, payload) -> Question:
-        # Валідація вхідних даних
+        # validate and prepare
+        self._validate_question_payload(exam_id, payload)
+        question_data = {k: v for k, v in payload.items() if k not in ('options', 'matching_data')}
+
+        # create question and ensure id is available
+        q = Question(**question_data)
+        q.exam_id = exam_id
+        self.db.add(q)
+        self.db.flush()
+
+        # add options and matching data
+        options = payload.get('options') or []
+        self._add_options(q.id, options)
+
+        matching_data = payload.get('matching_data')
+        if matching_data:
+            self._add_matching_options(q.id, matching_data)
+
+        self.db.commit()
+        self.db.refresh(q)
+        return q
+
+    def _validate_question_payload(self, exam_id: UUID, payload) -> None:
         if not payload:
             raise ValueError("Payload cannot be None or empty")
         if not isinstance(payload, dict):
             raise TypeError(f"Payload must be a dict, got {type(payload).__name__}")
         if not exam_id:
             raise ValueError("exam_id cannot be None or empty")
-        
-        # Перевірка обов'язкових полів
-        if 'title' not in payload or not payload.get('title'):
+        if not payload.get('title'):
             raise ValueError("Question title is required")
         if 'question_type' not in payload:
             raise ValueError("Question type is required")
-        
-        # Видаляємо options та matching_data з payload перед створенням питання
-        question_data = {k: v for k, v in payload.items() if k not in ('options', 'matching_data')}
-        q = Question(**question_data)
-        q.exam_id = exam_id
-        self.db.add(q)
-        # ensure q.id is populated before creating options/matching
-        self.db.flush()
-        
-        # add options if provided (for single_choice, multi_choice, short_answer)
-        options = payload.get('options') or []
+
+    def _add_options(self, question_id: UUID, options) -> None:
+        if not options:
+            return
         if not isinstance(options, list):
             raise TypeError(f"Options must be a list, got {type(options).__name__}")
         for opt in options:
             if not isinstance(opt, dict):
                 raise TypeError(f"Each option must be a dict, got {type(opt).__name__}")
-            o = Option(question_id=q.id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
+            o = Option(question_id=question_id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
             self.db.add(o)
-        
-        # add matching options if provided (for matching questions)
-        matching_data = payload.get('matching_data')
-        if matching_data:
-            if not isinstance(matching_data, dict):
-                raise TypeError(f"Matching data must be a dict, got {type(matching_data).__name__}")
-            prompts = matching_data.get('prompts', [])
-            if not isinstance(prompts, list):
-                raise TypeError(f"Prompts must be a list, got {type(prompts).__name__}")
-            for prompt_data in prompts:
-                if not isinstance(prompt_data, dict):
-                    raise TypeError(f"Each prompt must be a dict, got {type(prompt_data).__name__}")
-                matching_option = MatchingOption(
-                    question_id=q.id,
-                    prompt=prompt_data.get('text', ''),
-                    correct_match=prompt_data.get('correct_match', '')
-                )
-                self.db.add(matching_option)
 
-        self.db.commit()
-        # refresh q and return
-        self.db.refresh(q)
-        return q
+    def _add_matching_options(self, question_id: UUID, matching_data) -> None:
+        if not isinstance(matching_data, dict):
+            raise TypeError(f"Matching data must be a dict, got {type(matching_data).__name__}")
+        prompts = matching_data.get('prompts', [])
+        if not isinstance(prompts, list):
+            raise TypeError(f"Prompts must be a list, got {type(prompts).__name__}")
+        for prompt_data in prompts:
+            if not isinstance(prompt_data, dict):
+                raise TypeError(f"Each prompt must be a dict, got {type(prompt_data).__name__}")
+            matching_option = MatchingOption(
+                question_id=question_id,
+                prompt=prompt_data.get('text', ''),
+                correct_match=prompt_data.get('correct_match', ''),
+            )
+            self.db.add(matching_option)
 
     def update_question(self, question_id: UUID, patch: dict) -> Optional[Question]:
         if not question_id:
