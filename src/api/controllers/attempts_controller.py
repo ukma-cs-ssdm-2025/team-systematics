@@ -23,6 +23,8 @@ from src.api.schemas.plagiarism import (
     AnswerComparisonResponse
 )
 
+TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для вчителів"
+
 class AttemptsController:
     def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
         self.service = service
@@ -216,7 +218,7 @@ class AttemptsController:
             if user_role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для вчителів"
+                    detail=TEACHER_ONLY_ACCESS
                 )
             return self.service.flag_answer_for_plagiarism_check(
                 db=db,
@@ -238,7 +240,7 @@ class AttemptsController:
             if user_role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для вчителів"
+                    detail=TEACHER_ONLY_ACCESS
                 )
             self.service.unflag_answer(
                 db=db,
@@ -262,7 +264,7 @@ class AttemptsController:
             if user_role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для вчителів"
+                    detail=TEACHER_ONLY_ACCESS
                 )
             return self.service.compare_two_answers(
                 db=db,
@@ -285,7 +287,7 @@ class AttemptsController:
             if user_role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для вчителів"
+                    detail=TEACHER_ONLY_ACCESS
                 )
             
             # Перевіряємо, чи існує спроба та питання
