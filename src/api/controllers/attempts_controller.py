@@ -77,25 +77,25 @@ class AttemptsController:
             )
 
     # Extracted route handlers below. They are registered in `_register_flagged_answers_route`.
-    async def _list_flagged_answers(self, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _list_flagged_answers(self, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         return self.service.list_flagged_answers(db=db, current_user=current_user)
 
-    async def _add_answer(self, payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _add_answer(self, payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
         return self.service.add_answer(db, attempt_id, payload)
 
-    async def _submit(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _submit(self, attempt_id: UUID, db: Session = Depends(get_db)):
         return self.service.submit(db, attempt_id)
 
-    async def _get_attempt_details(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _get_attempt_details(self, attempt_id: UUID, db: Session = Depends(get_db)):
         return self.service.get_attempt_details(db, attempt_id)
 
-    async def _read_attempt_result(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _read_attempt_result(self, attempt_id: UUID, db: Session = Depends(get_db)):
         return self.service.get_attempt_result(db, attempt_id=attempt_id)
 
-    async def _get_exam_attempt_review(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _get_exam_attempt_review(self, attempt_id: UUID, db: Session = Depends(get_db)):
         return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
 
-    async def _update_answer_score(self, attempt_id: UUID = Path(..., description="ID спроби"),
+    def _update_answer_score(self, attempt_id: UUID = Path(..., description="ID спроби"),
                                    question_id: UUID = Path(..., description="ID питання"),
                                    payload: AnswerScoreUpdate = ...,
                                    db: Session = Depends(get_db),
@@ -122,27 +122,27 @@ class AttemptsController:
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
-    async def _list_plagiarism_checks(self, exam_id: UUID, max_uniqueness: Optional[float] = None,
+    def _list_plagiarism_checks(self, exam_id: UUID, max_uniqueness: Optional[float] = None,
                                       db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
         return self.service.get_exam_plagiarism_checks(db=db, exam_id=exam_id, current_user=current_user, max_uniqueness=max_uniqueness)
 
-    async def _compare_attempts(self, attempt_id: UUID, other_attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    def _compare_attempts(self, attempt_id: UUID, other_attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
         return self.service.get_attempts_comparison(db=db, base_attempt_id=attempt_id, other_attempt_id=other_attempt_id, current_user=current_user)
 
-    async def _flag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _flag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
         return self.service.flag_answer_for_plagiarism_check(db=db, answer_id=answer_id, current_user=current_user)
 
-    async def _unflag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _unflag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
         self.service.unflag_answer(db=db, answer_id=answer_id, current_user=current_user)
         return None
 
-    async def _compare_answers(self, answer1_id: UUID = Path(..., description="ID першої відповіді"), answer2_id: UUID = Path(..., description="ID другої відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _compare_answers(self, answer1_id: UUID = Path(..., description="ID першої відповіді"), answer2_id: UUID = Path(..., description="ID другої відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
         return self.service.compare_two_answers(db=db, answer1_id=answer1_id, answer2_id=answer2_id, current_user=current_user)
 
-    async def _get_answer_id(self, attempt_id: UUID = Path(..., description="ID спроби"), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _get_answer_id(self, attempt_id: UUID = Path(..., description="ID спроби"), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
 
         attempt = db.query(AttemptModel).filter(AttemptModel.id == attempt_id).first()
