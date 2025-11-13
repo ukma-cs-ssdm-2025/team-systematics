@@ -89,10 +89,13 @@ const scoreInputRef = ref(null)
 const isSaving = ref(false)
 
 const formattedEarnedPoints = computed(() => {
+    // Перевіряємо, чи earned_points є числом (включаючи 0)
+    // Важливо: 0 - це валідне значення, тому перевіряємо typeof, а не truthiness
     if (typeof props.questionData.earned_points === 'number') {
         return props.questionData.earned_points.toFixed(1);
     }
-    return '--' // Повертаємо плейсхолдер, якщо балів немає
+    // Повертаємо плейсхолдер тільки якщо earned_points є null або undefined
+    return '--'
 })
 
 function startEditing(event) {
@@ -256,8 +259,13 @@ async function saveScore() {
     const validatedScore = Math.max(0, Math.min(newScore, props.questionData.points))
     
     // Перевірка, чи значення змінилося
-    const currentScore = props.questionData.earned_points ?? 0
-    if (Math.abs(validatedScore - currentScore) < 0.01) {
+    // Важливо: розрізняємо null (не оцінено) та 0 (оцінено в 0 балів)
+    const currentScore = props.questionData.earned_points
+    // Якщо поточне значення null або undefined, завжди зберігаємо (навіть якщо це 0)
+    if (currentScore === null || currentScore === undefined) {
+        // Зберігаємо нове значення (може бути 0)
+    } else if (Math.abs(validatedScore - currentScore) < 0.01) {
+        // Значення не змінилося, скасовуємо редагування
         cancelEditing()
         return
     }

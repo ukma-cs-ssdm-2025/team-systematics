@@ -101,7 +101,9 @@ async function handleScoreUpdate(questionId, newScore) {
         // Оновлюємо локальні дані одразу для швидкого відображення
         const question = reviewData.value.questions.find(q => q.id === questionId)
         if (question) {
-            question.earned_points = newScore
+            // Важливо: 0 - це валідне значення, тому явно встановлюємо його
+            // Переконуємося, що newScore є числом (включаючи 0)
+            question.earned_points = typeof newScore === 'number' ? newScore : null
         }
         
         // Не перезавантажуємо дані з сервера одразу, оскільки оцінка вже збережена

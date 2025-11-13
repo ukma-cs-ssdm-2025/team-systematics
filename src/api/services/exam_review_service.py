@@ -205,9 +205,11 @@ class ExamReviewService:
         answer_id = str(student_answer.id) if student_answer else None
         # earned_points зберігається в масштабі final_points (масштабованих до 100 балів)
         earned_points = None
+        # Перевіряємо, чи earned_points встановлено (включаючи 0)
         if student_answer and student_answer.earned_points is not None:
             # earned_points вже в правильному масштабі (final_points)
-            earned_points = student_answer.earned_points
+            # Важливо: 0 - це валідне значення, тому перевіряємо is not None, а не просто truthiness
+            earned_points = float(student_answer.earned_points)
         
         # Перевіряємо, чи позначена відповідь для перевірки на плагіат
         is_flagged = False
