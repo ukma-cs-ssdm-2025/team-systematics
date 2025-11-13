@@ -80,14 +80,14 @@ function shuffleArray(array) {
 // Return integer in range [0, max) using Web Crypto when available.
 // Uses rejection sampling to avoid modulo bias. Falls back to Math.random().
 function secureRandomInt(max) {
-    if (typeof window !== 'undefined' && window.crypto && window.crypto.getRandomValues && max > 0) {
+    if (globalThis.crypto && globalThis.crypto.getRandomValues && max > 0) {
         const uint32Max = 0xFFFFFFFF
         const range = max
         const threshold = (uint32Max + 1) - ((uint32Max + 1) % range)
         const arr = new Uint32Array(1)
         let r
         do {
-            window.crypto.getRandomValues(arr)
+            globalThis.crypto.getRandomValues(arr)
             r = arr[0]
         } while (r >= threshold)
         return r % range
