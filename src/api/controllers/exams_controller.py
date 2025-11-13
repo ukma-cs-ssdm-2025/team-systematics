@@ -10,12 +10,38 @@ from src.api.services.exams_service import ExamsService
 from src.api.services.journal_service import JournalService
 from .versioning import require_api_version
 from src.api.database import get_db
+import inspect
 
 class ExamsController:
     def __init__(self, service: ExamsService) -> None:
         self.service = service
         self.journal_service = JournalService()
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
+
+        async def _safe_call(fn, *args, **kwargs):
+            """Run a function and convert unexpected exceptions to HTTP 500.
+
+            Supports both sync and async callables.
+            """
+            try:
+                result = fn(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    return await result
+                return result
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={"code": "INTERNAL_ERROR", "message": str(e)},
+                )
+
+        def _require_teacher(user: User):
+            if user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для викладачів",
+                )
 
         # --- CRUD-Ендпойнти ---
 
@@ -25,34 +51,13 @@ class ExamsController:
             current_user: User = Depends(get_current_user),
             limit: int = Query(10, ge=1, le=100),
             offset: int = Query(0, ge=0)
-            ):
-            try:
-                return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
-            except HTTPException as he:
-                # Re-raise HTTP exceptions (validation errors, etc.)
-                raise he
-            except Exception as e:
-                # Handle unexpected errors (including database failures)
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={
-                        "code": "INTERNAL_ERROR",
-                        "message": str(e)
-                    }
-                )
+        ):
+            return await _safe_call(self.service.list, db, user_id=current_user.id, limit=limit, offset=offset)
 
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(payload: ExamCreate, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
-            try:
-                # Встановлюємо owner_id з поточного користувача
-                return self.service.create(db, payload, owner_id=current_user.id)
-            except HTTPException as he:
-                raise he
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "INTERNAL_ERROR", "message": str(e)}
-                )
+            # Встановлюємо owner_id з поточного користувача
+            return await _safe_call(self.service.create, db, payload, owner_id=current_user.id)
         
         @self.router.post("/{exam_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Link exam to course")
         async def link_exam_to_course(
@@ -67,21 +72,10 @@ class ExamsController:
 
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(exam_id: UUID, db: Session = Depends(get_db)):
-            try:
-                exam = self.service.get(db, exam_id)
-                if not exam:
-                    raise HTTPException(
-                        status_code=status.HTTP_404_NOT_FOUND,
-                        detail="Exam not found"
-                    )
-                return exam
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "INTERNAL_ERROR", "message": str(e)}
-                )
+            exam = await _safe_call(self.service.get, db, exam_id)
+            if not exam:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Exam not found")
+            return exam
         
         @self.router.get("/{exam_id}/edit", response_model=ExamWithQuestions, summary="Get exam with questions for editing")
         async def get_exam_for_edit(
@@ -155,12 +149,8 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            if current_user.role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
-                )
-            return self.service.get_exams_for_course(db, course_id)
+            _require_teacher(current_user)
+            return await _safe_call(self.service.get_exams_for_course, db, course_id)
         
         @self.router.get(
             "/{exam_id}/journal",
@@ -172,10 +162,6 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            if current_user.role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
-                )
-            return self.journal_service.get_journal_for_exam(db, exam_id)
+            _require_teacher(current_user)
+            return await _safe_call(self.journal_service.get_journal_for_exam, db, exam_id)
         
