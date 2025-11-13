@@ -3,6 +3,7 @@ from sqlalchemy import func
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
+from api.services.statistics_service import StatisticsService
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
@@ -295,22 +296,6 @@ class AttemptsRepository:
         """Отримує статистику для спроб на іспиті"""
         attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
         
-        if not attempts:
-            return {"min_score": None, "max_score": None, "median_score": None, "average_score": None}
-        
         scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
         
-        if not scores:
-            return {"min_score": None, "max_score": None, "median_score": None, "average_score": None}
-        
-        min_score = min(scores)
-        max_score = max(scores)
-        median_score = sorted(scores)[len(scores) // 2]
-        average_score = sum(scores) / len(scores)
-
-        return {
-            "min_score": min_score,
-            "max_score": max_score,
-            "median_score": median_score,
-            "average_score": average_score
-        }
+        return StatisticsService.calculate_statistics(scores)
