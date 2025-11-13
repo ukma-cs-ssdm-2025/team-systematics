@@ -9,6 +9,7 @@ from src.models.courses import Course
 from src.api.repositories.user_repository import UserRepository
 from src.api.errors.app_errors import NotFoundError, ForbiddenError
 from src.models.users import User
+from src.api.services.exams_service import ExamsService
 
 SUPERVISOR_ONLY = "Доступ дозволений лише наглядачам"
 class CoursesService:
@@ -73,7 +74,6 @@ class CoursesService:
         return result
     
     def get_course_exam_statistics(self, db: Session, course_id: UUID):
-        from src.api.services.exams_service import ExamsService
         exams_service = ExamsService()
         journal_service = JournalService()
 
