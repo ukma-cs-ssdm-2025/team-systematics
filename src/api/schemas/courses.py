@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from uuid import UUID
+from .exams import ExamInList
 
 class CourseBase(BaseModel):
     name: str = Field(
@@ -61,3 +62,8 @@ class CourseSupervisorDetails(BaseModel):
     description: Optional[str]
     students: list[dict]
     teachers: list[dict]
+
+class CourseExamsPage(BaseModel):
+    course_id: UUID
+    course_name: str
+    exams: List[ExamInList]
