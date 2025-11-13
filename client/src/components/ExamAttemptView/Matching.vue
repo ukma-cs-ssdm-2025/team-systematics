@@ -81,19 +81,20 @@ function shuffleArray(array) {
 // Uses rejection sampling to avoid modulo bias. Falls back to Math.random().
 function secureRandomInt(max) {
     if (globalThis.crypto && globalThis.crypto.getRandomValues && max > 0) {
-        const uint32Max = 0xFFFFFFFF
-        const range = max
-        const threshold = (uint32Max + 1) - ((uint32Max + 1) % range)
-        const arr = new Uint32Array(1)
-        let r
+        const uint32Max = 0xFFFFFFFF;
+        const range = max;
+        const threshold = (uint32Max + 1) - ((uint32Max + 1) % range);
+        const arr = new Uint32Array(1);
+        let r;
         do {
-            globalThis.crypto.getRandomValues(arr)
-            r = arr[0]
-        } while (r >= threshold)
-        return r % range
+            globalThis.crypto.getRandomValues(arr);
+            r = arr[0];
+        } while (r >= threshold);
+        return r % range;
     }
+
     // Fallback: not cryptographically secure, but fine for UI shuffling when crypto is unavailable
-    return Math.floor(Math.random() * max)
+    return Math.floor(Math.random() * max);
 }
 
 watch(
