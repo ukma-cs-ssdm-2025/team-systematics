@@ -205,34 +205,40 @@ watch(localAnswer, (newValue) => {
 })
 
 // Зберігаємо answer_id окремо, якщо він не переданий в question
-const answerId = ref(null)
+const answerId = ref(null);
 
-// Перевіряємо, чи позначена відповідь при завантаженні (тільки для long_answer)
+const handleFlaggedStatus = async () => {
+    // Якщо `is_flagged` передано, використовуємо його значення
+    if (props.question.is_flagged !== undefined) {
+        isFlagged.value = props.question.is_flagged;
+    } else {
+        // Якщо `is_flagged` не передано, перевіряємо через API
+        await checkFlaggedStatus();
+    }
+};
+
+const fetchAnswerId = async () => {
+    if (props.attemptId && props.question.id) {
+        try {
+            const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id);
+            if (fetchedAnswerId) {
+                answerId.value = fetchedAnswerId;
+                props.question.answer_id = fetchedAnswerId;
+                await handleFlaggedStatus();
+            }
+        } catch (error) {
+            // Мовчазно ігноруємо помилку
+        }
+    }
+};
+
 onMounted(async () => {
     if (props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
-        // Спочатку перевіряємо, чи є answer_id в question
         if (props.question.answer_id) {
-            answerId.value = props.question.answer_id
-            // Використовуємо is_flagged з review даних, якщо воно є
-            if (props.question.is_flagged !== undefined) {
-                isFlagged.value = props.question.is_flagged
-            } else {
-                // Якщо is_flagged не передано, перевіряємо через API
-                await checkFlaggedStatus()
-            }
-        } else if (props.attemptId && props.question.id) {
-            // Якщо answer_id немає, спробуємо отримати його через API
-            try {
-                const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id)
-                if (fetchedAnswerId) {
-                    answerId.value = fetchedAnswerId
-                    // Оновлюємо question об'єкт
-                    props.question.answer_id = fetchedAnswerId
-                    await checkFlaggedStatus()
-                }
-            } catch (error) {
-                // Мовчазно ігноруємо помилку
-            }
+            answerId.value = props.question.answer_id;
+            await handleFlaggedStatus();
+        } else {
+            await fetchAnswerId();
         }
     }
 })
