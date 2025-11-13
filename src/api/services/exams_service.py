@@ -188,6 +188,36 @@ class ExamsService:
         ok = repo.delete(exam_id)
         if not ok:
             raise NotFoundError("Exam not found for delete")
+    
+    def get_group_statistics(self, db: Session, course_id: UUID):
+        exam_repo = ExamsRepository(db)
+        attempt_repo = AttemptsRepository(db)
+
+        exams = exam_repo.get_by_course(course_id)
+        
+        group_stats = []
+        for exam in exams:
+            attempts = attempt_repo.get_attempts_by_exam(exam.id)
+            total_students = len(attempts)
+            
+            if total_students == 0:
+                continue
+
+            scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+            min_score = min(scores)
+            max_score = max(scores)
+            median_score = sorted(scores)[len(scores) // 2]  # Просте обчислення медіани
+
+            group_stats.append({
+                'exam_id': exam.id,
+                'exam_name': exam.title,
+                'average_score': sum(scores) / total_students,
+                'min_score': min_score,
+                'max_score': max_score,
+                'median_score': median_score
+            })
+        
+        return group_stats    
 
 def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
     exams_repo = ExamsRepository(db)
