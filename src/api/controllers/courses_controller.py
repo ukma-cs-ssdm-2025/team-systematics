@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 
+from api.schemas.analytics import CourseAnalyticsResponse, GroupScoreAnalytics
 from src.models.users import User
 from src.api.schemas.exams import CourseExamsPage
 from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpdate, CoursesPage
@@ -200,3 +201,16 @@ class CoursesController:
             Перевірка ролі 'supervisor' виконується в сервісі.
             """
             return self.service.get_course_details_for_supervisor(db, current_user, course_id)
+
+        @self.router.get("/{course_id}/analytics", response_model=CourseAnalyticsResponse, summary="Аналітика курсу: статистика по іспитах")
+        async def get_course_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            if current_user.role != 'teacher':
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+            course_stats = self.service.get_course_exam_statistics(db, course_id)
+            return course_stats
+
+        @self.router.get("/{course_id}/group-analytics", response_model=GroupScoreAnalytics, summary="Аналітика групи: середній/мін/макс/медіана оцінок")
+        async def get_group_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            if current_user.role != 'teacher':
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+            return self.service.get_group_analytics(db, current_user.id, course_id)
