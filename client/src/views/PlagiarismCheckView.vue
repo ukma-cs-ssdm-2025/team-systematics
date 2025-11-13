@@ -141,17 +141,6 @@ function goToComparison() {
     font-size: 1.8rem;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--color-black-half-opacity);
-}
-
-.empty-state .hint {
-    margin-top: 12px;
-    font-size: 0.9rem;
-}
-
 .flagged-answers-list {
     display: flex;
     flex-direction: column;

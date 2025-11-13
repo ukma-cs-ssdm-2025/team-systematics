@@ -37,14 +37,17 @@ class ExamsService:
             last_attempt = attempts_repo.get_last_attempt_for_user_and_exam(user_id, exam_model.id)
             last_attempt_id = str(last_attempt.id) if last_attempt else None
             
-            # Додаємо last_attempt_id до схеми
+            # Додаємо last_attempt_id та user_attempts_count до схеми
             exam_dict = exam_schema.model_dump()
             exam_dict['last_attempt_id'] = last_attempt_id
+            exam_dict['user_attempts_count'] = user_attempts_count
             exam_with_attempt = Exam(**exam_dict)
 
-            if user_attempts_count >= exam_schema.max_attempts:
+            # Якщо досягнуто max_attempts або є хоча б одна спроба, то іспит у секції "виконані"
+            # Перевіряємо, чи є спроби (user_attempts_count > 0) або досягнуто ліміт
+            if user_attempts_count > 0 or user_attempts_count >= exam_schema.max_attempts:
                 completed_by_user.append(exam_with_attempt)
-            
+            # Інакше, якщо іспит ще не завершився, він у секції "майбутні"
             elif exam_schema.end_at > now:
                 future_or_active.append(exam_with_attempt)
 
@@ -65,8 +68,10 @@ class ExamsService:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         
         # Форматуємо питання з опціями та matching_data
+        # Сортуємо питання за position перед форматуванням
+        sorted_questions = sorted(exam.questions, key=lambda q: q.position or 0)
         questions_data = []
-        for question in exam.questions:
+        for question in sorted_questions:
             question_dict = {
                 "id": question.id,
                 "exam_id": question.exam_id,

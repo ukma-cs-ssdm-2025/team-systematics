@@ -190,6 +190,11 @@ class Exam(BaseModel):
         description="ID of the last attempt for this exam by the current user",
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
+    user_attempts_count: Optional[int] = Field(
+        None,
+        description="Number of attempts made by the current user for this exam",
+        example=2
+    )
 
     model_config = {"from_attributes": True}
 

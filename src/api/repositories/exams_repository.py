@@ -62,11 +62,25 @@ class ExamsRepository:
     
     def get_with_questions(self, exam_id: UUID) -> Optional[Exam]:
         """Отримує іспит разом з питаннями, опціями та matching_data"""
-        from sqlalchemy.orm import joinedload
+        from sqlalchemy.orm import selectinload
         exam = self.db.query(Exam).options(
-            joinedload(Exam.questions).joinedload(Question.options),
-            joinedload(Exam.questions).joinedload(Question.matching_options)
+            selectinload(Exam.questions).selectinload(Question.options),
+            selectinload(Exam.questions).selectinload(Question.matching_options)
         ).filter(Exam.id == exam_id).first()
+        
+        # Сортуємо питання за position після завантаження та видаляємо дублікати
+        if exam and exam.questions:
+            # Видаляємо дублікати за id (на випадок, якщо вони з'явилися)
+            seen_ids = set()
+            unique_questions = []
+            for q in exam.questions:
+                if q.id not in seen_ids:
+                    seen_ids.add(q.id)
+                    unique_questions.append(q)
+            exam.questions = unique_questions
+            # Сортуємо за position
+            exam.questions.sort(key=lambda q: q.position or 0)
+        
         return exam
 
     def create(self, payload: ExamCreate) -> Exam:

@@ -64,15 +64,16 @@
                         <tbody>
                             <tr v-for="exam in completedExams" :key="exam.id">
                                 <td 
-                                    class="exam-title left inactive"
-                                    @click="exam.last_attempt_id && goToExamResults(exam.last_attempt_id)">
+                                    class="exam-title left"
+                                    :class="{ 'inactive': !hasRemainingAttempts(exam) }"
+                                    @click="handleCompletedExamClick(exam)">
                                     {{ exam.title }}
                                 </td>
-                                <td class="left inactive">{{ formatDateTime(exam.start_at) }}</td>
-                                <td class="left inactive">{{ formatDateTime(exam.end_at) }}</td>
-                                <td class="right inactive">{{ exam.duration_minutes }} хв</td>
-                                <td class="right inactive">{{ exam.max_attempts }}</td>
-                                <td class="right inactive">{{ exam.pass_threshold }}</td>
+                                <td class="left" :class="{ 'inactive': !hasRemainingAttempts(exam) }">{{ formatDateTime(exam.start_at) }}</td>
+                                <td class="left" :class="{ 'inactive': !hasRemainingAttempts(exam) }">{{ formatDateTime(exam.end_at) }}</td>
+                                <td class="right" :class="{ 'inactive': !hasRemainingAttempts(exam) }">{{ exam.duration_minutes }} хв</td>
+                                <td class="right" :class="{ 'inactive': !hasRemainingAttempts(exam) }">{{ exam.max_attempts }}</td>
+                                <td class="right" :class="{ 'inactive': !hasRemainingAttempts(exam) }">{{ exam.pass_threshold }}</td>
                             </tr>
                         </tbody>
                     </table>
@@ -90,10 +91,10 @@
                 :visible="isPopupVisible" 
                 :header="popupHeader"
                 :disclaimer="popupDisclaimer"
-                :fstButton="(isWarningPopup || isErrorPopup) ? 'Закрити' : 'Розпочати'"
-                :sndButton="(isWarningPopup || isErrorPopup) ? null : 'Скасувати'"
-                @fstAction="(isWarningPopup || isErrorPopup) ? closePopup() : handleStartExam()"
-                @sndAction="closePopup" />
+                :fstButton="getPopupFirstButton()"
+                :sndButton="getPopupSecondButton()"
+                @fstAction="handlePopupFirstAction()"
+                @sndAction="handlePopupSecondAction()" />
         </div>
     </div>
 </template>
@@ -121,6 +122,7 @@ const isPopupVisible = ref(false)
 const selectedExam = ref(null)
 const isWarningPopup = ref(false) // Попап з попередженням про час початку
 const isErrorPopup = ref(false) // Попап з помилкою
+const isChoicePopup = ref(false) // Попап з вибором між переглядом спроби та початком нової
 const errorMessage = ref('') // Повідомлення про помилку
 
 const popupHeader = computed(() => {
@@ -132,6 +134,10 @@ const popupHeader = computed(() => {
     
     if (isWarningPopup.value) {
         return `Іспит ще не розпочався`
+    }
+    
+    if (isChoicePopup.value) {
+        return `Іспит: ${selectedExam.value.title}`
     }
     
     return `Розпочати іспит: ${selectedExam.value.title}?`
@@ -147,6 +153,13 @@ const popupDisclaimer = computed(() => {
     if (isWarningPopup.value) {
         const formattedTime = formatDateTime(selectedExam.value.start_at)
         return `Іспит "${selectedExam.value.title}" можна розпочати тільки після ${formattedTime}.`
+    }
+    
+    if (isChoicePopup.value) {
+        const attemptsUsed = selectedExam.value.user_attempts_count || 0
+        const maxAttempts = selectedExam.value.max_attempts || 0
+        const remainingAttempts = maxAttempts - attemptsUsed
+        return `Ви вже виконали ${attemptsUsed} з ${maxAttempts} спроб. Залишилося ${remainingAttempts} спроб. Що ви хочете зробити?`
     }
     
     return 'Як тільки екзамен розпочнеться, його не можна буде зупинити.'
@@ -183,7 +196,85 @@ function closePopup() {
     isPopupVisible.value = false
     isWarningPopup.value = false
     isErrorPopup.value = false
+    isChoicePopup.value = false
     errorMessage.value = ''
+}
+
+// Перевіряє, чи є ще дозволені спроби для іспиту
+function hasRemainingAttempts(exam) {
+    if (!exam) return false
+    const attemptsUsed = exam.user_attempts_count || 0
+    const maxAttempts = exam.max_attempts || 0
+    return attemptsUsed < maxAttempts
+}
+
+// Обробляє клік на іспит у секції "виконані"
+function handleCompletedExamClick(exam) {
+    if (!exam) return
+    
+    // Якщо немає спроб або досягнуто max_attempts, просто переходимо до результатів
+    if (!exam.last_attempt_id || !hasRemainingAttempts(exam)) {
+        if (exam.last_attempt_id) {
+            goToExamResults(exam.last_attempt_id)
+        }
+        return
+    }
+    
+    // Якщо є спроби і ще є дозволені спроби, показуємо діалог вибору
+    selectedExam.value = exam
+    isChoicePopup.value = true
+    isWarningPopup.value = false
+    isErrorPopup.value = false
+    isPopupVisible.value = true
+}
+
+// Отримує текст першої кнопки попапу
+function getPopupFirstButton() {
+    if (isErrorPopup.value || isWarningPopup.value) {
+        return 'Закрити'
+    }
+    if (isChoicePopup.value) {
+        return 'Розпочати нову спробу'
+    }
+    return 'Розпочати'
+}
+
+// Отримує текст другої кнопки попапу
+function getPopupSecondButton() {
+    if (isErrorPopup.value || isWarningPopup.value) {
+        return null
+    }
+    if (isChoicePopup.value) {
+        return 'Переглянути спробу'
+    }
+    return 'Скасувати'
+}
+
+// Обробляє натискання першої кнопки попапу
+function handlePopupFirstAction() {
+    if (isErrorPopup.value || isWarningPopup.value) {
+        closePopup()
+        return
+    }
+    if (isChoicePopup.value) {
+        // Розпочати нову спробу
+        handleStartExam()
+        return
+    }
+    handleStartExam()
+}
+
+// Обробляє натискання другої кнопки попапу
+function handlePopupSecondAction() {
+    if (isChoicePopup.value) {
+        // Переглянути спробу
+        if (selectedExam.value?.last_attempt_id) {
+            goToExamResults(selectedExam.value.last_attempt_id)
+        }
+        closePopup()
+        return
+    }
+    closePopup()
 }
 
 // розпочинаємо спробу іспиту, натиснувши на кнопку в поп-апі
