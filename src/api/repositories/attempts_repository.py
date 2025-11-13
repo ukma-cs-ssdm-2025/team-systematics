@@ -151,6 +151,89 @@ class AttemptsRepository:
         self.db.refresh(attempt)
         return attempt    
 
+    def _get_question_type(self, q: Question) -> str:
+        return q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
+
+    def _load_options_by_question(self, question_ids: List[UUID]) -> Dict[UUID, List[Dict[str, Any]]]:
+        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
+        if not question_ids:
+            return opts_by_q
+        options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
+        for o in options:
+            opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
+        return opts_by_q
+
+    def _load_matching_by_question(self, question_ids: List[UUID]) -> Dict[UUID, Dict[str, List[Dict[str, Any]]]]:
+        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
+        if not question_ids:
+            return match_by_q
+        matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
+        for m in matching_rows:
+            q_id = m.question_id
+            if q_id not in match_by_q:
+                match_by_q[q_id] = {'prompts': [], 'matches': []}
+            match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
+            match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+        return match_by_q
+
+    def _format_question(self, q: Question, opts_by_q: Dict[UUID, List[Dict[str, Any]]], match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]]) -> Dict[str, Any]:
+        q_type = self._get_question_type(q)
+        q_out: Dict[str, Any] = {
+            'id': str(q.id),
+            'position': q.position,
+            'question_type': q_type,
+            'title': q.title,
+            'points': q.points,
+        }
+        if q_type in ('single_choice', 'multi_choice'):
+            q_out['options'] = opts_by_q.get(q.id, [])
+        elif q_type == 'short_answer':
+            q_out['input_type'] = 'text'
+        elif q_type == 'matching':
+            q_out['matching_data'] = match_by_q.get(q.id, {'prompts': [], 'matches': []})
+        return q_out
+
+    def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
+        """Збирає та форматує всю інформацію для сторінки складання іспиту.
+
+        Цей метод агрегує дані про спробу, іспит, відсортовані питання,
+        варіанти відповідей, дані для питань на відповідність та збережені
+        відповіді користувача в один зручний для фронтенду об'єкт.
+        """
+        attempt = self.get_attempt(attempt_id)
+        if not attempt or not attempt.exam:
+            return None
+        exam = attempt.exam
+
+        # 1. Завантажуємо питання, впорядковані за позицією
+        questions: List[Question] = (
+            self.db.query(Question)
+            .filter(Question.exam_id == exam.id)
+            .order_by(Question.position)
+            .all()
+        )
+        question_ids = [q.id for q in questions]
+
+        # 2. Оптимізація: завантажуємо всі опції та дані для 'matching' одним запитом
+        opts_by_q = self._load_options_by_question(question_ids)
+        match_by_q = self._load_matching_by_question(question_ids)
+
+        # 3. Формуємо фінальний список питань для фронтенду
+        questions_out = [self._format_question(q, opts_by_q, match_by_q) for q in questions]
+
+        # 4. Збираємо все в один об'єкт-результат
+        result: Dict[str, Any] = {
+            'attempt_id': str(attempt.id),
+            'exam_id': str(exam.id),
+            'exam_title': exam.title,
+            'duration_minutes': exam.duration_minutes,
+            'status': str(attempt.status.value) if hasattr(attempt.status, 'value') else str(attempt.status),
+            'started_at': to_utc_iso(attempt.started_at),
+            'due_at': to_utc_iso(attempt.due_at),
+            'questions': questions_out,
+        }
+        return result
+
     def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         """Збирає та форматує всю інформацію для сторінки складання іспиту.
 
