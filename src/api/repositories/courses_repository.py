@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func, or_, literal
 from uuid import UUID
 from fastapi import Query
+from api.repositories.exams_repository import ExamsRepository
 from api.schemas.exams import Exam
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
@@ -197,25 +198,23 @@ class CoursesRepository:
         return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0
     
     def get_course_statistics(self, course_id: UUID) -> dict:
-        """Метод для отримання статистики по курсу"""
+        """Метод для отримання статистики по курсу."""
         # Використовуємо ExamsRepository, щоб отримати статистику по кожному іспиту
-        from src.api.repositories.exams_repository import ExamsRepository
-
         exams = self.db.query(Exam).filter(Exam.course_id == course_id).all()
         repo = ExamsRepository(self.db)
-
-        stats = []
+    
+        stats = {}  # Змінено на dict замість списку
         for exam in exams:
             exam_stats = repo.get_exam_statistics(exam.id)
-            stats.append({
-                "exam_id": exam.id,
+            stats[exam.id] = {  # Ключем буде exam_id
                 "exam_title": exam.title,
                 "average_score": exam_stats.get("average_score"),
                 "min_score": exam_stats.get("min_score"),
                 "max_score": exam_stats.get("max_score"),
                 "median_score": exam_stats.get("median_score"),
-            })
-        return stats
+            }
+
+        return stats 
     
     def get_group_score_analytics(self, course_id: UUID) -> dict:
         """
@@ -278,7 +277,7 @@ class CoursesRepository:
             }
 
         scores = [a.earned_points for a in attempts]
-        unique_completed_students = len(set(a.user_id for a in attempts))
+        unique_completed_students = len({a.user_id for a in attempts})
 
         avg = sum(scores) / len(scores) if scores else None
         mn = min(scores) if scores else None
