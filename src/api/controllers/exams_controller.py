@@ -13,6 +13,8 @@ from .versioning import require_api_version
 from src.api.database import get_db
 from typing import List
 
+TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для викладачів"
+
 class ExamsController:
     def __init__(self, service: ExamsService) -> None:
         self.service = service
@@ -160,7 +162,7 @@ class ExamsController:
             if current_user.role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail=TEACHER_ONLY_ACCESS,
                 )
             return self.service.get_exams_for_course(db, course_id)
         
@@ -177,28 +179,28 @@ class ExamsController:
             if current_user.role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail=TEACHER_ONLY_ACCESS,
                 )
             return self.journal_service.get_journal_for_exam(db, exam_id)
 
         @self.router.get("/{course_id}/analytics", response_model=List[GroupAnalytics], summary="Аналітика результатів групи")
         async def get_group_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
             if current_user.role != 'teacher':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
             group_stats = self.service.get_group_statistics(db, course_id)
             return group_stats
 
         @self.router.get("/{course_id}/exams/{exam_id}/statistics", response_model=ExamStatistics, summary="Статистика по іспиту")
         async def get_exam_statistics(course_id: UUID, exam_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
             if current_user.role != 'teacher':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
             stats = self.service.get_exam_statistics(db, exam_id)
             return stats
 
         @self.router.get("/{course_id}/exams/{exam_id}/progress", response_model=List[ExamProgress], summary="Динаміка результатів по іспиту")
         async def get_exam_progress(course_id: UUID, exam_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
             if current_user.role != 'teacher':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
             progress = self.service.get_exam_progress(db, exam_id)
             return progress
         
