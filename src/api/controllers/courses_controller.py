@@ -15,6 +15,8 @@ from src.utils.auth import get_current_user_with_role, get_current_user, require
 from .versioning import require_api_version
 from src.api.schemas.courses import CourseSupervisorListItem, CourseSupervisorDetails
 
+TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для викладачів"
+
 class CoursesController:
     def __init__(self, service: CoursesService) -> None:
         self.service = service
@@ -46,7 +48,7 @@ class CoursesController:
             if current_user.role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail=TEACHER_ONLY_ACCESS,
                 )
             items, total = self.service.list_my_courses(db, current_user.id, limit, offset) 
             return {"items": items, "total": total, "limit": limit, "offset": offset}
@@ -146,7 +148,7 @@ class CoursesController:
             if current_user.role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail=TEACHER_ONLY_ACCESS,
                 )
             
             return self.exams_service.get_exams_for_course(db, course_id=course_id)
@@ -205,12 +207,12 @@ class CoursesController:
         @self.router.get("/{course_id}/analytics", response_model=CourseAnalyticsResponse, summary="Аналітика курсу: статистика по іспитах")
         async def get_course_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
             if current_user.role != 'teacher':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
             course_stats = self.service.get_course_exam_statistics(db, course_id)
             return course_stats
 
         @self.router.get("/{course_id}/group-analytics", response_model=GroupScoreAnalytics, summary="Аналітика групи: середній/мін/макс/медіана оцінок")
         async def get_group_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
             if current_user.role != 'teacher':
-                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Цей функціонал доступний лише для викладачів")
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
             return self.service.get_group_analytics(db, current_user.id, course_id)
