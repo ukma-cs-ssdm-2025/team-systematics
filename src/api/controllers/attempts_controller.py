@@ -62,9 +62,12 @@ class AttemptsController:
 
     def _setup_routes(self):
         """Setup all route handlers for the attempts router."""
-        # Важливо: специфічні роути (без параметрів шляху) мають бути визначені ПЕРЕД роутами з параметрами
-        # інакше FastAPI спробує зіставити їх з параметрами
-        
+    
+        # Окремий метод для реєстрації роутів
+        self._register_flagged_answers_route()
+
+    # Окремий метод для реєстрації роутів
+    def _register_flagged_answers_route(self):
         @self.router.get(
             "/flagged-answers",
             response_model=List[FlaggedAnswerResponse],
