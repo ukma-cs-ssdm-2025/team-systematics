@@ -290,3 +290,27 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(answer)
         return answer
+
+    def get_attempts_statistics_for_exam(self, exam_id: UUID) -> dict:
+        """Отримує статистику для спроб на іспиті"""
+        attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+        
+        if not attempts:
+            return {"min_score": None, "max_score": None, "median_score": None, "average_score": None}
+        
+        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        
+        if not scores:
+            return {"min_score": None, "max_score": None, "median_score": None, "average_score": None}
+        
+        min_score = min(scores)
+        max_score = max(scores)
+        median_score = sorted(scores)[len(scores) // 2]
+        average_score = sum(scores) / len(scores)
+
+        return {
+            "min_score": min_score,
+            "max_score": max_score,
+            "median_score": median_score,
+            "average_score": average_score
+        }
