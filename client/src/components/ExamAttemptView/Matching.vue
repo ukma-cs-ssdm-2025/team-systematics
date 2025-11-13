@@ -80,6 +80,7 @@ function shuffleArray(array) {
 // Return integer in range [0, max) using Web Crypto when available.
 // Uses rejection sampling to avoid modulo bias. Falls back to Math.random().
 function secureRandomInt(max) {
+    // Перевірка на наявність crypto API
     if (globalThis.crypto && globalThis.crypto.getRandomValues && max > 0) {
         const uint32Max = 0xFFFFFFFF;
         const range = max;
@@ -93,8 +94,8 @@ function secureRandomInt(max) {
         return r % range;
     }
 
-    // Fallback: not cryptographically secure, but fine for UI shuffling when crypto is unavailable
-    return Math.floor(Math.random() * max);
+    // Якщо crypto недоступне, то не використовуємо Math.random() в безпечному контексті
+    throw new Error('Secure random number generation is not supported in this environment.');
 }
 
 watch(
