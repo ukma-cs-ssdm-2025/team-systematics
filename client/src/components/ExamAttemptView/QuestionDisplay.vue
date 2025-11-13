@@ -208,8 +208,8 @@ watch(localAnswer, (newValue) => {
 const answerId = ref(null);
 
 const handleFlaggedStatus = async () => {
-    // Якщо `is_flagged` визначено, використовуємо його значення
-    if (props.question.is_flagged != null) { // Перевірка на `null` і `undefined`
+    // Якщо `is_flagged` визначено (не null і не undefined), використовуємо його значення
+    if (props.question.is_flagged !== null && props.question.is_flagged !== undefined) {
         isFlagged.value = props.question.is_flagged;
     } else {
         // Якщо `is_flagged` не передано, перевіряємо через API
