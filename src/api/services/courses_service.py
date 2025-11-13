@@ -2,8 +2,7 @@ from sqlalchemy.orm import Session
 from uuid import UUID
 from fastapi import HTTPException, status
 from typing import Optional, Tuple, List
-from api.services.exams_service import ExamsService
-from api.services.journal_service import JournalService
+from src.api.services.journal_service import JournalService
 from src.api.repositories.courses_repository import CoursesRepository
 from src.api.schemas.courses import CourseCreate, CourseUpdate
 from src.models.courses import Course
@@ -74,6 +73,7 @@ class CoursesService:
         return result
     
     def get_course_exam_statistics(self, db: Session, course_id: UUID):
+        from src.api.services.exams_service import ExamsService
         exams_service = ExamsService()
         journal_service = JournalService()
 

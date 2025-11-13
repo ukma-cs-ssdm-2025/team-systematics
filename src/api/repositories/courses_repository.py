@@ -3,8 +3,8 @@ from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func, or_, literal
 from uuid import UUID
 from fastapi import Query
-from api.repositories.exams_repository import ExamsRepository
-from api.schemas.exams import Exam
+from src.api.repositories.exams_repository import ExamsRepository
+from src.api.schemas.exams import Exam
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.courses import CourseCreate, CourseUpdate

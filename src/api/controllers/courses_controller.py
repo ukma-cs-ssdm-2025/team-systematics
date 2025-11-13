@@ -4,7 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 
-from api.schemas.analytics import CourseAnalyticsResponse, GroupScoreAnalytics
+from src.api.schemas.analytics import CourseAnalyticsResponse, GroupScoreAnalytics
 from src.models.users import User
 from src.api.schemas.exams import CourseExamsPage
 from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpdate, CoursesPage

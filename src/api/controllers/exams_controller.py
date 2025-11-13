@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
-from api.schemas.analytics import ExamProgress, GroupAnalytics
+from src.api.schemas.analytics import ExamProgress, GroupAnalytics
 from src.api.schemas.exams import Exam, ExamCreate, ExamStatistics, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt

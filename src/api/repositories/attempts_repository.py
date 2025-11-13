@@ -3,7 +3,7 @@ from sqlalchemy import func
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
-from api.services.statistics_service import StatisticsService
+from src.api.services.statistics_service import StatisticsService
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 

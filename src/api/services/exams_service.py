@@ -9,7 +9,6 @@ from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, Cours
 from src.api.schemas.questions import QuestionSchema
 from src.models.matching_options import MatchingOption
 from src.api.schemas.attempts import AttemptStartRequest, Attempt
-from .courses_service import CoursesService
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
