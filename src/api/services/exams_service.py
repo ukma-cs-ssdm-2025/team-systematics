@@ -23,6 +23,7 @@ class ExamsService:
         Завжди повертає персоналізований список іспитів для користувача.
         """
         repo = ExamsRepository(db)
+        attempts_repo = AttemptsRepository(db)
         items_with_status, _ = repo.list(user_id=user_id, limit=limit, offset=offset)
         
         now = datetime.now(timezone.utc)
@@ -31,12 +32,21 @@ class ExamsService:
 
         for exam_model, user_attempts_count in items_with_status:
             exam_schema = Exam.model_validate(exam_model)
+            
+            # Отримуємо останню спробу для цього іспиту
+            last_attempt = attempts_repo.get_last_attempt_for_user_and_exam(user_id, exam_model.id)
+            last_attempt_id = str(last_attempt.id) if last_attempt else None
+            
+            # Додаємо last_attempt_id до схеми
+            exam_dict = exam_schema.model_dump()
+            exam_dict['last_attempt_id'] = last_attempt_id
+            exam_with_attempt = Exam(**exam_dict)
 
             if user_attempts_count >= exam_schema.max_attempts:
-                completed_by_user.append(exam_schema)
+                completed_by_user.append(exam_with_attempt)
             
             elif exam_schema.end_at > now:
-                future_or_active.append(exam_schema)
+                future_or_active.append(exam_with_attempt)
 
         return {"future": future_or_active, "completed": completed_by_user}
 
@@ -111,6 +121,7 @@ class ExamsService:
             "pass_threshold": exam.pass_threshold,
             "owner_id": exam.owner_id,
             "published": exam.status.value != "draft",
+            "status": exam.status.value,  # Додаємо поле status, яке обов'язкове для ExamWithQuestions
             "question_count": len(questions_data),
             "questions": questions_data
         }

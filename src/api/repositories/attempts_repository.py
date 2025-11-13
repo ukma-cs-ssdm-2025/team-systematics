@@ -260,6 +260,15 @@ class AttemptsRepository:
         ).count()
         return count
 
+    def get_last_attempt_for_user_and_exam(self, user_id: UUID, exam_id: UUID) -> Optional[Attempt]:
+        """
+        Отримує останню спробу користувача для конкретного іспиту.
+        """
+        return self.db.query(Attempt).filter(
+            Attempt.exam_id == exam_id,
+            Attempt.user_id == user_id
+        ).order_by(Attempt.started_at.desc()).first()
+
     def get_attempt_for_review(self, attempt_id: UUID) -> Optional[Attempt]:
         """
         Завантажує спробу з усіма необхідними пов'язаними даними для

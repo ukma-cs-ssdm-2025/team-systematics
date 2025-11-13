@@ -63,7 +63,11 @@
                         </thead>
                         <tbody>
                             <tr v-for="exam in completedExams" :key="exam.id">
-                                <td class="exam-title left inactive">{{ exam.title }}</td>
+                                <td 
+                                    class="exam-title left inactive"
+                                    @click="exam.last_attempt_id && goToExamResults(exam.last_attempt_id)">
+                                    {{ exam.title }}
+                                </td>
                                 <td class="left inactive">{{ formatDateTime(exam.start_at) }}</td>
                                 <td class="left inactive">{{ formatDateTime(exam.end_at) }}</td>
                                 <td class="right inactive">{{ exam.duration_minutes }} хв</td>
@@ -238,6 +242,10 @@ function formatDateTime(dateString) {
         minute: '2-digit'
     }
     return new Date(dateString).toLocaleString('uk-UA', options)
+}
+
+function goToExamResults(attemptId) {
+    router.push(`/exams-results/${attemptId}`)
 }
 </script>
 

@@ -236,36 +236,44 @@ function validateStartDate(value) {
     // Використовуємо currentTime для перевірки
     const now = currentTime.value
     
-    // Перевіряємо, чи дата/час початку не в минулому
-    if (startDate < now) {
+    // Перевіряємо, чи дата/час початку не в минулому (тільки для створення нового іспиту)
+    if (!isEditMode.value && startDate < now) {
         // Показуємо помилку замість автоматичного виправлення
         startDateError.value = 'Дата та час початку не можуть бути в минулому'
         // Не оновлюємо значення автоматично - залишаємо як є, щоб користувач міг бачити помилку
         return
-    } else {
-        // Очищаємо помилку, якщо дата коректна
-        startDateError.value = null
     }
     
-    // Якщо дата початку змінилася і тепер дата завершення стала раніше або дорівнює початку,
-    // встановлюємо дату завершення на основі тривалості, або мінімум початок + 1 хвилина
-    // watch для end_at автоматично викличе validateEndDate
-    if (endDate && endDate <= startDate) {
-        // Спробуємо використати тривалість, якщо вона встановлена
-        if (exam.value.duration_minutes && exam.value.duration_minutes > 0) {
-            updateEndDateFromDuration()
-        } else {
-            // Інакше встановлюємо мінімум: початок + 1 хвилина
-            const minEndDate = new Date(startDate.getTime() + 60000) // +1 хвилина
-            const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
-            const newEndDate = new Date(Math.max(minEndDate.getTime(), roundedNow.getTime()))
-            exam.value.end_at = formatDateTimeForInput(newEndDate)
-            // watch для end_at автоматично викличе validateEndDate
+    // Очищаємо помилку про минуле, якщо це редагування або дата коректна
+    if (isEditMode.value || startDate >= now) {
+        // Якщо помилка була про минуле, очищаємо її
+        if (startDateError.value === 'Дата та час початку не можуть бути в минулому') {
+            startDateError.value = null
         }
-    } else if (endDate && exam.value.duration_minutes) {
-        // Якщо дата початку змінилася, але дата завершення все ще коректна,
-        // оновлюємо час завершення на основі нової дати початку та тривалості
-        updateEndDateFromDuration()
+    }
+    
+    // У режимі редагування не синхронізуємо тривалість та час завершення
+    if (!isEditMode.value) {
+        // Якщо дата початку змінилася і тепер дата завершення стала раніше або дорівнює початку,
+        // встановлюємо дату завершення на основі тривалості, або мінімум початок + 1 хвилина
+        // watch для end_at автоматично викличе validateEndDate
+        if (endDate && endDate <= startDate) {
+            // Спробуємо використати тривалість, якщо вона встановлена
+            if (exam.value.duration_minutes && exam.value.duration_minutes > 0) {
+                updateEndDateFromDuration()
+            } else {
+                // Інакше встановлюємо мінімум: початок + 1 хвилина
+                const minEndDate = new Date(startDate.getTime() + 60000) // +1 хвилина
+                const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
+                const newEndDate = new Date(Math.max(minEndDate.getTime(), roundedNow.getTime()))
+                exam.value.end_at = formatDateTimeForInput(newEndDate)
+                // watch для end_at автоматично викличе validateEndDate
+            }
+        } else if (endDate && exam.value.duration_minutes) {
+            // Якщо дата початку змінилася, але дата завершення все ще коректна,
+            // оновлюємо час завершення на основі нової дати початку та тривалості
+            updateEndDateFromDuration()
+        }
     }
 }
 
@@ -361,24 +369,35 @@ function validateEndDate(value, updateDuration = true) {
     // Використовуємо currentTime для перевірки
     const now = currentTime.value
     
-    // Перевіряємо, чи дата/час завершення не в минулому
-    if (endDate < now) {
+    // Перевіряємо, чи дата/час завершення не в минулому (тільки для створення нового іспиту)
+    if (!isEditMode.value && endDate < now) {
         // Показуємо помилку замість автоматичного виправлення
         endDateError.value = 'Дата та час завершення не можуть бути в минулому'
         return
     }
     
+    // Очищаємо помилку про минуле, якщо це редагування або дата коректна
+    if (isEditMode.value || endDate >= now) {
+        // Якщо помилка була про минуле, очищаємо її
+        if (endDateError.value === 'Дата та час завершення не можуть бути в минулому') {
+            endDateError.value = null
+        }
+    }
+    
     // Перевіряємо, чи дата завершення не раніше дати початку
     if (startDate && endDate <= startDate) {
-        // Якщо час завершення раніше за час початку, але тривалість встановлена,
-        // автоматично виправляємо час завершення на основі тривалості
-        // (навіть якщо час завершення був введений вручну, бо це некоректне значення)
-        if (exam.value.duration_minutes && exam.value.duration_minutes > 0) {
-            // Виправляємо час завершення на основі тривалості (примусово)
-            updateEndDateFromDuration(true)
-            return
+        // У режимі редагування не синхронізуємо тривалість та час завершення
+        if (!isEditMode.value) {
+            // Якщо час завершення раніше за час початку, але тривалість встановлена,
+            // автоматично виправляємо час завершення на основі тривалості
+            // (навіть якщо час завершення був введений вручну, бо це некоректне значення)
+            if (exam.value.duration_minutes && exam.value.duration_minutes > 0) {
+                // Виправляємо час завершення на основі тривалості (примусово)
+                updateEndDateFromDuration(true)
+                return
+            }
         }
-        // Показуємо помилку, якщо автоматичне виправлення неможливе
+        // Показуємо помилку, якщо автоматичне виправлення неможливе або в режимі редагування
         endDateError.value = 'Дата та час завершення не можуть бути раніше або дорівнювати часу початку'
         return
     }
@@ -387,7 +406,8 @@ function validateEndDate(value, updateDuration = true) {
     endDateError.value = null
     
     // Оновлюємо тривалість на основі нового часу завершення (тільки якщо помилок немає і дозволено оновлення)
-    if (updateDuration && !endDateError.value && !isUpdatingDuration.value) {
+    // У режимі редагування не синхронізуємо тривалість та час завершення
+    if (!isEditMode.value && updateDuration && !endDateError.value && !isUpdatingDuration.value) {
         updateDurationFromEndDate()
     }
 }
@@ -516,9 +536,10 @@ onMounted(async () => {
                 })
             }
             
-            // Валідуємо дати після завантаження з бекенду
-            validateStartDate(exam.value.start_at)
-            validateEndDate(exam.value.end_at)
+            // В режимі редагування не валідуємо дати на предмет того, чи вони в минулому
+            // Просто очищаємо можливі помилки
+            startDateError.value = null
+            endDateError.value = null
         } catch (err) {
             console.error('Помилка завантаження іспиту:', err)
             error.value = err.message || 'Не вдалося завантажити іспит для редагування'
@@ -566,7 +587,7 @@ watch(() => exam.value.start_at, (newValue) => {
             validateEndDate(exam.value.end_at)
         }
     }
-})
+}, { immediate: false })
 
 // Валідуємо дату завершення при зміні (тільки якщо не завантажуємо зі сховища)
 watch(() => exam.value.end_at, (newValue, oldValue) => {
@@ -584,7 +605,8 @@ watch(() => exam.value.end_at, (newValue, oldValue) => {
 
 // Оновлюємо час завершення при зміні тривалості (тільки якщо не завантажуємо зі сховища)
 watch(() => exam.value.duration_minutes, (newValue, oldValue) => {
-    if (newValue && !isLoadingFromStorage.value && !isUpdatingDuration.value) {
+    // У режимі редагування не синхронізуємо тривалість та час завершення
+    if (!isEditMode.value && newValue && !isLoadingFromStorage.value && !isUpdatingDuration.value) {
         // Якщо тривалість змінилася не через автоматичне оновлення (isUpdatingDuration = false),
         // то це ручна зміна користувача
         if (oldValue && newValue !== oldValue) {

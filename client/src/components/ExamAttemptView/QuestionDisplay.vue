@@ -51,7 +51,8 @@
                 <SingleChoice
                     :options="question.options" v-model="localAnswer"
                     :is-review-mode="isReviewMode"
-                    :earned-points="question.earned_points" 
+                    :earned-points="question.earned_points"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -62,6 +63,7 @@
                     v-model="localAnswer"
                     :is-review-mode="isReviewMode"
                     :earned-points="question.earned_points"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -71,6 +73,7 @@
                     :placeholder="question.answer_format === 'text' ? 'Введіть вашу відповідь...' : 'Введіть число...'"
                     :is-review-mode="isReviewMode"
                     :question-data="question"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -94,6 +97,7 @@
                     :matches="question.matching_data.matches"
                     :modelValue="localAnswer"
                     :is-review-mode="isReviewMode"
+                    :show-correct-answers="showCorrectAnswers"
                     @update:modelValue="localAnswer = $event" />
             </div>
         </div>
@@ -138,6 +142,10 @@ const props = defineProps({
     attemptId: {
         type: String,
         default: null
+    },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
     }
 })
 

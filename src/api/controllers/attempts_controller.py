@@ -104,8 +104,9 @@ class AttemptsController:
         async def get_exam_attempt_review(
             attempt_id: UUID,
             db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
         ):
-            return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
+            return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db, current_user=current_user)
 
         @self.router.patch("/{attempt_id}/questions/{question_id}/score", 
             response_model=Answer, 

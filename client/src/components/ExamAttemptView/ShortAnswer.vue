@@ -20,13 +20,13 @@
                     <span class="answer-text">
                         {{ questionData.student_answer_text }}
                     </span>
-                    <span class="answer-points">
+                    <span v-if="showCorrectAnswers" class="answer-points">
                         ({{ isCorrect ? formattedPoints : 0 }} б)
                     </span>
                 </div>
             </div>
         
-            <div v-if="!isCorrect" class="correct-answer">
+            <div v-if="showCorrectAnswers && !isCorrect && questionData.correct_answer_text" class="correct-answer">
                 <strong>Правильна відповідь:</strong> {{ questionData.correct_answer_text }}
             </div>
         </div>
@@ -52,6 +52,10 @@ const props = defineProps({
     questionData: { 
         type: Object, 
         default: () => ({}) 
+    },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
     }
 })
 

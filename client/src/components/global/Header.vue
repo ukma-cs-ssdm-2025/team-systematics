@@ -137,6 +137,9 @@ onUnmounted(() => {
     background-color: var(--color-purple);
 }
 
+.user-greeting {
+    white-space: nowrap;
+}
 
 .user-profile {
     position: relative;
@@ -147,6 +150,14 @@ onUnmounted(() => {
     border: none;
     cursor: pointer;
     border-radius: 50%;
+    padding: 0;
+    background: transparent;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .user-avatar img {
