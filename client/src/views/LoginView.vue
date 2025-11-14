@@ -94,6 +94,7 @@ h1 {
 #submitButton {
     background-color: var(--color-lavender);
     color: var(--color-black);
+    margin-top: 36px;
 }
 
 #submitButton:hover {
