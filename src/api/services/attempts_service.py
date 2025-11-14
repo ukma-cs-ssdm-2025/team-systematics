@@ -652,3 +652,28 @@ class AttemptsService:
         
         return result
     
+    def get_completed_attempts_for_exam(
+        self,
+        db: Session,
+        exam_id: UUID,
+    ) -> List[dict]:
+        """
+        Отримує список завершених спроб для іспиту (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempts = repo.get_completed_attempts_for_exam(exam_id)
+        
+        result = []
+        for attempt in attempts:
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
+            
+            result.append({
+                'user_id': attempt.user_id,
+                'user_full_name': user_full_name,
+                'status': attempt.status.value,
+                'submitted_at': attempt.submitted_at,
+            })
+        
+        return result
+    

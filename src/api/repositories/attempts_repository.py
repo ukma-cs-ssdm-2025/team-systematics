@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session, load_only, joinedload, defer, selectinload
-from sqlalchemy import func
+from sqlalchemy import func, or_
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
@@ -325,4 +325,18 @@ class AttemptsRepository:
         ).filter(
             Attempt.exam_id == exam_id,
             Attempt.status == AttemptStatus.in_progress
+        ).all()
+    
+    def get_completed_attempts_for_exam(self, exam_id: UUID) -> List[Attempt]:
+        """
+        Отримує список завершених спроб (completed або submitted) для конкретного іспиту.
+        """
+        return self.db.query(Attempt).options(
+            joinedload(Attempt.user)
+        ).filter(
+            Attempt.exam_id == exam_id,
+            or_(
+                Attempt.status == AttemptStatus.completed,
+                Attempt.status == AttemptStatus.submitted
+            )
         ).all()

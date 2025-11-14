@@ -257,6 +257,18 @@ export async function getActiveAttemptsForExam(examId) {
     }
 }
 
+export async function getCompletedAttemptsForExam(examId) {
+    try {
+        const response = await http.get(`/api/attempts/exam/${examId}/completed-attempts`)
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити список завершених спроб.')
+    }
+}
+
 export async function addTimeToAttempt(attemptId, additionalMinutes) {
     try {
         const response = await http.post(`/api/attempts/${attemptId}/add-time`, {

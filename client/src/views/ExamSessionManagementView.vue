@@ -205,7 +205,7 @@ import CSelect from '../components/global/CSelect.vue'
 import { getExamParticipants, addExamParticipant, removeExamParticipant } from '../api/examParticipants.js'
 import { getExam } from '../api/exams.js'
 import { getCourseDetailsForSupervisor } from '../api/courses.js'
-import { getActiveAttemptsForExam, addTimeToAttempt } from '../api/attempts.js'
+import { getActiveAttemptsForExam, getCompletedAttemptsForExam, addTimeToAttempt } from '../api/attempts.js'
 
 const route = useRoute()
 const examId = route.params.examId
@@ -227,6 +227,7 @@ const activeAttempts = ref([])
 const loadingActiveAttempts = ref(false)
 const selectedAdditionalTime = ref({})
 const addingTimeToAttempt = ref(null)
+const studentsWithCompletedAttempts = ref(new Set()) // Set з user_id студентів, які мають завершені спроби
 
 const sortState = reactive({
     key: null, // Поле, за яким сортуємо
@@ -315,8 +316,26 @@ function getParticipantEmail(userId) {
 }
 
 function isParticipantPresent(userId) {
-    // Перевіряємо, чи є у студента активна спроба
-    return activeAttempts.value.some(attempt => attempt.user_id === userId)
+    // Перевіряємо, чи є у студента активна спроба АБО завершена спроба
+    // Нормалізуємо user_id до рядка для порівняння
+    const userIdStr = String(userId).toLowerCase().trim()
+    
+    const hasActiveAttempt = activeAttempts.value.some(attempt => {
+        const attemptUserIdStr = String(attempt.user_id || attempt.userId || '').toLowerCase().trim()
+        return attemptUserIdStr === userIdStr
+    })
+    
+    // Перевіряємо всі можливі формати user_id в Set
+    let hasCompletedAttempt = false
+    for (const completedId of studentsWithCompletedAttempts.value) {
+        const completedIdStr = String(completedId).toLowerCase().trim()
+        if (completedIdStr === userIdStr) {
+            hasCompletedAttempt = true
+            break
+        }
+    }
+    
+    return hasActiveAttempt || hasCompletedAttempt
 }
 
 function sortBy(key) {
@@ -366,6 +385,8 @@ async function loadActiveAttempts() {
         loadingActiveAttempts.value = true
         const attempts = await getActiveAttemptsForExam(examId)
         activeAttempts.value = attempts
+        // Оновлюємо також список завершених спроб, щоб статуси присутності були актуальними
+        await loadCompletedAttempts()
     } catch (err) {
         console.error('Помилка завантаження активних спроб:', err)
         // Не встановлюємо помилку як критичну, оскільки це може бути нормально, якщо немає активних спроб
@@ -374,6 +395,29 @@ async function loadActiveAttempts() {
         }
     } finally {
         loadingActiveAttempts.value = false
+    }
+}
+
+async function loadCompletedAttempts() {
+    if (!examId) {
+        return
+    }
+    
+    try {
+        // Завантажуємо завершені спроби через новий endpoint для наглядачів
+        const completedAttemptsData = await getCompletedAttemptsForExam(examId)
+        
+        // Створюємо Set з user_id студентів, які мають завершені спроби
+        const completedUserIds = new Set()
+        
+        completedAttemptsData.forEach(attempt => {
+            const userId = String(attempt.user_id).toLowerCase().trim()
+            completedUserIds.add(userId)
+        })
+        
+        studentsWithCompletedAttempts.value = completedUserIds
+    } catch (err) {
+        // Не встановлюємо помилку як критичну, оскільки це не критично для роботи
     }
 }
 
@@ -493,14 +537,21 @@ onMounted(async () => {
         loading.value = true
         await loadExamAndCourse()
         await loadParticipants()
+        // Завантажуємо завершені спроби для відображення присутності
+        await loadCompletedAttempts()
+        
         // Завантажуємо активні спроби, якщо іспит відкритий
         if (examStatus.value === 'open') {
             await loadActiveAttempts()
             
             // Автоматично оновлюємо список активних спроб кожні 10 секунд
+            // Також оновлюємо завершені спроби, щоб статуси присутності були актуальними
             refreshInterval = setInterval(() => {
                 if (examStatus.value === 'open' && !loadingActiveAttempts.value) {
                     loadActiveAttempts()
+                } else if (!loadingActiveAttempts.value) {
+                    // Навіть якщо іспит не відкритий, оновлюємо завершені спроби для коректного відображення статусів
+                    loadCompletedAttempts()
                 }
             }, 10000) // 10 секунд
         } else {

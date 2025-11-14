@@ -80,6 +80,36 @@ class AttemptsController:
                 current_user=current_user,
             )
         
+        # Роути для exam мають бути перед роутами з {attempt_id}, щоб уникнути конфліктів
+        @self.router.get(
+            "/exam/{exam_id}/active-attempts",
+            response_model=List[ActiveAttemptInfo],
+            summary="Отримати список активних спроб для іспиту (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
+        )
+        async def get_active_attempts(
+            exam_id: UUID = Path(..., description="ID іспиту"),
+            db: Session = Depends(get_db),
+        ):
+            return self.service.get_active_attempts_for_exam(
+                db=db,
+                exam_id=exam_id,
+            )
+        
+        @self.router.get(
+            "/exam/{exam_id}/completed-attempts",
+            summary="Отримати список завершених спроб для іспиту (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
+        )
+        async def get_completed_attempts(
+            exam_id: UUID = Path(..., description="ID іспиту"),
+            db: Session = Depends(get_db),
+        ):
+            return self.service.get_completed_attempts_for_exam(
+                db=db,
+                exam_id=exam_id,
+            )
+        
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
         async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
             return self.service.add_answer(db, attempt_id, payload)
@@ -355,19 +385,4 @@ class AttemptsController:
                 db=db,
                 attempt_id=attempt_id,
                 payload=payload,
-            )
-        
-        @self.router.get(
-            "/exam/{exam_id}/active-attempts",
-            response_model=List[ActiveAttemptInfo],
-            summary="Отримати список активних спроб для іспиту (тільки для наглядача)",
-            dependencies=[Depends(require_role('supervisor'))],
-        )
-        async def get_active_attempts(
-            exam_id: UUID = Path(..., description="ID іспиту"),
-            db: Session = Depends(get_db),
-        ):
-            return self.service.get_active_attempts_for_exam(
-                db=db,
-                exam_id=exam_id,
             )
