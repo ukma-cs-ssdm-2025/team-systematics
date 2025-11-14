@@ -8,6 +8,7 @@ from src.models.exams import ExamStatusEnum
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
 DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретичних питань."
 EXAMPLE_TITLE = "Вступ до Docker"
+EXAM_DURATION_DESCRIPTION = "Duration of the exam in minutes"
 
 def datetime_must_not_be_in_past(cls, v):
     """Перевіряє, що дата/час не в минулому відносно поточного часу.
@@ -70,7 +71,7 @@ class ExamCreate(BaseModel):
     )
     duration_minutes: int = Field(
         60,
-        description="Duration of the exam in minutes",
+        description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
     max_attempts: conint(ge=1, le=10) = Field(
@@ -116,7 +117,7 @@ class ExamUpdate(BaseModel):
     )
     duration_minutes: Optional[int] = Field(
         None,
-        description="Duration of the exam in minutes",
+        description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
     max_attempts: Optional[conint(ge=1, le=10)] = Field(
@@ -160,7 +161,7 @@ class Exam(BaseModel):
     duration_minutes: int = Field(
         ...,
         example=60,
-        description="Duration of the exam in minutes"
+        description=EXAM_DURATION_DESCRIPTION
     )
     max_attempts: int = Field(
         ...,
