@@ -98,6 +98,48 @@ class CoursesRepository:
             })
         return items
 
+    def _apply_student_exam_filters(
+        self,
+        results: List,
+        min_students: Optional[int] = None,
+        max_students: Optional[int] = None,
+        min_exams: Optional[int] = None,
+        max_exams: Optional[int] = None,
+    ) -> List:
+        """Фільтрує результати за кількістю студентів та іспитів."""
+        filtered_results = []
+        for result in results:
+            course, student_count, exam_count, is_enrolled = result[:4]
+            student_count = student_count or 0
+            exam_count = exam_count or 0
+            
+            # Фільтр за кількістю студентів
+            if min_students is not None and student_count < min_students:
+                continue
+            if max_students is not None and student_count > max_students:
+                continue
+            
+            # Фільтр за кількістю іспитів
+            if min_exams is not None and exam_count < min_exams:
+                continue
+            if max_exams is not None and exam_count > max_exams:
+                continue
+            
+            filtered_results.append(result)
+        return filtered_results
+
+    def _apply_name_filter(self, query, name_filter: Optional[str], owner_alias=None):
+        """Застосовує фільтр за назвою/кодом курсу."""
+        if name_filter:
+            name_lower = f"%{name_filter.lower()}%"
+            query = query.filter(
+                or_(
+                    func.lower(Course.name).like(name_lower),
+                    func.lower(Course.code).like(name_lower)
+                )
+            )
+        return query
+
     def list(
         self,
         current_user_id: UUID,
@@ -118,14 +160,7 @@ class CoursesRepository:
         query = query.outerjoin(owner_alias, Course.owner_id == owner_alias.id).add_columns(owner_alias)
         
         # Фільтр за назвою/кодом курсу
-        if name_filter:
-            name_lower = f"%{name_filter.lower()}%"
-            query = query.filter(
-                or_(
-                    func.lower(Course.name).like(name_lower),
-                    func.lower(Course.code).like(name_lower)
-                )
-            )
+        query = self._apply_name_filter(query, name_filter, owner_alias)
         
         # Фільтр за викладачем (ПІБ або email)
         if teacher_filter:
@@ -146,25 +181,9 @@ class CoursesRepository:
         all_results = query.order_by(Course.name).all()
         
         # Фільтруємо за кількістю студентів та іспитів
-        filtered_results = []
-        for result in all_results:
-            course, student_count, exam_count, is_enrolled, owner = result
-            student_count = student_count or 0
-            exam_count = exam_count or 0
-            
-            # Фільтр за кількістю студентів
-            if min_students is not None and student_count < min_students:
-                continue
-            if max_students is not None and student_count > max_students:
-                continue
-            
-            # Фільтр за кількістю іспитів
-            if min_exams is not None and exam_count < min_exams:
-                continue
-            if max_exams is not None and exam_count > max_exams:
-                continue
-            
-            filtered_results.append(result)
+        filtered_results = self._apply_student_exam_filters(
+            all_results, min_students, max_students, min_exams, max_exams
+        )
         
         # Застосовуємо пагінацію
         total = len(filtered_results)
@@ -193,38 +212,15 @@ class CoursesRepository:
         query = query.outerjoin(owner_alias, Course.owner_id == owner_alias.id).add_columns(owner_alias)
         
         # Фільтр за назвою/кодом курсу
-        if name_filter:
-            name_lower = f"%{name_filter.lower()}%"
-            query = query.filter(
-                or_(
-                    func.lower(Course.name).like(name_lower),
-                    func.lower(Course.code).like(name_lower)
-                )
-            )
+        query = self._apply_name_filter(query, name_filter, owner_alias)
         
         # Отримуємо всі результати для фільтрації за кількістю студентів/іспитів
         all_results = query.order_by(Course.name).all()
         
         # Фільтруємо за кількістю студентів та іспитів
-        filtered_results = []
-        for result in all_results:
-            course, student_count, exam_count, is_enrolled, owner = result
-            student_count = student_count or 0
-            exam_count = exam_count or 0
-            
-            # Фільтр за кількістю студентів
-            if min_students is not None and student_count < min_students:
-                continue
-            if max_students is not None and student_count > max_students:
-                continue
-            
-            # Фільтр за кількістю іспитів
-            if min_exams is not None and exam_count < min_exams:
-                continue
-            if max_exams is not None and exam_count > max_exams:
-                continue
-            
-            filtered_results.append(result)
+        filtered_results = self._apply_student_exam_filters(
+            all_results, min_students, max_students, min_exams, max_exams
+        )
         
         # Застосовуємо пагінацію
         total = len(filtered_results)
