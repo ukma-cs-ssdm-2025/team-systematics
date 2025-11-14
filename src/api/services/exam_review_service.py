@@ -10,6 +10,7 @@ from src.api.repositories.weights_repository import WeightsRepository
 from src.api.repositories.flagged_answers_repository import FlaggedAnswersRepository
 from src.api.errors.app_errors import NotFoundError
 from src.utils.largest_remainder import distribute_largest_remainder
+from src.api.services.grading_service import GradingService
 
 # Імпортуємо схеми Pydantic для відповіді
 from src.api.schemas.exam_review import (
@@ -226,15 +227,24 @@ class ExamReviewService:
         )
         
     def _build_short_answer_data(self, base_data, question, student_answer, show_correct_answers=True):
-        correct_answers = {opt.text.lower() for opt in question.options if opt.is_correct}
+        # Отримуємо всі правильні відповіді
+        correct_texts = [opt.text for opt in question.options if opt.is_correct]
+        # Визначаємо, чи питання числове
+        is_numeric = GradingService._is_numeric_question(correct_texts)
+        # Нормалізуємо правильні відповіді
+        correct_answers = {GradingService._normalize_short_answer(text, is_numeric) for text in correct_texts}
+        
         student_ans_text = student_answer.answer_text if student_answer else ""
+        # Нормалізуємо відповідь студента для перевірки
+        normalized_student_answer = GradingService._normalize_short_answer(student_ans_text, is_numeric)
         earned_points = 0
         
-        if student_ans_text.lower() in correct_answers:
+        if normalized_student_answer in correct_answers:
             earned_points = base_data["points"]
         
         # Приховуємо правильну відповідь, якщо не дозволено показувати правильні відповіді
-        correct_answer_text = next(iter(correct_answers), None) if show_correct_answers else None
+        # Беремо першу правильну відповідь у нормалізованому вигляді для відображення
+        correct_answer_text = next(iter(correct_texts), None) if show_correct_answers else None
             
         return ShortAnswerQuestionReview(
             **base_data,

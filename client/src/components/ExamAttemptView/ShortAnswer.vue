@@ -12,8 +12,8 @@
             <div 
                 class="student-answer"
                 :class="{
-                    'correct': isCorrect,
-                    'incorrect': !isCorrect && questionData.student_answer_text !== null
+                    'correct': showCorrectAnswers && isCorrect,
+                    'incorrect': showCorrectAnswers && !isCorrect && questionData.student_answer_text !== null
                 }"
             >
                 <div class="answer-content">
