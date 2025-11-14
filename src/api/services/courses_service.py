@@ -72,6 +72,10 @@ class CoursesService:
     def enroll(self, db: Session, user_id, course_id: UUID) -> None:
         return CoursesRepository(db).enroll(user_id, course_id)
 
+    def unenroll(self, db: Session, user_id, course_id: UUID) -> None:
+        """Виписує студента з курсу."""
+        return CoursesRepository(db).unenroll(user_id, course_id)
+
     def list_my_courses(
         self,
         db: Session,

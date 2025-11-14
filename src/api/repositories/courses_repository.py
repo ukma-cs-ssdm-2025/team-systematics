@@ -337,6 +337,17 @@ class CoursesRepository:
         self.db.add(CourseEnrollment(user_id=user_id, course_id=course_id))
         self.db.commit()
 
+    def unenroll(self, user_id, course_id: UUID) -> None:
+        """Виписує студента з курсу."""
+        enrollment = (
+            self.db.query(CourseEnrollment)
+            .filter(CourseEnrollment.user_id == user_id, CourseEnrollment.course_id == course_id)
+            .first()
+        )
+        if enrollment:
+            self.db.delete(enrollment)
+            self.db.commit()
+
     def get_student_count(self, course_id: UUID) -> int:
         """Підраховує кількість студентів, записаних на курс."""
         return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0

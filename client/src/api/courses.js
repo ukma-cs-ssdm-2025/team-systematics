@@ -119,6 +119,20 @@ export async function enrollInCourse(courseId) {
     }
 }
 
+// Виписати студента з конкретного курсу.
+export async function unenrollFromCourse(courseId) {
+    if (USE_MOCK_DATA) {
+        return {}
+    }
+    try {
+        const response = await http.delete(`/api/courses/${courseId}/enroll`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error unenrolling student from course ${courseId}:`, error)
+        throw new Error('Не вдалося виписати студента з курсу.')
+    }
+}
+
 // Отримує список курсів для наглядача з фільтрами
 export async function getCoursesForSupervisor(filters = {}) {
     if (USE_MOCK_DATA) {

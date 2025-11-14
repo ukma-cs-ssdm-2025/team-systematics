@@ -138,15 +138,25 @@
                         </div>
                         <div class="card-actions">
                             <CButton v-if="auth.isTeacher.value" @click="goToExams(course.id)">Керувати</CButton>
-                            <CButton 
-                                v-if="auth.isStudent.value" 
-                                @click="handleEnroll(course)" 
-                                :disabled="course.is_enrolled || isEnrolling[course.id]"
-                            >
-                                <span v-if="isEnrolling[course.id]">Запис...</span>
-                                <span v-else-if="course.is_enrolled">✔ Ви записані</span>
-                                <span v-else>Записатися</span>
-                            </CButton>
+                            <template v-if="auth.isStudent.value">
+                                <CButton 
+                                    v-if="!course.is_enrolled"
+                                    @click="handleEnroll(course)" 
+                                    :disabled="isEnrolling[course.id]"
+                                >
+                                    <span v-if="isEnrolling[course.id]">Запис...</span>
+                                    <span v-else>Записатися</span>
+                                </CButton>
+                                <CButton 
+                                    v-else
+                                    @click="openUnenrollPopup(course)" 
+                                    :disabled="isUnenrolling[course.id]"
+                                    variant="red"
+                                >
+                                    <span v-if="isUnenrolling[course.id]">Виписування...</span>
+                                    <span v-else>Виписатися</span>
+                                </CButton>
+                            </template>
                             <CButton v-if="auth.isSupervisor.value" @click.stop="viewCourseDetails(course.id)">Переглянути деталі</CButton>
                         </div>
                     </div>
@@ -160,6 +170,18 @@
                 </div>
         </main>
 
+        <!-- Попап з попередженням про виписування -->
+        <div class="unenroll-popup" v-if="isUnenrollPopupVisible">
+            <CPopup 
+                :visible="isUnenrollPopupVisible" 
+                :header="unenrollPopupHeader"
+                :disclaimer="unenrollPopupDisclaimer"
+                :fstButton="'Виписатися'"
+                :sndButton="'Скасувати'"
+                :fstButtonVariant="'red'"
+                @fstAction="handleUnenrollConfirm()"
+                @sndAction="closeUnenrollPopup()" />
+        </div>
     </div>
 </template>
 
@@ -169,7 +191,8 @@ import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
-import { getMyCourses, getAllCourses, enrollInCourse, getCoursesForSupervisor } from '../api/courses.js'
+import CPopup from '../components/global/CPopup.vue'
+import { getMyCourses, getAllCourses, enrollInCourse, unenrollFromCourse, getCoursesForSupervisor } from '../api/courses.js'
 import { useAuth } from '../store/loginInfo.js'
 
 const router = useRouter()
@@ -177,6 +200,9 @@ const courses = ref([])
 const loading = ref(true)
 const error = ref(null)
 const isEnrolling = ref({})
+const isUnenrolling = ref({})
+const isUnenrollPopupVisible = ref(false)
+const selectedCourseForUnenroll = ref(null)
 
 const filters = ref({
     name: '',
@@ -266,7 +292,17 @@ async function handleEnroll(course) {
     isEnrolling.value[course.id] = true
     try {
         await enrollInCourse(course.id)
-        course.is_enrolled = true
+        // Оновлюємо курс в масиві
+        const courseIndex = courses.value.findIndex(c => c.id === course.id)
+        if (courseIndex !== -1) {
+            courses.value[courseIndex].is_enrolled = true
+            // Оновлюємо кількість студентів локально
+            if (courses.value[courseIndex].student_count !== undefined) {
+                courses.value[courseIndex].student_count++
+            } else if (courses.value[courseIndex].students_count !== undefined) {
+                courses.value[courseIndex].students_count++
+            }
+        }
     } catch (err) {
         alert(err.message || 'Не вдалося записатися на курс.')
     } finally {
@@ -301,6 +337,52 @@ function clearFilters() {
 function viewCourseDetails(courseId) {
     if (!auth.isSupervisor.value) return
     router.push(`/courses/${courseId}/details`)
+}
+
+const unenrollPopupHeader = computed(() => {
+    if (!selectedCourseForUnenroll.value) return 'Виписатися з курсу?'
+    return `Виписатися з курсу "${selectedCourseForUnenroll.value.name}"?`
+})
+
+const unenrollPopupDisclaimer = computed(() => {
+    return 'Ви впевнені, що хочете виписатися з цього курсу? Після виписування ви втратите доступ до матеріалів курсу та іспитів. Цю дію можна буде скасувати лише повторним записом на курс.'
+})
+
+function openUnenrollPopup(course) {
+    selectedCourseForUnenroll.value = course
+    isUnenrollPopupVisible.value = true
+}
+
+function closeUnenrollPopup() {
+    selectedCourseForUnenroll.value = null
+    isUnenrollPopupVisible.value = false
+}
+
+async function handleUnenrollConfirm() {
+    if (!selectedCourseForUnenroll.value) return
+    
+    const course = selectedCourseForUnenroll.value
+    isUnenrolling.value[course.id] = true
+    
+    try {
+        await unenrollFromCourse(course.id)
+        // Оновлюємо курс в масиві
+        const courseIndex = courses.value.findIndex(c => c.id === course.id)
+        if (courseIndex !== -1) {
+            courses.value[courseIndex].is_enrolled = false
+            // Оновлюємо кількість студентів локально
+            if (courses.value[courseIndex].student_count !== undefined && courses.value[courseIndex].student_count > 0) {
+                courses.value[courseIndex].student_count--
+            } else if (courses.value[courseIndex].students_count !== undefined && courses.value[courseIndex].students_count > 0) {
+                courses.value[courseIndex].students_count--
+            }
+        }
+        closeUnenrollPopup()
+    } catch (err) {
+        alert(err.message || 'Не вдалося виписатися з курсу.')
+    } finally {
+        isUnenrolling.value[course.id] = false
+    }
 }
 </script>
 
@@ -452,6 +534,19 @@ function viewCourseDetails(courseId) {
 
 .teachers-list {
     color: var(--color-dark-gray);
+}
+
+.unenroll-popup {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
 }
 
 </style>

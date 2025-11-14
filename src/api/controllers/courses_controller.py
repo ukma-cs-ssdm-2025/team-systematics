@@ -211,6 +211,22 @@ class CoursesController:
                 raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Записуватись на курси можуть лише студенти")
             self.service.enroll(db, current_user.id, course_id)
             return None
+
+        @self.router.delete("/{course_id}/enroll", status_code=status.HTTP_204_NO_CONTENT)
+        async def unenroll(
+            course_id: UUID,
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            """
+            Виписує поточного автентифікованого студента з вказаного курсу.
+
+            Доступно лише для користувачів з роллю 'student'.
+            """
+            if current_user.role != 'student':
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="Виписуватись з курсів можуть лише студенти")
+            self.service.unenroll(db, current_user.id, course_id)
+            return None
         
         @self.router.get(
             "/{course_id}/exams",
