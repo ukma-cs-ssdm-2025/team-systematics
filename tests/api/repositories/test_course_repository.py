@@ -21,19 +21,64 @@ def repo(mock_db):
 
 # Test for listing courses
 def test_list_courses(repo, mock_db):
-    # The repository builds a query with outerjoin().outerjoin().add_columns() and then calls
-    # count() and order_by(...).limit(...).offset(...).all() on that result.
-    base_query = mock_db.query.return_value
-    after_joins = base_query.outerjoin.return_value.outerjoin.return_value
-    final_query = after_joins.add_columns.return_value
-
-    final_query.count.return_value = 1
-    final_query.order_by.return_value.limit.return_value.offset.return_value.all.return_value = [
+    # The repository builds a query with:
+    # 1. db.query() called multiple times for subqueries and main query
+    # 2. Main query: db.query(Course, ...).outerjoin().outerjoin().add_columns()
+    # 3. Then in list(): .outerjoin(owner).add_columns(owner).order_by().all()
+    # 4. Then filters in memory and calculates total from filtered results
+    
+    from unittest.mock import MagicMock
+    from src.models.users import User
+    
+    # Mock subqueries - these are created first but we don't need to fully mock them
+    # Just ensure db.query() can be called multiple times
+    subquery_mock = MagicMock()
+    subquery_mock.subquery.return_value = MagicMock()  # Mock subquery object
+    
+    # Mock the main query chain
+    base_query = MagicMock()
+    after_first_join = MagicMock()
+    after_second_join = MagicMock()
+    after_add_columns = MagicMock()
+    after_owner_join = MagicMock()
+    final_query = MagicMock()
+    
+    # Set up the chain
+    base_query.outerjoin.return_value = after_first_join
+    after_first_join.outerjoin.return_value = after_second_join
+    after_second_join.add_columns.return_value = after_add_columns
+    after_add_columns.outerjoin.return_value = after_owner_join
+    after_owner_join.add_columns.return_value = final_query
+    
+    # Mock db.query() to return subquery_mock for subqueries and base_query for main query
+    # First two calls are for subqueries, third call is main query with Course
+    call_count = [0]  # Use list to allow modification in nested function
+    def query_side_effect(*args, **kwargs):
+        call_count[0] += 1
+        if call_count[0] <= 2:
+            return subquery_mock
+        else:
+            return base_query
+    
+    mock_db.query.side_effect = query_side_effect
+    
+    # Mock owner user
+    mock_owner = MagicMock(spec=User)
+    mock_owner.id = uuid4()
+    mock_owner.first_name = "John"
+    mock_owner.last_name = "Doe"
+    
+    # Mock the result - includes owner as 5th element when include_owner=True
+    course = Course(id=uuid4(), name="Test Course", description="Test Description", code="CS101")
+    order_by_mock = MagicMock()
+    final_query.order_by.return_value = order_by_mock
+    order_by_mock.all.return_value = [
         (
-            Course(id=uuid4(), name="Test Course", description="Test Description", code="CS101"),
-            30,
-            3,
-            False
+            course,
+            30,  # student_count
+            3,   # exam_count
+            False,  # is_enrolled
+            mock_owner  # owner
         )
     ]
 

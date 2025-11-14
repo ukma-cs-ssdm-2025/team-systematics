@@ -30,7 +30,9 @@ class MockExamService:
             "duration_minutes": payload.duration_minutes,
             "max_attempts": payload.max_attempts,
             "pass_threshold": payload.pass_threshold,
-            "owner_id": payload.owner_id,
+            "owner_id": payload.owner_id or owner_id,
+            "status": "draft",
+            "question_count": 0,
             "created_at": now,
             "updated_at": now
         }
@@ -98,7 +100,9 @@ def test_create_exam_with_minimum_title_length_accepted():
                 "duration_minutes": payload.duration_minutes,
                 "max_attempts": payload.max_attempts,
                 "pass_threshold": payload.pass_threshold,
-                "owner_id": payload.owner_id,
+                "owner_id": payload.owner_id or owner_id,
+                "status": "draft",
+                "question_count": 0,
                 "created_at": now,
                 "updated_at": now,
             }
