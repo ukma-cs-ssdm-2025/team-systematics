@@ -113,51 +113,91 @@ function handleExamResultsRoutes(crumbs) {
     crumbs.push({ title: 'Результати іспиту', path: null })
 }
 
-const breadcrumbs = computed(() => {
-    const crumbs = []
-    const path = route.path
-    
-    // Не показуємо breadcrumbs на публічних сторінках
-    if (path === '/login' || path === '/' || path === '/forbidden' || path === '/unauthorized') {
-        return []
+// Допоміжна функція для обробки журналу іспиту
+function handleExamJournalRoute(crumbs) {
+    if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Мої курси', path: '/courses/my' })
     }
-    
-    addHomePage(crumbs)
-    
-    // Обробляємо різні маршрути
+    crumbs.push({ title: 'Журнал іспиту', path: null })
+}
+
+// Допоміжна функція для обробки створення курсу
+function handleCreateCourseRoute(crumbs) {
+    if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+    }
+    crumbs.push({ title: 'Створити новий курс', path: null })
+}
+
+// Допоміжна функція для обробки маршрутів з мапи
+function handleRouteMapRoute(crumbs, path) {
+    const routeInfo = routeMap[path]
+    if (routeInfo.parent) {
+        crumbs.push({ title: routeMap[routeInfo.parent].title, path: routeInfo.parent })
+    }
+    crumbs.push({ title: routeInfo.title, path: null })
+}
+
+// Допоміжна функція для перевірки публічних сторінок
+function isPublicPage(path) {
+    return path === '/login' || path === '/' || path === '/forbidden' || path === '/unauthorized'
+}
+
+// Допоміжна функція для обробки різних типів маршрутів
+function processRoute(crumbs, path) {
     if (path.startsWith('/courses/') && path.includes('/exams')) {
         handleCourseExamsRoutes(crumbs, path)
-    } else if (path.startsWith('/courses/') && path.includes('/details')) {
+        return true
+    }
+    if (path.startsWith('/courses/') && path.includes('/details')) {
         addCourseBreadcrumb(crumbs)
         crumbs.push({ title: 'Деталі курсу', path: null })
-    } else if (path.startsWith('/exams/') && path.includes('/journal')) {
-        if (auth.isTeacher.value) {
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-        }
-        crumbs.push({ title: 'Журнал іспиту', path: null })
-    } else if (path.startsWith('/exam/')) {
+        return true
+    }
+    if (path.startsWith('/exams/') && path.includes('/journal')) {
+        handleExamJournalRoute(crumbs)
+        return true
+    }
+    if (path.startsWith('/exam/')) {
         handleExamAttemptRoutes(crumbs, path)
-    } else if (path.startsWith('/exams-results/')) {
+        return true
+    }
+    if (path.startsWith('/exams-results/')) {
         handleExamResultsRoutes(crumbs)
-    } else if (path.startsWith('/plagiarism-check/compare')) {
+        return true
+    }
+    if (path.startsWith('/plagiarism-check/compare')) {
         crumbs.push(
             { title: 'Перевірка плагіату', path: '/plagiarism-check' },
             { title: 'Порівняння робіт', path: null }
         )
-    } else if (path.startsWith('/courses/create')) {
-        if (auth.isTeacher.value) {
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-        }
-        crumbs.push({ title: 'Створити новий курс', path: null })
-    } else if (routeMap[path]) {
-        const routeInfo = routeMap[path]
-        if (routeInfo.parent) {
-            crumbs.push({ title: routeMap[routeInfo.parent].title, path: routeInfo.parent })
-        }
-        crumbs.push({ title: routeInfo.title, path: null })
-    } else if (route.meta?.title) {
-        crumbs.push({ title: route.meta.title, path: null })
+        return true
     }
+    if (path.startsWith('/courses/create')) {
+        handleCreateCourseRoute(crumbs)
+        return true
+    }
+    if (routeMap[path]) {
+        handleRouteMapRoute(crumbs, path)
+        return true
+    }
+    if (route.meta?.title) {
+        crumbs.push({ title: route.meta.title, path: null })
+        return true
+    }
+    return false
+}
+
+const breadcrumbs = computed(() => {
+    const crumbs = []
+    const path = route.path
+    
+    if (isPublicPage(path)) {
+        return []
+    }
+    
+    addHomePage(crumbs)
+    processRoute(crumbs, path)
     
     return crumbs
 })
