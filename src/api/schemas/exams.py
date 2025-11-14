@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field, conint, constr, validator
+from pydantic import BaseModel, Field, conint, constr, validator, model_validator
 from src.models.exams import ExamStatusEnum
 
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
@@ -174,12 +174,22 @@ class Exam(BaseModel):
         ...,
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
-    published: bool = Field(False, description="Whether exam is published")
+    published: bool = Field(default=False, description="Whether exam is published")
     status: str = Field(
         ...,
         description="Exam status: draft, published, open, or closed",
         example="draft"
     )
+    
+    @model_validator(mode='after')
+    def set_published_from_status(self):
+        """Встановлюємо published на основі status після валідації"""
+        # Переконуємося, що status - це рядок (не enum)
+        if hasattr(self.status, 'value'):
+            self.status = self.status.value
+        # Встановлюємо published на основі status
+        self.published = self.status != 'draft'
+        return self
     question_count: int = Field(
         0,
         description="Number of available questions",

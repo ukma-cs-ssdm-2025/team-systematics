@@ -14,8 +14,19 @@
 
                     <!-- Інформація про іспит -->
                     <div class="exam-info">
-                        <p><strong>Курс:</strong> {{ courseName }}</p>
-                        <p><strong>Статус іспиту:</strong> {{ examStatusLabel }}</p>
+                        <div class="exam-info-row">
+                            <p><strong>Курс:</strong> {{ courseName }}</p>
+                            <p><strong>Статус іспиту:</strong> {{ examStatusLabel }}</p>
+                        </div>
+                        <div v-if="examStatus === 'draft'" class="publish-section">
+                            <CButton 
+                                @click="showPublishConfirm"
+                                variant="green"
+                                :disabled="publishingExam"
+                            >
+                                {{ publishingExam ? 'Публікація...' : '📢 Опублікувати' }}
+                            </CButton>
+                        </div>
                     </div>
 
                     <!-- Список учасників -->
@@ -179,6 +190,19 @@
             </div>
         </main>
 
+        <!-- Попап підтвердження публікації -->
+        <CPopup
+            v-if="showPublishDialog"
+            :visible="showPublishDialog"
+            header="Підтвердження публікації іспиту"
+            :disclaimer="publishConfirmMessage"
+            fst-button="Опублікувати"
+            snd-button="Скасувати"
+            fst-button-variant="green"
+            @fstAction="confirmPublishExam"
+            @sndAction="cancelPublishExam"
+        />
+
         <!-- Попап підтвердження видалення -->
         <CPopup
             v-if="userToRemove"
@@ -203,7 +227,7 @@ import CButton from '../components/global/CButton.vue'
 import CPopup from '../components/global/CPopup.vue'
 import CSelect from '../components/global/CSelect.vue'
 import { getExamParticipants, addExamParticipant, removeExamParticipant } from '../api/examParticipants.js'
-import { getExam } from '../api/exams.js'
+import { getExam, publishExam } from '../api/exams.js'
 import { getCourseDetailsForSupervisor } from '../api/courses.js'
 import { getActiveAttemptsForExam, getCompletedAttemptsForExam, addTimeToAttempt } from '../api/attempts.js'
 
@@ -228,6 +252,8 @@ const loadingActiveAttempts = ref(false)
 const selectedAdditionalTime = ref({})
 const addingTimeToAttempt = ref(null)
 const studentsWithCompletedAttempts = ref(new Set()) // Set з user_id студентів, які мають завершені спроби
+const showPublishDialog = ref(false)
+const publishingExam = ref(false)
 
 const sortState = reactive({
     key: null, // Поле, за яким сортуємо
@@ -529,6 +555,39 @@ const removeConfirmMessage = computed(() => {
     return `Ви впевнені, що хочете видалити студента "${studentName}" зі списку учасників іспиту? Якщо студент проходить іспит зараз, його сесія буде автоматично завершена.`
 })
 
+const publishConfirmMessage = computed(() => {
+    return `Ви впевнені, що хочете опублікувати іспит "${examName.value}"? Після публікації іспит стане видимим для студентів курсу.`
+})
+
+function showPublishConfirm() {
+    showPublishDialog.value = true
+}
+
+function cancelPublishExam() {
+    showPublishDialog.value = false
+}
+
+async function confirmPublishExam() {
+    if (publishingExam.value) return
+    
+    showPublishDialog.value = false
+    
+    try {
+        publishingExam.value = true
+        await publishExam(examId)
+        // Оновлюємо статус іспиту
+        examStatus.value = 'published'
+        // Оновлюємо дані іспиту
+        await loadExamAndCourse()
+    } catch (err) {
+        console.error('Помилка публікації іспиту:', err)
+        error.value = err.message || 'Не вдалося опублікувати іспит'
+        alert(err.message || 'Не вдалося опублікувати іспит')
+    } finally {
+        publishingExam.value = false
+    }
+}
+
 // Зберігаємо інтервал для автоматичного оновлення
 let refreshInterval = null
 
@@ -590,8 +649,22 @@ onUnmounted(() => {
     margin-bottom: 24px;
 }
 
+.exam-info-row {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
 .exam-info p {
-    margin: 8px 0;
+    margin: 0;
+}
+
+.publish-section {
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--color-gray);
+    display: flex;
+    justify-content: flex-start;
 }
 
 .participants-section,

@@ -84,10 +84,19 @@ class ExamsRepository:
         return exam
 
     def create(self, payload: ExamCreate) -> Exam:
-        new_exam = Exam(**payload.model_dump())
+        exam_data = payload.model_dump()
+        # Виключаємо status з exam_data, якщо він там є (не повинен бути)
+        exam_data.pop('status', None)
+        # Створюємо об'єкт іспиту
+        new_exam = Exam(**exam_data)
+        # Явно встановлюємо статус як "draft" при створенні іспиту
+        # (встановлюємо після створення об'єкта, щоб гарантувати правильне значення)
+        new_exam.status = ExamStatusEnum.draft
+        logger.debug(f"Creating exam with status: {new_exam.status}, status value: {new_exam.status.value}")
         self.db.add(new_exam)
         self.db.commit()
         self.db.refresh(new_exam)
+        logger.debug(f"Exam created with status: {new_exam.status}, status value: {new_exam.status.value}")
         return new_exam
     
     def link_to_course(self, exam_id: UUID, course_id: UUID) -> None:

@@ -183,7 +183,13 @@ class ExamsService:
         # Встановлюємо owner_id з параметра (якщо не встановлено в payload)
         if not payload.owner_id:
             payload.owner_id = owner_id
-        return repo.create(payload)
+        exam_model = repo.create(payload)
+        # Переконуємося, що статус встановлено як "draft"
+        if exam_model.status != ExamStatusEnum.draft:
+            exam_model.status = ExamStatusEnum.draft
+            db.commit()
+            db.refresh(exam_model)
+        return exam_model
     
     def link_to_course(self, db: Session, exam_id: UUID, course_id: UUID) -> None:
         """Зв'язує екзамен з курсом"""
