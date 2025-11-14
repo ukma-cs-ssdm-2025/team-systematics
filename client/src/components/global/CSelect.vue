@@ -1,8 +1,8 @@
 <template>
     <select
         class="custom-select"
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
+        :value="modelValue || ''"
+        @change="handleChange"
         :disabled="disabled"
     >
         <option disabled value="">{{ placeholder }}</option>
@@ -33,7 +33,15 @@ defineProps({
     }
 });
 
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
+
+function handleChange(event) {
+    const value = event.target.value;
+    // Не дозволяємо вибрати порожнє значення (плейсхолдер)
+    if (value !== '') {
+        emit('update:modelValue', value);
+    }
+}
 </script>
 
 <style scoped>

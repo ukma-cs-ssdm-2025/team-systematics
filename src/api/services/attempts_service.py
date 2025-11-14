@@ -638,7 +638,7 @@ class AttemptsService:
             remaining_seconds = max(0, int((attempt.due_at - now).total_seconds()))
             remaining_minutes = remaining_seconds // 60
             
-            user_full_name = f"{attempt.user.first_name} {attempt.user.last_name} {attempt.user.patronymic or ''}".strip()
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
             
             result.append(ActiveAttemptInfo(
                 attempt_id=attempt.id,

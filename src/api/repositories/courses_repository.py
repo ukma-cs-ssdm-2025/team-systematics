@@ -248,7 +248,7 @@ class CoursesRepository:
 
         # Студенти (enrolled) - тільки користувачі з роллю 'student'
         stu_rows = (
-            self.db.query(User.id, User.first_name, User.last_name, User.email)
+            self.db.query(User.id, User.first_name, User.last_name, User.patronymic, User.email)
             .join(CourseEnrollment, CourseEnrollment.user_id == User.id)
             .join(UserRole, UserRole.user_id == User.id)
             .join(Role, Role.id == UserRole.role_id)
@@ -262,7 +262,7 @@ class CoursesRepository:
         students = [
             {
                 "id": str(row.id),
-                "full_name": f"{row.first_name} {row.last_name}".strip(),
+                "full_name": f"{row.last_name} {row.first_name} {row.patronymic or ''}".strip(),
                 "email": row.email,
                 "status": "enrolled",
             }
@@ -346,7 +346,7 @@ class CoursesRepository:
         )
         if enrollment:
             self.db.delete(enrollment)
-            self.db.commit()
+        self.db.commit()
 
     def get_student_count(self, course_id: UUID) -> int:
         """Підраховує кількість студентів, записаних на курс."""

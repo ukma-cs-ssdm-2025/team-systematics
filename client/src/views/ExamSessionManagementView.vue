@@ -26,23 +26,50 @@
 
                         <table v-if="participants.length > 0" class="exams-table">
                             <colgroup>
-                                <col style="width: 40%">
                                 <col style="width: 30%">
+                                <col style="width: 25%">
+                                <col style="width: 15%">
                                 <col style="width: 20%">
                                 <col style="width: 10%">
                             </colgroup>
                             <thead>
                                 <tr>
-                                    <th class="left"><span class="pill">ПІБ студента</span></th>
-                                    <th class="left"><span class="pill">Email</span></th>
-                                    <th class="left"><span class="pill">Додано</span></th>
+                                    <th class="left"><span class="pill sortable" @click="sortBy('name')">
+                                        ПІБ студента
+                                        <span v-if="sortState.key === 'name'" class="sort-indicator">
+                                            {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                        </span>
+                                    </span></th>
+                                    <th class="left"><span class="pill sortable" @click="sortBy('email')">
+                                        Email
+                                        <span v-if="sortState.key === 'email'" class="sort-indicator">
+                                            {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                        </span>
+                                    </span></th>
+                                    <th class="left"><span class="pill sortable" @click="sortBy('attendance')">
+                                        Присутність
+                                        <span v-if="sortState.key === 'attendance'" class="sort-indicator">
+                                            {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                        </span>
+                                    </span></th>
+                                    <th class="left"><span class="pill sortable" @click="sortBy('joined_at')">
+                                        Додано
+                                        <span v-if="sortState.key === 'joined_at'" class="sort-indicator">
+                                            {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                        </span>
+                                    </span></th>
                                     <th class="right"><span class="pill">Дії</span></th>
                                 </tr>
                             </thead>
                             <tbody>
-                                <tr v-for="participant in participants" :key="participant.user_id">
+                                <tr v-for="participant in sortedParticipants" :key="participant.user_id">
                                     <td class="left">{{ getParticipantName(participant.user_id) }}</td>
                                     <td class="left">{{ getParticipantEmail(participant.user_id) }}</td>
+                                    <td class="left">
+                                        <span :class="['attendance-badge', isParticipantPresent(participant.user_id) ? 'present' : 'absent']">
+                                            {{ isParticipantPresent(participant.user_id) ? 'Присутній' : 'Відсутній' }}
+                                        </span>
+                                    </td>
                                     <td class="left">{{ formatDate(participant.joined_at) }}</td>
                                     <td class="right">
                                         <button 
@@ -130,20 +157,12 @@
                         </div>
                         
                         <div class="add-participant-controls">
-                            <select 
+                            <CSelect 
                                 v-model="selectedStudentId" 
-                                class="student-select"
+                                :options="studentSelectOptions"
+                                placeholder="Оберіть..."
                                 :disabled="addingParticipant || !availableStudents.length"
-                            >
-                                <option value="">Оберіть студента...</option>
-                                <option 
-                                    v-for="student in availableStudents" 
-                                    :key="student.id" 
-                                    :value="student.id"
-                                >
-                                    {{ student.full_name }} ({{ student.email }})
-                                </option>
-                            </select>
+                            />
                             <CButton 
                                 @click="addParticipant"
                                 :disabled="!selectedStudentId || addingParticipant || examStatus === 'closed'"
@@ -176,12 +195,13 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, onMounted, onUnmounted, computed, reactive } from 'vue'
 import { useRoute } from 'vue-router'
 import Header from '../components/global/Header.vue'
 import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import CPopup from '../components/global/CPopup.vue'
+import CSelect from '../components/global/CSelect.vue'
 import { getExamParticipants, addExamParticipant, removeExamParticipant } from '../api/examParticipants.js'
 import { getExam } from '../api/exams.js'
 import { getCourseDetailsForSupervisor } from '../api/courses.js'
@@ -208,6 +228,11 @@ const loadingActiveAttempts = ref(false)
 const selectedAdditionalTime = ref({})
 const addingTimeToAttempt = ref(null)
 
+const sortState = reactive({
+    key: null, // Поле, за яким сортуємо
+    order: 'asc' // Напрямок сортування
+})
+
 const examStatusLabel = computed(() => {
     switch (examStatus.value) {
         case 'draft':
@@ -229,6 +254,56 @@ const availableStudents = computed(() => {
     return courseStudents.value.filter(student => !participantIds.has(student.id))
 })
 
+const studentSelectOptions = computed(() => {
+    return availableStudents.value.map(student => ({
+        value: student.id,
+        text: `${student.full_name} (${student.email})`
+    }))
+})
+
+const sortedParticipants = computed(() => {
+    if (!sortState.key) {
+        return participants.value
+    }
+    
+    const sorted = [...participants.value]
+    
+    sorted.sort((a, b) => {
+        let aValue, bValue
+        
+        switch (sortState.key) {
+            case 'name':
+                aValue = getParticipantName(a.user_id).toLowerCase()
+                bValue = getParticipantName(b.user_id).toLowerCase()
+                break
+            case 'email':
+                aValue = getParticipantEmail(a.user_id).toLowerCase()
+                bValue = getParticipantEmail(b.user_id).toLowerCase()
+                break
+            case 'attendance':
+                aValue = isParticipantPresent(a.user_id) ? 1 : 0
+                bValue = isParticipantPresent(b.user_id) ? 1 : 0
+                break
+            case 'joined_at':
+                aValue = a.joined_at ? new Date(a.joined_at).getTime() : 0
+                bValue = b.joined_at ? new Date(b.joined_at).getTime() : 0
+                break
+            default:
+                return 0
+        }
+        
+        if (aValue < bValue) {
+            return sortState.order === 'asc' ? -1 : 1
+        }
+        if (aValue > bValue) {
+            return sortState.order === 'asc' ? 1 : -1
+        }
+        return 0
+    })
+    
+    return sorted
+})
+
 function getParticipantName(userId) {
     const student = courseStudents.value.find(s => s.id === userId)
     return student ? student.full_name : 'Невідомо'
@@ -237,6 +312,22 @@ function getParticipantName(userId) {
 function getParticipantEmail(userId) {
     const student = courseStudents.value.find(s => s.id === userId)
     return student ? student.email : 'Невідомо'
+}
+
+function isParticipantPresent(userId) {
+    // Перевіряємо, чи є у студента активна спроба
+    return activeAttempts.value.some(attempt => attempt.user_id === userId)
+}
+
+function sortBy(key) {
+    // Якщо клікнули на ту саму колонку, змінюємо напрямок
+    if (sortState.key === key) {
+        sortState.order = sortState.order === 'asc' ? 'desc' : 'asc'
+    } else {
+        // Якщо клікнули на нову колонку, встановлюємо її і скидаємо напрямок
+        sortState.key = key
+        sortState.order = 'asc'
+    }
 }
 
 function formatDate(dateString) {
@@ -271,15 +362,16 @@ function formatRemainingTime(minutes) {
 }
 
 async function loadActiveAttempts() {
-    if (examStatus.value !== 'open') return
-    
     try {
         loadingActiveAttempts.value = true
         const attempts = await getActiveAttemptsForExam(examId)
         activeAttempts.value = attempts
     } catch (err) {
         console.error('Помилка завантаження активних спроб:', err)
-        error.value = err.message || 'Не вдалося завантажити активні спроби'
+        // Не встановлюємо помилку як критичну, оскільки це може бути нормально, якщо немає активних спроб
+        if (err.message && !err.message.includes('404')) {
+            error.value = err.message || 'Не вдалося завантажити активні спроби'
+        }
     } finally {
         loadingActiveAttempts.value = false
     }
@@ -411,6 +503,10 @@ onMounted(async () => {
                     loadActiveAttempts()
                 }
             }, 10000) // 10 секунд
+        } else {
+            // Якщо іспит не відкритий, все одно завантажуємо активні спроби для відображення присутності
+            // (на випадок, якщо є спроби, які ще не завершені)
+            await loadActiveAttempts()
         }
     } catch (err) {
         error.value = err.message || 'Сталася невідома помилка.'
@@ -492,21 +588,10 @@ onUnmounted(() => {
     align-items: center;
 }
 
-.student-select {
+.add-participant-controls .custom-select {
     flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--color-gray);
-    border-radius: 4px;
-    font-size: 1rem;
-    font-family: inherit;
-    background-color: white;
-    color: inherit;
 }
 
-.student-select:disabled {
-    background-color: #f5f5f5;
-    cursor: not-allowed;
-}
 
 .warning-message {
     color: var(--color-red);
@@ -542,6 +627,42 @@ onUnmounted(() => {
     padding: 24px;
     color: var(--color-dark-gray);
     font-style: italic;
+}
+
+.attendance-badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+.attendance-badge.present {
+    background-color: var(--color-green);
+    /* Колір тексту залишається дефолтним */
+}
+
+.attendance-badge.absent {
+    background-color: var(--color-red);
+}
+
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sortable:hover {
+    opacity: 0.8;
+}
+
+.sort-indicator {
+    font-size: 0.8rem;
+    color: var(--color-violet);
+    font-weight: bold;
 }
 </style>
 
