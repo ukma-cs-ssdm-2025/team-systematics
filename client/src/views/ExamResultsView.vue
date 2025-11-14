@@ -112,7 +112,12 @@ const formattedTimeSpent = computed(() => {
 })
 
 function viewAnswers() {
-    router.push(`/exam/${attemptId}/review`)
+    // Зберігаємо examId з query параметрів для breadcrumbs
+    const examId = route.query.examId
+    router.push({ 
+        path: `/exam/${attemptId}/review`,
+        query: examId ? { examId } : {}
+    })
 }
 </script>
 

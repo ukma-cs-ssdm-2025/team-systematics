@@ -131,7 +131,11 @@ function toggleDetails(student) {
 }
 
 function reviewAttempt(attemptId) {
-    router.push(`/exams-results/${attemptId}`)
+    // Передаємо examId через query параметр для breadcrumbs
+    router.push({ 
+        path: `/exams-results/${attemptId}`,
+        query: { examId: examId }
+    })
 }
 
 function formatGrade(grade) {

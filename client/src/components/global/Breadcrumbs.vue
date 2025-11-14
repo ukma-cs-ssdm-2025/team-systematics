@@ -103,7 +103,17 @@ const breadcrumbs = computed(() => {
         crumbs.push({ title: 'Журнал іспиту', path: null })
     } else if (path.startsWith('/exam/')) {
         // Спроба іспиту
-        crumbs.push({ title: 'Мої іспити', path: '/exams' })
+        if (auth.isTeacher.value) {
+            // Для вчителів показуємо "Мої курси" та "Журнал іспиту", якщо є examId
+            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+            const examId = route.query.examId
+            if (examId) {
+                crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
+            }
+        } else {
+            // Для студентів показуємо "Мої іспити"
+            crumbs.push({ title: 'Мої іспити', path: '/exams' })
+        }
         if (path.includes('/review')) {
             crumbs.push({ title: 'Перегляд відповідей', path: null })
         } else {
@@ -111,7 +121,17 @@ const breadcrumbs = computed(() => {
         }
     } else if (path.startsWith('/exams-results/')) {
         // Результати спроби
-        crumbs.push({ title: 'Мої іспити', path: '/exams' })
+        if (auth.isTeacher.value) {
+            // Для вчителів показуємо "Мої курси" та "Журнал іспиту", якщо є examId
+            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+            const examId = route.query.examId
+            if (examId) {
+                crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
+            }
+        } else {
+            // Для студентів показуємо "Мої іспити"
+            crumbs.push({ title: 'Мої іспити', path: '/exams' })
+        }
         crumbs.push({ title: 'Результати іспиту', path: null })
     } else if (path.startsWith('/plagiarism-check/compare')) {
         // Порівняння плагіату
