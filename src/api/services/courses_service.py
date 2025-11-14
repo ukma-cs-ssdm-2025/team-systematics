@@ -13,8 +13,30 @@ from src.api.services.exams_service import ExamsService
 
 SUPERVISOR_ONLY = "Доступ дозволений лише наглядачам"
 class CoursesService:
-    def list(self, db: Session, current_user_id: UUID, limit: int, offset: int) -> Tuple[List[Course], int]:
-        return CoursesRepository(db).list(current_user_id, limit, offset)
+    def list(
+        self,
+        db: Session,
+        current_user_id: UUID,
+        limit: int,
+        offset: int,
+        name_filter: Optional[str] = None,
+        teacher_filter: Optional[str] = None,
+        min_students: Optional[int] = None,
+        max_students: Optional[int] = None,
+        min_exams: Optional[int] = None,
+        max_exams: Optional[int] = None,
+    ) -> Tuple[List[Course], int]:
+        return CoursesRepository(db).list(
+            current_user_id=current_user_id,
+            limit=limit,
+            offset=offset,
+            name_filter=name_filter,
+            teacher_filter=teacher_filter,
+            min_students=min_students,
+            max_students=max_students,
+            min_exams=min_exams,
+            max_exams=max_exams,
+        )
 
     def get(self, db: Session, course_id: UUID) -> Optional[Course]:
         return CoursesRepository(db).get(course_id)
@@ -52,17 +74,41 @@ class CoursesService:
     def enroll(self, db: Session, user_id, course_id: UUID) -> None:
         return CoursesRepository(db).enroll(user_id, course_id)
 
-    def list_my_courses(self, db: Session, user_id, limit: int, offset: int):
-        return CoursesRepository(db).list_my_courses(user_id, limit, offset)
+    def unenroll(self, db: Session, user_id, course_id: UUID) -> None:
+        """Виписує студента з курсу."""
+        return CoursesRepository(db).unenroll(user_id, course_id)
+
+    def list_my_courses(
+        self,
+        db: Session,
+        user_id,
+        limit: int,
+        offset: int,
+        name_filter: Optional[str] = None,
+        min_students: Optional[int] = None,
+        max_students: Optional[int] = None,
+        min_exams: Optional[int] = None,
+        max_exams: Optional[int] = None,
+    ):
+        return CoursesRepository(db).list_my_courses(
+            teacher_id=user_id,
+            limit=limit,
+            offset=offset,
+            name_filter=name_filter,
+            min_students=min_students,
+            max_students=max_students,
+            min_exams=min_exams,
+            max_exams=max_exams,
+        )
 
     def list_for_supervisor(self, db: Session, current_user: User, **filters):
-        roles = UserRepository(db).get_user_roles(current_user.id)
+        roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
         return CoursesRepository(db).list_with_stats_for_supervisor(**filters)
 
     def get_course_details_for_supervisor(self, db: Session, current_user: User, course_id: UUID):
-        roles = UserRepository(db).get_user_roles(current_user.id)
+        roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
 

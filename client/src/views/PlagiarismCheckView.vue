@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <h2 class="page-title">Перевірка плагіату</h2>
             
             <div v-if="loading" class="status-message">Завантаження...</div>
@@ -66,6 +67,7 @@
 import { ref, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import { getFlaggedAnswers } from '../api/attempts.js'
 
@@ -139,17 +141,6 @@ function goToComparison() {
     font-size: 1.8rem;
 }
 
-.empty-state {
-    text-align: center;
-    padding: 60px 20px;
-    color: var(--color-black-half-opacity);
-}
-
-.empty-state .hint {
-    margin-top: 12px;
-    font-size: 0.9rem;
-}
-
 .flagged-answers-list {
     display: flex;
     flex-direction: column;
@@ -159,7 +150,7 @@ function goToComparison() {
 .flagged-answers-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap:п 16px;
 }
 
 .selection-info {

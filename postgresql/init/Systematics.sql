@@ -52,20 +52,6 @@ CREATE TYPE public.attempt_status_enum AS ENUM (
 ALTER TYPE public.attempt_status_enum OWNER TO postgres;
 
 --
--- TOC entry 943 (class 1247 OID 16952)
--- Name: attemptstatus; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.attemptstatus AS ENUM (
-    'in_progress',
-    'submitted',
-    'completed'
-);
-
-
-ALTER TYPE public.attemptstatus OWNER TO postgres;
-
---
 -- TOC entry 937 (class 1247 OID 16931)
 -- Name: exam_status_enum; Type: TYPE; Schema: public; Owner: postgres
 --
@@ -106,39 +92,6 @@ CREATE TYPE public.question_type_enum AS ENUM (
 
 
 ALTER TYPE public.question_type_enum OWNER TO postgres;
-
---
--- TOC entry 931 (class 1247 OID 16819)
--- Name: question_type_enum_weights; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.question_type_enum_weights AS ENUM (
-    'single_choice',
-    'multi_choice',
-    'short_answer',
-    'long_answer',
-    'matching'
-);
-
-
-ALTER TYPE public.question_type_enum_weights OWNER TO postgres;
-
---
--- TOC entry 940 (class 1247 OID 16941)
--- Name: questiontype; Type: TYPE; Schema: public; Owner: postgres
---
-
-CREATE TYPE public.questiontype AS ENUM (
-    'single_choice',
-    'multi_choice',
-    'short_answer',
-    'long_answer',
-    'matching'
-);
-
-
-ALTER TYPE public.questiontype OWNER TO postgres;
-
 
 -- Тип статусу відвідуваності
 CREATE TYPE public.attendance_status_enum AS ENUM (

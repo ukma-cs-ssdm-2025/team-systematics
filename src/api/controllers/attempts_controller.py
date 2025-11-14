@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, load_only, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, AddTimeRequest, ActiveAttemptInfo
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
 from src.api.services.exam_review_service import ExamReviewService
@@ -10,7 +10,7 @@ from src.api.repositories.weights_repository import WeightsRepository
 from src.models.attempts import Answer as AnswerModel, Attempt as AttemptModel
 from src.models.exams import QuestionType, Question
 from src.utils.largest_remainder import distribute_largest_remainder
-from src.utils.auth import get_current_user_with_role
+from src.utils.auth import get_current_user_with_role, require_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
@@ -24,6 +24,7 @@ from src.api.schemas.plagiarism import (
 )
 
 TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для вчителів"
+ATTEMPT_ID_DESCRIPTION = "ID спроби"
 
 class AttemptsController:
     def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
@@ -80,22 +81,46 @@ class AttemptsController:
     def _list_flagged_answers(self, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         return self.service.list_flagged_answers(db=db, current_user=current_user)
 
-    def _add_answer(self, payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _add_answer(self, payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: тільки студент може зберігати відповіді
+        if current_user.role != 'student':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Тільки студенти можуть зберігати відповіді"
+            )
         return self.service.add_answer(db, attempt_id, payload)
 
-    def _submit(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _submit(self, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: тільки студент може завершувати спробу
+        if current_user.role != 'student':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Тільки студенти можуть завершувати спроби"
+            )
         return self.service.submit(db, attempt_id)
 
-    def _get_attempt_details(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _get_attempt_details(self, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: студент або вчитель можуть переглядати деталі спроби
+        if current_user.role not in ['student', 'teacher']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Доступ дозволений тільки студентам та вчителям"
+            )
         return self.service.get_attempt_details(db, attempt_id)
 
-    def _read_attempt_result(self, attempt_id: UUID, db: Session = Depends(get_db)):
+    def _read_attempt_result(self, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: студент або вчитель можуть переглядати результати
+        if current_user.role not in ['student', 'teacher']:
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Доступ дозволений тільки студентам та вчителям"
+            )
         return self.service.get_attempt_result(db, attempt_id=attempt_id)
 
-    def _get_exam_attempt_review(self, attempt_id: UUID, db: Session = Depends(get_db)):
-        return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db)
+    def _get_exam_attempt_review(self, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db, current_user=current_user)
 
-    def _update_answer_score(self, attempt_id: UUID = Path(..., description="ID спроби"),
+    def _update_answer_score(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION),
                                    question_id: UUID = Path(..., description="ID питання"),
                                    payload: AnswerScoreUpdate = ...,
                                    db: Session = Depends(get_db),
@@ -123,10 +148,14 @@ class AttemptsController:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
     def _list_plagiarism_checks(self, exam_id: UUID, max_uniqueness: Optional[float] = None,
-                                      db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+                                      db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: тільки вчитель може переглядати перевірки на плагіат
+        self._require_teacher(current_user)
         return self.service.get_exam_plagiarism_checks(db=db, exam_id=exam_id, current_user=current_user, max_uniqueness=max_uniqueness)
 
-    def _compare_attempts(self, attempt_id: UUID, other_attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+    def _compare_attempts(self, attempt_id: UUID, other_attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі: тільки вчитель може порівнювати спроби
+        self._require_teacher(current_user)
         return self.service.get_attempts_comparison(db=db, base_attempt_id=attempt_id, other_attempt_id=other_attempt_id, current_user=current_user)
 
     def _flag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
@@ -142,7 +171,7 @@ class AttemptsController:
         self._require_teacher(current_user)
         return self.service.compare_two_answers(db=db, answer1_id=answer1_id, answer2_id=answer2_id, current_user=current_user)
 
-    def _get_answer_id(self, attempt_id: UUID = Path(..., description="ID спроби"), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _get_answer_id(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
 
         attempt = db.query(AttemptModel).filter(AttemptModel.id == attempt_id).first()
@@ -168,6 +197,15 @@ class AttemptsController:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Відповідь не знайдена")
         return {"answer_id": str(answer.id)}
 
+    def _get_active_attempts(self, exam_id: UUID = Path(..., description="ID іспиту"), db: Session = Depends(get_db)):
+        return self.service.get_active_attempts_for_exam(db=db, exam_id=exam_id)
+
+    def _get_completed_attempts(self, exam_id: UUID = Path(..., description="ID іспиту"), db: Session = Depends(get_db)):
+        return self.service.get_completed_attempts_for_exam(db=db, exam_id=exam_id)
+
+    def _add_time_to_attempt(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION), payload: AddTimeRequest = ..., db: Session = Depends(get_db)):
+        return self.service.add_time_to_attempt(db=db, attempt_id=attempt_id, payload=payload)
+
     # Окремий метод для реєстрації роутів
     def _register_flagged_answers_route(self):
         # Register route handlers using extracted methods
@@ -177,6 +215,24 @@ class AttemptsController:
             response_model=List[FlaggedAnswerResponse],
             methods=["GET"],
             summary="Отримати список позначених відповідей (лише викладач)",
+        )
+
+        # Роути для exam мають бути перед роутами з {attempt_id}, щоб уникнути конфліктів
+        self.router.add_api_route(
+            "/exam/{exam_id}/active-attempts",
+            endpoint=self._get_active_attempts,
+            response_model=List[ActiveAttemptInfo],
+            methods=["GET"],
+            summary="Отримати список активних спроб для іспиту (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
+        )
+
+        self.router.add_api_route(
+            "/exam/{exam_id}/completed-attempts",
+            endpoint=self._get_completed_attempts,
+            methods=["GET"],
+            summary="Отримати список завершених спроб для іспиту (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
         )
 
         self.router.add_api_route(
@@ -274,4 +330,14 @@ class AttemptsController:
             endpoint=self._get_answer_id,
             methods=["GET"],
             summary="Отримати ID відповіді за attempt_id та question_id (лише викладач)",
+        )
+
+        self.router.add_api_route(
+            "/{attempt_id}/add-time",
+            endpoint=self._add_time_to_attempt,
+            response_model=AttemptSchema,
+            methods=["POST"],
+            status_code=status.HTTP_200_OK,
+            summary="Додати додатковий час до спроби студента (тільки для наглядача)",
+            dependencies=[Depends(require_role('supervisor'))],
         )

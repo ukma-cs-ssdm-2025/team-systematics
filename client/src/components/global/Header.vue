@@ -18,6 +18,9 @@
                     <li v-if="auth.isStudent.value" class="nav-item" :class="{ active: route.path === '/courses' }">
                         <router-link to="/courses">Каталог курсів</router-link>
                     </li>
+                    <li v-if="auth.isSupervisor.value" class="nav-item" :class="{ active: route.path === '/courses/supervisor' }">
+                        <router-link to="/courses/supervisor">Курси</router-link>
+                    </li>
                 </ul>
             </div>
             <div class="user-container">
@@ -134,6 +137,9 @@ onUnmounted(() => {
     background-color: var(--color-purple);
 }
 
+.user-greeting {
+    white-space: nowrap;
+}
 
 .user-profile {
     position: relative;
@@ -144,6 +150,14 @@ onUnmounted(() => {
     border: none;
     cursor: pointer;
     border-radius: 50%;
+    padding: 0;
+    background: transparent;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
 }
 
 .user-avatar img {

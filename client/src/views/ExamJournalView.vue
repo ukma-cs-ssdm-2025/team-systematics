@@ -2,11 +2,12 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <div v-if="loading" class="status-message">Завантаження журналу...</div>
             <div v-else-if="error" class="status-message error">{{ error }}</div>
 
             <div v-else>
-                <section class="exams-section">
+                <div class="exams-section">
                     <h2>Журнал іспиту {{ examName }}</h2>
 
                     <table v-if="students.length" class="exams-table">
@@ -96,7 +97,7 @@
                     </table>
 
                     <p v-else class="empty-list-message">Ще жоден студент не складав цей іспит.</p>
-                </section>
+                </div>
             </div>
         </main>
     </div>
@@ -106,6 +107,7 @@
 import { ref, onMounted } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import { getExamJournal } from '../api/exams.js'
 
 const router = useRouter()
@@ -129,7 +131,11 @@ function toggleDetails(student) {
 }
 
 function reviewAttempt(attemptId) {
-    router.push(`/exams-results/${attemptId}`)
+    // Передаємо examId через query параметр для breadcrumbs
+    router.push({ 
+        path: `/exams-results/${attemptId}`,
+        query: { examId: examId }
+    })
 }
 
 function formatGrade(grade) {

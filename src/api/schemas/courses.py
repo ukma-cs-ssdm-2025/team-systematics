@@ -38,6 +38,7 @@ class Course(BaseModel):
     student_count: int = Field(..., examples=[35])
     exam_count: int = Field(..., examples=[3])
     is_enrolled: bool = False
+    teachers: List[str] = Field(default_factory=list, examples=[["Іван Петренко"]])
 
     class Config:
         from_attributes = True

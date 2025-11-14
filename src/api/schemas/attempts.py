@@ -46,3 +46,15 @@ class AttemptResultResponse(BaseModel):
     incorrect_answers: int
     pending_count: int
     plagiarism_report: Optional[PlagiarismReport] = None
+
+class AddTimeRequest(BaseModel):
+    additional_minutes: conint(ge=1, le=60) = Field(..., description="Кількість додаткових хвилин (1-60)") # type: ignore
+
+class ActiveAttemptInfo(BaseModel):
+    attempt_id: UUID
+    user_id: UUID
+    user_full_name: str
+    started_at: datetime
+    due_at: datetime
+    remaining_minutes: int
+    status: str
