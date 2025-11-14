@@ -22,12 +22,6 @@
                         placeholder="password123" autocomplete="current-password" />
                 </div>
 
-                <div class="forgot-password-link-container">
-                    <a href="#" class="forgot-password-link" aria-label="Забули пароль? Натисніть тут для відновлення.">
-                        Забули пароль?
-                    </a>
-                </div>
-
                 <CButton type="submit" id="submitButton" class="submit-button">
                     Увійти
                 </CButton>
@@ -88,7 +82,6 @@ h1 {
     font-weight: bold;
 }
 
-.forgot-password-link,
 .register-link {
     text-decoration: underline;
 }
