@@ -80,3 +80,28 @@ class JournalService:
             max_attempts=exam.max_attempts,
             students=students_list
         )
+
+    def get_exam_statistics_for_course(self, db: Session, course_id: UUID):
+        journal_repo = JournalRepository(db)
+        
+        exams = journal_repo.get_exams_for_course(course_id)
+        statistics = []
+
+        for exam in exams:
+            attempts = journal_repo.get_attempts_for_exam(exam.id)
+            students = []
+            for student in attempts:
+                max_grade = max(attempt.earned_points for attempt in student.attempts if attempt.earned_points is not None)
+                students.append({
+                    'student_id': student.id,
+                    'name': student.name,
+                    'max_grade': max_grade,
+                    'attempts': len(student.attempts)
+                })
+            statistics.append({
+                'exam_id': exam.id,
+                'exam_name': exam.title,
+                'students': students
+            })
+        
+        return statistics

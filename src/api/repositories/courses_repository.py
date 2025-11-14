@@ -3,6 +3,8 @@ from sqlalchemy.orm import Session, aliased
 from sqlalchemy import func, or_, literal
 from uuid import UUID
 from fastapi import Query
+from src.api.repositories.exams_repository import ExamsRepository
+from src.api.schemas.exams import Exam
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
 from src.api.schemas.courses import CourseCreate, CourseUpdate
@@ -360,6 +362,110 @@ class CoursesRepository:
         """Підраховує кількість студентів, записаних на курс."""
         return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0
     
+    def get_course_statistics(self, course_id: UUID) -> dict:
+        """Метод для отримання статистики по курсу."""
+        # Використовуємо ExamsRepository, щоб отримати статистику по кожному іспиту
+        exams = self.db.query(Exam).filter(Exam.course_id == course_id).all()
+        repo = ExamsRepository(self.db)
+    
+        stats = {}  # Змінено на dict замість списку
+        for exam in exams:
+            exam_stats = repo.get_exam_statistics(exam.id)
+            stats[exam.id] = {  # Ключем буде exam_id
+                "exam_title": exam.title,
+                "average_score": exam_stats.get("average_score"),
+                "min_score": exam_stats.get("min_score"),
+                "max_score": exam_stats.get("max_score"),
+                "median_score": exam_stats.get("median_score"),
+            }
+
+        return stats 
+    
+    def get_group_score_analytics(self, course_id: UUID) -> dict:
+        """
+        Отримує аналітику оцінок групи студентів для курсу.
+        Повертає словник із загальною статистикою по усіх завершених спробах
+        студентів, що записані на курс (average, min, max, median), а також
+        список оцінок для подальшої візуалізації.
+        """
+        from src.models.attempts import Attempt, AttemptStatus
+        # збираємо id студентів, записаних на курс
+        student_rows = self.db.query(CourseEnrollment.user_id).filter(
+            CourseEnrollment.course_id == course_id
+        ).all()
+        student_ids = [r[0] for r in student_rows]
+        total_students = len(student_ids)
+
+        if total_students == 0:
+            return {
+                "total_students": 0,
+                "students_completed": 0,
+                "average_score": None,
+                "min_score": None,
+                "max_score": None,
+                "median_score": None,
+                "scores": []
+            }
+
+        # список іспитів, пов'язаних з курсом
+        exam_rows = self.db.query(CourseExam.exam_id).filter(CourseExam.course_id == course_id).all()
+        exam_ids = [r[0] for r in exam_rows]
+
+        if not exam_ids:
+            return {
+                "total_students": total_students,
+                "students_completed": 0,
+                "average_score": None,
+                "min_score": None,
+                "max_score": None,
+                "median_score": None,
+                "scores": []
+            }
+
+        # отримуємо завершені і оцінені спроби студентів по цим іспитам
+        attempts = self.db.query(Attempt).filter(
+            Attempt.user_id.in_(student_ids),
+            Attempt.exam_id.in_(exam_ids),
+            Attempt.status == AttemptStatus.completed,
+            Attempt.earned_points.isnot(None)
+        ).all()
+
+        if not attempts:
+            return {
+                "total_students": total_students,
+                "students_completed": 0,
+                "average_score": None,
+                "min_score": None,
+                "max_score": None,
+                "median_score": None,
+                "scores": []
+            }
+
+        scores = [a.earned_points for a in attempts]
+        unique_completed_students = len({a.user_id for a in attempts})
+
+        avg = sum(scores) / len(scores) if scores else None
+        mn = min(scores) if scores else None
+        mx = max(scores) if scores else None
+        sorted_scores = sorted(scores)
+        if not sorted_scores:
+            median = None
+        elif len(sorted_scores) % 2 == 0:
+            mid = len(sorted_scores) // 2
+            median = (sorted_scores[mid - 1] + sorted_scores[mid]) / 2
+        else:
+            median = sorted_scores[len(sorted_scores) // 2]
+
+        return {
+            "total_students": total_students,
+            "students_completed": unique_completed_students,
+            "average_score": round(avg, 2) if avg is not None else None,
+            "min_score": round(mn, 2) if mn is not None else None,
+            "max_score": round(mx, 2) if mx is not None else None,
+            "median_score": round(median, 2) if median is not None else None,
+            "scores": scores
+        }
+
     def list_with_stats_for_supervisor(
         self,
         title_filter: Optional[str] = None,

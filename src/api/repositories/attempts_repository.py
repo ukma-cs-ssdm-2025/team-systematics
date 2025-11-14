@@ -3,6 +3,7 @@ from sqlalchemy import func, or_
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
+from src.api.services.statistics_service import StatisticsService
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
@@ -309,6 +310,14 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(answer)
         return answer
+
+    def get_attempts_statistics_for_exam(self, exam_id: UUID) -> dict:
+        """Отримує статистику для спроб на іспиті"""
+        attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+        
+        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        
+        return StatisticsService.calculate_statistics(scores)
 
     def add_time_to_attempt(self, attempt_id: UUID, additional_minutes: int) -> Optional[Attempt]:
         """

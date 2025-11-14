@@ -4,6 +4,7 @@ from typing import Optional
 from fastapi import APIRouter, Depends, status, Query, HTTPException
 from sqlalchemy.orm import Session
 
+from src.api.schemas.analytics import CourseAnalyticsResponse, GroupScoreAnalytics
 from src.models.users import User
 from src.api.schemas.exams import CourseExamsPage
 from src.api.schemas.courses import Course, CourseBase, CourseCreate, CourseUpdate, CoursesPage
@@ -14,6 +15,7 @@ from src.utils.auth import get_current_user_with_role, get_current_user, require
 from .versioning import require_api_version
 from src.api.schemas.courses import CourseSupervisorListItem, CourseSupervisorDetails
 
+TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для викладачів"
 # Константи для описів параметрів запиту
 FILTER_NAME_DESCRIPTION = "Фільтр за назвою/кодом курсу"
 MIN_STUDENTS_DESCRIPTION = "Мін. к-сть студентів"
@@ -55,7 +57,7 @@ class CoursesController:
             if current_user.role != 'teacher':
                 raise HTTPException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
+                    detail=TEACHER_ONLY_ACCESS,
                 )
             items, total = self.service.list_my_courses(
                 db=db,
@@ -123,40 +125,18 @@ class CoursesController:
             """
             return self.service.get_course_details_for_supervisor(db, current_user, course_id)
 
-        @self.router.get(
-            "",
-            response_model=CoursesPage,
-            summary="Каталог усіх курсів",
-        )
-        async def list_courses(
-            name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
-            teacher_name: Optional[str] = Query(None, description="Фільтр за ПІБ або email викладача"),
-            min_students: Optional[int] = Query(None, ge=0, description=MIN_STUDENTS_DESCRIPTION),
-            max_students: Optional[int] = Query(None, ge=0, description=MAX_STUDENTS_DESCRIPTION),
-            min_exams: Optional[int] = Query(None, ge=0, description="Мін. к-сть іспитів"),
-            max_exams: Optional[int] = Query(None, ge=0, description="Макс. к-сть іспитів"),
-            limit: int = Query(10, ge=1, le=100),
-            offset: int = Query(0, ge=0),
-            db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user)
-        ):
-            """
-            Повертає загальний список усіх доступних курсів у системі
-            з пагінацією та підтримкою фільтрації.
-            """
-            items, total = self.service.list(
-                db=db,
-                current_user_id=current_user.id,
-                limit=limit,
-                offset=offset,
-                name_filter=name,
-                teacher_filter=teacher_name,
-                min_students=min_students,
-                max_students=max_students,
-                min_exams=min_exams,
-                max_exams=max_exams,
-            )
-            return {"items": items, "total": total, "limit": limit, "offset": offset}
+        @self.router.get("/{course_id}/analytics", response_model=CourseAnalyticsResponse, summary="Аналітика курсу: статистика по іспитах")
+        async def get_course_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            if current_user.role != 'teacher':
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
+            course_stats = self.service.get_course_exam_statistics(db, course_id)
+            return course_stats
+
+        @self.router.get("/{course_id}/group-analytics", response_model=GroupScoreAnalytics, summary="Аналітика групи: середній/мін/макс/медіана оцінок")
+        async def get_group_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            if current_user.role != 'teacher':
+                raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=TEACHER_ONLY_ACCESS)
+            return self.service.get_group_analytics(db, current_user.id, course_id)
 
         @self.router.post(
             "",

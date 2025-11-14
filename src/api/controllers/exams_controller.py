@@ -1,7 +1,8 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions, ExamsResponse
+from src.api.schemas.analytics import ExamProgress, GroupAnalytics
+from src.api.schemas.exams import Exam, ExamCreate, ExamStatistics, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions, ExamsResponse
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
@@ -10,6 +11,9 @@ from src.api.services.exams_service import ExamsService
 from src.api.services.journal_service import JournalService
 from .versioning import require_api_version
 from src.api.database import get_db
+from typing import List
+
+TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для викладачів"
 import inspect
 
 class ExamsController:
@@ -25,6 +29,7 @@ class ExamsController:
         self._register_question_routes()
         self._register_option_routes()
         self._register_journal_routes()
+        self._register_analytics_routes()
 
     def _register_crud_routes(self):
         """Реєструє CRUD маршрути для іспитів."""
@@ -403,4 +408,31 @@ class ExamsController:
         ):
             self._require_teacher(current_user)
             return await self._safe_call(self.journal_service.get_journal_for_exam, db, exam_id)
+
+    def _register_analytics_routes(self):
+        """Реєструє маршрути для аналітики."""
+        self._register_group_analytics()
+        self._register_exam_statistics()
+        self._register_exam_progress()
+
+    def _register_group_analytics(self):
+        """Реєструє маршрут для аналітики групи."""
+        @self.router.get("/{course_id}/analytics", response_model=List[GroupAnalytics], summary="Аналітика результатів групи")
+        async def get_group_analytics(course_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            self._require_teacher(current_user)
+            return await self._safe_call(self.service.get_group_statistics, db, course_id)
+
+    def _register_exam_statistics(self):
+        """Реєструє маршрут для статистики іспиту."""
+        @self.router.get("/{course_id}/exams/{exam_id}/statistics", response_model=ExamStatistics, summary="Статистика по іспиту")
+        async def get_exam_statistics(course_id: UUID, exam_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            self._require_teacher(current_user)
+            return await self._safe_call(self.service.get_exam_statistics, db, exam_id)
+
+    def _register_exam_progress(self):
+        """Реєструє маршрут для динаміки результатів іспиту."""
+        @self.router.get("/{course_id}/exams/{exam_id}/progress", response_model=List[ExamProgress], summary="Динаміка результатів по іспиту")
+        async def get_exam_progress(course_id: UUID, exam_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+            self._require_teacher(current_user)
+            return await self._safe_call(self.service.get_exam_progress, db, exam_id)
         

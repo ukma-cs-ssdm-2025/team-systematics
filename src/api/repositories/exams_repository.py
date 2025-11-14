@@ -3,6 +3,7 @@ from sqlalchemy import and_, func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
 import logging
+from src.api.services.statistics_service import StatisticsService
 from src.models.exams import Exam, ExamStatusEnum
 from src.models.exams import Question, Option
 from src.models.attempts import Attempt, AttemptStatus
@@ -338,3 +339,11 @@ class ExamsRepository:
             .all()
         )
         return results
+
+    def get_exam_statistics(self, exam_id: UUID) -> dict:
+        """Метод для отримання статистики по іспиту"""
+        attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+        
+        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        
+        return StatisticsService.calculate_statistics(scores)

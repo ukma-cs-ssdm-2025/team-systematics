@@ -49,12 +49,12 @@ def end_at_must_be_after_start_at(cls, v, values):
     return v
 
 class ExamCreate(BaseModel):
-    title: constr(min_length=3, max_length=100) = Field(
+    title: constr(min_length=3, max_length=100) = Field( # type: ignore
         ...,
         description="Exam title",
         example=EXAMPLE_TITLE,
     )
-    instructions: Optional[constr(max_length=2000)] = Field(
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
         example=DEFAULT_INSTRUCTIONS
@@ -74,12 +74,12 @@ class ExamCreate(BaseModel):
         description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
-    max_attempts: conint(ge=1, le=10) = Field(
+    max_attempts: conint(ge=1, le=10) = Field( # type: ignore
         1,
         description="Max attempts per user",
         example=3
     )
-    pass_threshold: conint(ge=0, le=100) = Field(
+    pass_threshold: conint(ge=0, le=100) = Field( # type: ignore
         60,
         description="Passing threshold in percent",
         example=75
@@ -95,12 +95,12 @@ class ExamCreate(BaseModel):
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class ExamUpdate(BaseModel):
-    title: Optional[constr(min_length=3, max_length=100)] = Field(
+    title: Optional[constr(min_length=3, max_length=100)] = Field( # type: ignore
         None,
         description="Exam title",
         example="Docker: Просунутий рівень"
     )
-    instructions: Optional[constr(max_length=2000)] = Field(
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
         example="Оновлені інструкції: додано практичне завдання."
@@ -120,12 +120,12 @@ class ExamUpdate(BaseModel):
         description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
-    max_attempts: Optional[conint(ge=1, le=10)] = Field(
+    max_attempts: Optional[conint(ge=1, le=10)] = Field( # type: ignore
         None,
         description="Max attempts per user",
         example=2
     )
-    pass_threshold: Optional[conint(ge=0, le=100)] = Field(
+    pass_threshold: Optional[conint(ge=0, le=100)] = Field( # type: ignore
         None,
         description="Passing threshold in percent",
         example=80
@@ -266,3 +266,10 @@ class CourseExamsPage(BaseModel):
     course_id: UUID
     course_name: str
     exams: List[ExamInList]
+
+class ExamStatistics(BaseModel):
+    exam_id: UUID
+    min_score: Optional[float]
+    max_score: Optional[float]
+    median_score: Optional[float]
+    total_students: int
