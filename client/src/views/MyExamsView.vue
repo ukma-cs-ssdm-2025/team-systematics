@@ -220,13 +220,13 @@ function openStartExamPopup(exam) {
     const isOpen = exam.status === 'open'
     const canStart = isOpen || canStartExam(exam)
     
-    if (!canStart) {
-        // Показуємо попап з попередженням (тільки з кнопкою "Закрити")
-        isWarningPopup.value = true
-        isPopupVisible.value = true
-    } else {
+    if (canStart) {
         // Показуємо звичайний попап з підтвердженням
         isWarningPopup.value = false
+        isPopupVisible.value = true
+    } else {
+        // Показуємо попап з попередженням (тільки з кнопкою "Закрити")
+        isWarningPopup.value = true
         isPopupVisible.value = true
     }
 }

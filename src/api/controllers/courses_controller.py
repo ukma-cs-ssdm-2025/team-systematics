@@ -14,6 +14,11 @@ from src.utils.auth import get_current_user_with_role, get_current_user, require
 from .versioning import require_api_version
 from src.api.schemas.courses import CourseSupervisorListItem, CourseSupervisorDetails
 
+# Константи для описів параметрів запиту
+FILTER_NAME_DESCRIPTION = "Фільтр за назвою/кодом курсу"
+MIN_STUDENTS_DESCRIPTION = "Мін. к-сть студентів"
+MAX_STUDENTS_DESCRIPTION = "Макс. к-сть студентів"
+
 class CoursesController:
     def __init__(self, service: CoursesService) -> None:
         self.service = service
@@ -30,9 +35,9 @@ class CoursesController:
             summary="Список моїх курсів (лише для викладача)",
         )
         async def list_my_courses(
-            name: Optional[str] = Query(None, description="Фільтр за назвою/кодом курсу"),
-            min_students: Optional[int] = Query(None, ge=0, description="Мін. к-сть студентів"),
-            max_students: Optional[int] = Query(None, ge=0, description="Макс. к-сть студентів"),
+            name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
+            min_students: Optional[int] = Query(None, ge=0, description=MIN_STUDENTS_DESCRIPTION),
+            max_students: Optional[int] = Query(None, ge=0, description=MAX_STUDENTS_DESCRIPTION),
             min_exams: Optional[int] = Query(None, ge=0, description="Мін. к-сть іспитів"),
             max_exams: Optional[int] = Query(None, ge=0, description="Макс. к-сть іспитів"),
             limit: int = Query(10, ge=1, le=100),
@@ -73,12 +78,12 @@ class CoursesController:
             summary="Список курсів для наглядача",
         )
         async def list_courses_for_supervisor(
-            name: Optional[str] = Query(None, description="Фільтр за назвою/кодом курсу"),
+            name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
             teacher_name: Optional[str] = Query(
                 None, description="Фільтр за ПІБ або email викладача (owner)"
             ),
-            min_students: Optional[int] = Query(None, ge=0, description="Мін. к-сть студентів"),
-            max_students: Optional[int] = Query(None, ge=0, description="Макс. к-сть студентів"),
+            min_students: Optional[int] = Query(None, ge=0, description=MIN_STUDENTS_DESCRIPTION),
+            max_students: Optional[int] = Query(None, ge=0, description=MAX_STUDENTS_DESCRIPTION),
             limit: int = Query(50, ge=1, le=200),
             offset: int = Query(0, ge=0),
             db: Session = Depends(get_db),
@@ -124,10 +129,10 @@ class CoursesController:
             summary="Каталог усіх курсів",
         )
         async def list_courses(
-            name: Optional[str] = Query(None, description="Фільтр за назвою/кодом курсу"),
+            name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
             teacher_name: Optional[str] = Query(None, description="Фільтр за ПІБ або email викладача"),
-            min_students: Optional[int] = Query(None, ge=0, description="Мін. к-сть студентів"),
-            max_students: Optional[int] = Query(None, ge=0, description="Макс. к-сть студентів"),
+            min_students: Optional[int] = Query(None, ge=0, description=MIN_STUDENTS_DESCRIPTION),
+            max_students: Optional[int] = Query(None, ge=0, description=MAX_STUDENTS_DESCRIPTION),
             min_exams: Optional[int] = Query(None, ge=0, description="Мін. к-сть іспитів"),
             max_exams: Optional[int] = Query(None, ge=0, description="Макс. к-сть іспитів"),
             limit: int = Query(10, ge=1, le=100),

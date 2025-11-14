@@ -11,10 +11,10 @@ const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
 function buildQueryParams(filters) {
     const params = new URLSearchParams()
     
-    if (filters.name && filters.name.trim()) {
+    if (filters.name?.trim()) {
         params.append('name', filters.name.trim())
     }
-    if (filters.teacher_name && filters.teacher_name.trim()) {
+    if (filters.teacher_name?.trim()) {
         params.append('teacher_name', filters.teacher_name.trim())
     }
     

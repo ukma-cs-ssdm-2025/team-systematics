@@ -24,6 +24,7 @@ from src.api.schemas.plagiarism import (
 )
 
 TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише для вчителів"
+ATTEMPT_ID_DESCRIPTION = "ID спроби"
 
 class AttemptsController:
     def __init__(self, service: AttemptsService, review_service: ExamReviewService) -> None:
@@ -119,7 +120,7 @@ class AttemptsController:
     def _get_exam_attempt_review(self, attempt_id: UUID, db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         return self.review_service.get_attempt_review(attempt_id=attempt_id, db=db, current_user=current_user)
 
-    def _update_answer_score(self, attempt_id: UUID = Path(..., description="ID спроби"),
+    def _update_answer_score(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION),
                                    question_id: UUID = Path(..., description="ID питання"),
                                    payload: AnswerScoreUpdate = ...,
                                    db: Session = Depends(get_db),
@@ -170,7 +171,7 @@ class AttemptsController:
         self._require_teacher(current_user)
         return self.service.compare_two_answers(db=db, answer1_id=answer1_id, answer2_id=answer2_id, current_user=current_user)
 
-    def _get_answer_id(self, attempt_id: UUID = Path(..., description="ID спроби"), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
+    def _get_answer_id(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION), question_id: UUID = Path(..., description="ID питання"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
 
         attempt = db.query(AttemptModel).filter(AttemptModel.id == attempt_id).first()
@@ -202,7 +203,7 @@ class AttemptsController:
     def _get_completed_attempts(self, exam_id: UUID = Path(..., description="ID іспиту"), db: Session = Depends(get_db)):
         return self.service.get_completed_attempts_for_exam(db=db, exam_id=exam_id)
 
-    def _add_time_to_attempt(self, attempt_id: UUID = Path(..., description="ID спроби"), payload: AddTimeRequest = ..., db: Session = Depends(get_db)):
+    def _add_time_to_attempt(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION), payload: AddTimeRequest = ..., db: Session = Depends(get_db)):
         return self.service.add_time_to_attempt(db=db, attempt_id=attempt_id, payload=payload)
 
     # Окремий метод для реєстрації роутів

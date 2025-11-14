@@ -436,14 +436,15 @@ async function loadCompletedAttempts() {
         // Створюємо Set з user_id студентів, які мають завершені спроби
         const completedUserIds = new Set()
         
-        completedAttemptsData.forEach(attempt => {
+        for (const attempt of completedAttemptsData) {
             const userId = String(attempt.user_id).toLowerCase().trim()
             completedUserIds.add(userId)
-        })
+        }
         
         studentsWithCompletedAttempts.value = completedUserIds
     } catch (err) {
         // Не встановлюємо помилку як критичну, оскільки це не критично для роботи
+        console.warn('Помилка завантаження завершених спроб:', err)
     }
 }
 

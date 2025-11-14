@@ -238,7 +238,9 @@ const displayCourses = computed(() => {
         sorted.sort((a, b) => {
             const aVal = String(a.name || '').toLowerCase()
             const bVal = String(b.name || '').toLowerCase()
-            return aVal > bVal ? 1 : aVal < bVal ? -1 : 0
+            if (aVal > bVal) return 1
+            if (aVal < bVal) return -1
+            return 0
         })
         return sorted
     }

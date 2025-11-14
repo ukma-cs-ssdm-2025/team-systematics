@@ -234,6 +234,34 @@ const router = createRouter({
   ]
 })
 
+// Допоміжна функція для перевірки ролі користувача
+function checkUserRole(role, auth) {
+  if (role === 'teacher') return auth.isTeacher.value
+  if (role === 'student') return auth.isStudent.value
+  if (role === 'supervisor') return auth.isSupervisor.value
+  return false
+}
+
+// Допоміжна функція для перевірки доступу за роллю
+function hasRoleAccess(requiredRole, auth, to) {
+  // Підтримка масиву ролей
+  if (Array.isArray(requiredRole)) {
+    return requiredRole.some(role => checkUserRole(role, auth))
+  }
+  
+  // Одиночна роль
+  if (checkUserRole(requiredRole, auth)) {
+    return true
+  }
+  
+  // Дозволяємо доступ до /exams як для студентів, так і для вчителів
+  if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
+    return true
+  }
+  
+  return false
+}
+
 // Перевіряє доступ до маршрутів перед переходом
 router.beforeEach((to, from, next) => {
   const auth = useAuth()
@@ -244,36 +272,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresRole) {
-    let hasAccess = false
-    const requiredRole = to.meta.requiresRole
-    
-    // Підтримка масиву ролей
-    if (Array.isArray(requiredRole)) {
-      hasAccess = requiredRole.some(role => {
-        if (role === 'teacher' && auth.isTeacher.value) return true
-        if (role === 'student' && auth.isStudent.value) return true
-        if (role === 'supervisor' && auth.isSupervisor.value) return true
-        return false
-      })
-    } else {
-      // Одиночна роль
-      if (requiredRole === 'teacher' && auth.isTeacher.value) {
-        hasAccess = true
-      }
-      if (requiredRole === 'student' && auth.isStudent.value) {
-        hasAccess = true
-      }
-      if (requiredRole === 'supervisor' && auth.isSupervisor.value) {
-        hasAccess = true
-      }
-    }
-    
-    // Дозволяємо доступ до /exams як для студентів, так і для вчителів
-    // Вчителі можуть переглядати список іспитів
-    if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
-      hasAccess = true
-    }
-
+    const hasAccess = hasRoleAccess(to.meta.requiresRole, auth, to)
     if (!hasAccess) {
       next({ path: '/forbidden' })
       return

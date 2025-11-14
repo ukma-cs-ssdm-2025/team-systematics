@@ -35,6 +35,84 @@ const routeMap = {
     '/my-profile': { title: 'Налаштування профіля', parent: null },
 }
 
+// Допоміжна функція для додавання головної сторінки
+function addHomePage(crumbs) {
+    if (auth.isStudent.value) {
+        crumbs.push({ title: 'Головна', path: '/exams' })
+    } else if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Головна', path: '/courses/my' })
+    } else if (auth.isSupervisor.value) {
+        crumbs.push({ title: 'Головна', path: '/courses/supervisor' })
+    }
+}
+
+// Допоміжна функція для додавання курсу до breadcrumbs
+function addCourseBreadcrumb(crumbs) {
+    if (auth.isSupervisor.value) {
+        crumbs.push({ title: 'Курси', path: '/courses/supervisor' })
+    } else if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+    }
+}
+
+// Допоміжна функція для обробки маршрутів курсів з іспитами
+function handleCourseExamsRoutes(crumbs, path) {
+    const courseId = route.params.courseId
+    const examId = route.params.examId
+    
+    addCourseBreadcrumb(crumbs)
+    
+    if (path.includes('/exams/create')) {
+        crumbs.push({ title: 'Створити іспит', path: null })
+    } else if (path.match(/\/courses\/[^/]+\/exams$/) || (path.includes('/exams') && !examId && !path.includes('/create'))) {
+        crumbs.push({ title: 'Іспити курсу', path: null })
+    } else if (examId) {
+        crumbs.push({ title: 'Іспити курсу', path: `/courses/${courseId}/exams` })
+        if (path.includes('/edit')) {
+            crumbs.push({ title: 'Редагувати іспит', path: null })
+        } else if (path.includes('/session')) {
+            crumbs.push({ title: 'Управління сесією', path: null })
+        } else if (path.includes('/journal')) {
+            crumbs.push({ title: 'Журнал іспиту', path: null })
+        } else if (path.includes('/review')) {
+            crumbs.push({ title: 'Перегляд іспиту', path: null })
+        }
+    }
+}
+
+// Допоміжна функція для обробки маршрутів спроб іспиту
+function handleExamAttemptRoutes(crumbs, path) {
+    if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+        const examId = route.query.examId
+        if (examId) {
+            crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
+        }
+    } else {
+        crumbs.push({ title: 'Мої іспити', path: '/exams' })
+    }
+    
+    if (path.includes('/review')) {
+        crumbs.push({ title: 'Перегляд відповідей', path: null })
+    } else {
+        crumbs.push({ title: 'Проходження іспиту', path: null })
+    }
+}
+
+// Допоміжна функція для обробки маршрутів результатів іспиту
+function handleExamResultsRoutes(crumbs) {
+    if (auth.isTeacher.value) {
+        crumbs.push({ title: 'Мої курси', path: '/courses/my' })
+        const examId = route.query.examId
+        if (examId) {
+            crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
+        }
+    } else {
+        crumbs.push({ title: 'Мої іспити', path: '/exams' })
+    }
+    crumbs.push({ title: 'Результати іспиту', path: null })
+}
+
 const breadcrumbs = computed(() => {
     const crumbs = []
     const path = route.path
@@ -44,114 +122,40 @@ const breadcrumbs = computed(() => {
         return []
     }
     
-    // Додаємо головну сторінку
-    if (auth.isStudent.value) {
-        crumbs.push({ title: 'Головна', path: '/exams' })
-    } else if (auth.isTeacher.value) {
-        crumbs.push({ title: 'Головна', path: '/courses/my' })
-    } else if (auth.isSupervisor.value) {
-        crumbs.push({ title: 'Головна', path: '/courses/supervisor' })
-    }
+    addHomePage(crumbs)
     
     // Обробляємо різні маршрути
     if (path.startsWith('/courses/') && path.includes('/exams')) {
-        const courseId = route.params.courseId
-        const examId = route.params.examId
-        
-        // Курси
-        if (auth.isSupervisor.value) {
-            crumbs.push({ title: 'Курси', path: '/courses/supervisor' })
-        } else if (auth.isTeacher.value) {
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-        }
-        
-        // Створення іспиту
-        if (path.includes('/exams/create')) {
-            crumbs.push({ title: 'Створити іспит', path: null })
-        } 
-        // Іспити курсу (без examId)
-        else if (path.match(/\/courses\/[^/]+\/exams$/) || (path.includes('/exams') && !examId && !path.includes('/create'))) {
-            crumbs.push({ title: 'Іспити курсу', path: null })
-        }
-        // Конкретний іспит з examId
-        else if (examId) {
-            crumbs.push({ title: 'Іспити курсу', path: `/courses/${courseId}/exams` })
-            if (path.includes('/edit')) {
-                crumbs.push({ title: 'Редагувати іспит', path: null })
-            } else if (path.includes('/session')) {
-                crumbs.push({ title: 'Управління сесією', path: null })
-            } else if (path.includes('/journal')) {
-                crumbs.push({ title: 'Журнал іспиту', path: null })
-            } else if (path.includes('/review')) {
-                crumbs.push({ title: 'Перегляд іспиту', path: null })
-            }
-        }
+        handleCourseExamsRoutes(crumbs, path)
     } else if (path.startsWith('/courses/') && path.includes('/details')) {
-        // Деталі курсу
-        const courseId = route.params.courseId
-        if (auth.isSupervisor.value) {
-            crumbs.push({ title: 'Курси', path: '/courses/supervisor' })
-        } else if (auth.isTeacher.value) {
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-        }
+        addCourseBreadcrumb(crumbs)
         crumbs.push({ title: 'Деталі курсу', path: null })
     } else if (path.startsWith('/exams/') && path.includes('/journal')) {
-        // Журнал іспиту (для вчителя, маршрут /exams/:examId/journal)
         if (auth.isTeacher.value) {
             crumbs.push({ title: 'Мої курси', path: '/courses/my' })
         }
         crumbs.push({ title: 'Журнал іспиту', path: null })
     } else if (path.startsWith('/exam/')) {
-        // Спроба іспиту
-        if (auth.isTeacher.value) {
-            // Для вчителів показуємо "Мої курси" та "Журнал іспиту", якщо є examId
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-            const examId = route.query.examId
-            if (examId) {
-                crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
-            }
-        } else {
-            // Для студентів показуємо "Мої іспити"
-            crumbs.push({ title: 'Мої іспити', path: '/exams' })
-        }
-        if (path.includes('/review')) {
-            crumbs.push({ title: 'Перегляд відповідей', path: null })
-        } else {
-            crumbs.push({ title: 'Проходження іспиту', path: null })
-        }
+        handleExamAttemptRoutes(crumbs, path)
     } else if (path.startsWith('/exams-results/')) {
-        // Результати спроби
-        if (auth.isTeacher.value) {
-            // Для вчителів показуємо "Мої курси" та "Журнал іспиту", якщо є examId
-            crumbs.push({ title: 'Мої курси', path: '/courses/my' })
-            const examId = route.query.examId
-            if (examId) {
-                crumbs.push({ title: 'Журнал іспиту', path: `/exams/${examId}/journal` })
-            }
-        } else {
-            // Для студентів показуємо "Мої іспити"
-            crumbs.push({ title: 'Мої іспити', path: '/exams' })
-        }
-        crumbs.push({ title: 'Результати іспиту', path: null })
+        handleExamResultsRoutes(crumbs)
     } else if (path.startsWith('/plagiarism-check/compare')) {
-        // Порівняння плагіату
-        crumbs.push({ title: 'Перевірка плагіату', path: '/plagiarism-check' })
-        crumbs.push({ title: 'Порівняння робіт', path: null })
+        crumbs.push(
+            { title: 'Перевірка плагіату', path: '/plagiarism-check' },
+            { title: 'Порівняння робіт', path: null }
+        )
     } else if (path.startsWith('/courses/create')) {
-        // Створення курсу
         if (auth.isTeacher.value) {
             crumbs.push({ title: 'Мої курси', path: '/courses/my' })
         }
         crumbs.push({ title: 'Створити новий курс', path: null })
     } else if (routeMap[path]) {
-        // Прості маршрути з мапи
         const routeInfo = routeMap[path]
         if (routeInfo.parent) {
             crumbs.push({ title: routeMap[routeInfo.parent].title, path: routeInfo.parent })
         }
         crumbs.push({ title: routeInfo.title, path: null })
     } else if (route.meta?.title) {
-        // Використовуємо title з мета-даних маршруту
         crumbs.push({ title: route.meta.title, path: null })
     }
     

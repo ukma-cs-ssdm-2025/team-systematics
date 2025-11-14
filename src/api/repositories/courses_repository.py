@@ -70,21 +70,32 @@ class CoursesRepository:
             
         return query
     
+    def _get_teacher_name(self, owner) -> str:
+        """Отримує ім'я викладача з об'єкта owner."""
+        if not owner or not owner.first_name or not owner.last_name:
+            return ""
+        return f"{owner.first_name} {owner.last_name}".strip()
+    
+    def _get_teachers_list(self, course, owner=None) -> List[str]:
+        """Формує список викладачів для курсу."""
+        if owner:
+            teacher_name = self._get_teacher_name(owner)
+        else:
+            owner = self.db.query(User).filter(User.id == course.owner_id).first()
+            teacher_name = self._get_teacher_name(owner)
+        return [teacher_name] if teacher_name else []
+    
     def _format_course_results(self, results: List, include_owner: bool = False) -> List[dict]:
         """Форматує результати запиту у список словників для відповіді API."""
         items = []
         for result in results:
             if include_owner and len(result) > 4:
                 course, student_count, exam_count, is_enrolled, owner = result
-                # Формуємо список викладачів (наразі тільки owner)
-                teacher_name = f"{owner.first_name} {owner.last_name}".strip() if owner and owner.first_name and owner.last_name else ""
-                teachers = [teacher_name] if teacher_name else []
             else:
                 course, student_count, exam_count, is_enrolled = result[:4]
-                # Отримуємо owner окремо, якщо потрібно
-                owner = self.db.query(User).filter(User.id == course.owner_id).first()
-                teacher_name = f"{owner.first_name} {owner.last_name}".strip() if owner and owner.first_name and owner.last_name else ""
-                teachers = [teacher_name] if teacher_name else []
+                owner = None
+            
+            teachers = self._get_teachers_list(course, owner)
             
             items.append({
                 "id": course.id,
@@ -109,7 +120,7 @@ class CoursesRepository:
         """Фільтрує результати за кількістю студентів та іспитів."""
         filtered_results = []
         for result in results:
-            course, student_count, exam_count, is_enrolled = result[:4]
+            _, student_count, exam_count, _ = result[:4]
             student_count = student_count or 0
             exam_count = exam_count or 0
             
@@ -130,6 +141,7 @@ class CoursesRepository:
 
     def _apply_name_filter(self, query, name_filter: Optional[str], owner_alias=None):
         """Застосовує фільтр за назвою/кодом курсу."""
+        # owner_alias parameter kept for future use
         if name_filter:
             name_lower = f"%{name_filter.lower()}%"
             query = query.filter(
@@ -229,7 +241,7 @@ class CoursesRepository:
         items = self._format_course_results(paginated_results, include_owner=True)
         return items, total
 
-    def get_course_participants_for_supervisor(self, course_id: UUID) -> dict:
+    def get_course_participants_for_supervisor(self, course_id: UUID) -> Optional[dict]:
         """
         Деталі курсу для наглядача:
           - id, name, code, description

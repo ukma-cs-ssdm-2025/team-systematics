@@ -17,34 +17,71 @@ class ExamsController:
         self.service = service
         self.journal_service = JournalService()
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
+        self._register_routes()
 
-        async def _safe_call(fn, *args, **kwargs):
-            """Run a function and convert unexpected exceptions to HTTP 500.
+    def _register_routes(self):
+        """Реєструє всі маршрути для контролера іспитів."""
+        self._register_crud_routes()
+        self._register_question_routes()
+        self._register_option_routes()
+        self._register_journal_routes()
 
-            Supports both sync and async callables.
-            """
-            try:
-                result = fn(*args, **kwargs)
-                if inspect.isawaitable(result):
-                    return await result
-                return result
-            except HTTPException:
-                raise
-            except Exception as e:
-                raise HTTPException(
-                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-                    detail={"code": "INTERNAL_ERROR", "message": str(e)},
-                )
+    def _register_crud_routes(self):
+        """Реєструє CRUD маршрути для іспитів."""
+        self._register_list_exams()
+        self._register_create_exam()
+        self._register_link_exam_to_course()
+        self._register_get_exam()
+        self._register_get_exam_for_edit()
+        self._register_update_exam()
+        self._register_publish_exam()
+        self._register_delete_exam()
+        self._register_start_attempt()
 
-        def _require_teacher(user: User):
-            if user.role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
-                )
+    def _register_question_routes(self):
+        """Реєструє маршрути для питань іспиту."""
+        self._register_create_question()
+        self._register_update_question()
+        self._register_delete_question()
 
-        # --- CRUD-Ендпойнти ---
+    def _register_option_routes(self):
+        """Реєструє маршрути для опцій питань."""
+        self._register_create_option()
+        self._register_update_option()
+        self._register_delete_option()
 
+    def _register_journal_routes(self):
+        """Реєструє маршрути для журналу іспиту."""
+        self._register_list_course_exams()
+        self._register_get_exam_journal()
+
+    async def _safe_call(self, fn, *args, **kwargs):
+        """Run a function and convert unexpected exceptions to HTTP 500.
+
+        Supports both sync and async callables.
+        """
+        try:
+            result = fn(*args, **kwargs)
+            if inspect.isawaitable(result):
+                return await result
+            return result
+        except HTTPException:
+            raise
+        except Exception as e:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail={"code": "INTERNAL_ERROR", "message": str(e)},
+            )
+
+    def _require_teacher(self, user: User):
+        if user.role != 'teacher':
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail="Цей функціонал доступний лише для викладачів",
+            )
+
+    def _register_list_exams(self):
+        """Реєструє маршрут для списку іспитів."""
         @self.router.get("", response_model=ExamsResponse, summary="List exams")
         async def list_exams(
             db: Session = Depends(get_db),
@@ -74,6 +111,8 @@ class ExamsController:
                     }
                 )
 
+    def _register_create_exam(self):
+        """Реєструє маршрут для створення іспиту."""
         @self.router.post("", response_model=Exam, status_code=status.HTTP_201_CREATED, summary="Create exam")
         async def create_exam(
             payload: ExamCreate, 
@@ -96,7 +135,9 @@ class ExamsController:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail={"code": "INTERNAL_ERROR", "message": str(e)}
                 )
-        
+
+    def _register_link_exam_to_course(self):
+        """Реєструє маршрут для зв'язування іспиту з курсом."""
         @self.router.post("/{exam_id}/courses/{course_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Link exam to course")
         async def link_exam_to_course(
             exam_id: UUID = Path(...),
@@ -114,6 +155,8 @@ class ExamsController:
             self.service.link_to_course(db, exam_id, course_id)
             return None
 
+    def _register_get_exam(self):
+        """Реєструє маршрут для отримання іспиту за ID."""
         @self.router.get("/{exam_id}", response_model=Exam, summary="Get exam by id")
         async def get_exam(
             exam_id: UUID, 
@@ -136,7 +179,9 @@ class ExamsController:
                     status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                     detail={"code": "INTERNAL_ERROR", "message": str(e)}
                 )
-        
+
+    def _register_get_exam_for_edit(self):
+        """Реєструє маршрут для отримання іспиту для редагування."""
         @self.router.get("/{exam_id}/edit", response_model=ExamWithQuestions, summary="Get exam with questions for editing")
         async def get_exam_for_edit(
             exam_id: UUID = Path(...),
@@ -152,6 +197,8 @@ class ExamsController:
             """Отримує іспит з питаннями, опціями та matching_data для редагування"""
             return self.service.get_for_edit(db, exam_id)
 
+    def _register_update_exam(self):
+        """Реєструє маршрут для оновлення іспиту."""
         @self.router.patch("/{exam_id}", response_model=Exam, summary="Update exam (partial)")
         async def update_exam(
             patch: ExamUpdate, 
@@ -166,7 +213,9 @@ class ExamsController:
                     detail="Тільки вчителі можуть оновлювати іспити"
                 )
             return self.service.update(db, exam_id, patch)
-        
+
+    def _register_publish_exam(self):
+        """Реєструє маршрут для публікації іспиту."""
         @self.router.post("/{exam_id}/publish", response_model=Exam, summary="Publish exam")
         async def publish_exam(
             exam_id: UUID = Path(...),
@@ -182,6 +231,8 @@ class ExamsController:
             """Публікує іспит (змінює статус з draft на published)"""
             return self.service.publish_exam(db, exam_id)
 
+    def _register_delete_exam(self):
+        """Реєструє маршрут для видалення іспиту."""
         @self.router.delete("/{exam_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete exam")
         async def delete_exam(
             exam_id: UUID, 
@@ -197,8 +248,8 @@ class ExamsController:
             self.service.delete(db, exam_id)
             return None
 
-        # --- Керування спробами іспиту ---
-
+    def _register_start_attempt(self):
+        """Реєструє маршрут для початку спроби іспиту."""
         @self.router.post("/{exam_id}/attempts", response_model=Attempt, status_code=status.HTTP_201_CREATED, summary="Start an attempt for exam")
         async def start_attempt(
             user_id: UUID = Depends(get_current_user_id), 
@@ -214,7 +265,8 @@ class ExamsController:
                 )
             return self.service.start_attempt(db, exam_id, user_id)
 
-        # --- Ендпойнти для питань іспиту ---
+    def _register_create_question(self):
+        """Реєструє маршрут для створення питання."""
         @self.router.post("/{exam_id}/questions", status_code=status.HTTP_201_CREATED, summary="Create question for exam")
         async def create_question(
             exam_id: UUID, 
@@ -230,6 +282,8 @@ class ExamsController:
                 )
             return self.service.create_question(db, exam_id, payload)
 
+    def _register_update_question(self):
+        """Реєструє маршрут для оновлення питання."""
         @self.router.patch("/{exam_id}/questions/{question_id}", summary="Update question")
         async def update_question(
             exam_id: UUID, 
@@ -246,6 +300,8 @@ class ExamsController:
                 )
             return self.service.update_question(db, question_id, patch)
 
+    def _register_delete_question(self):
+        """Реєструє маршрут для видалення питання."""
         @self.router.delete("/{exam_id}/questions/{question_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete question")
         async def delete_question(
             exam_id: UUID, 
@@ -262,7 +318,8 @@ class ExamsController:
             self.service.delete_question(db, question_id)
             return None
 
-        # --- Ендпойнти для варіантів відповіді на питання ---
+    def _register_create_option(self):
+        """Реєструє маршрут для створення опції."""
         @self.router.post("/{exam_id}/questions/{question_id}/options", status_code=status.HTTP_201_CREATED, summary="Create option for question")
         async def create_option(
             exam_id: UUID, 
@@ -279,6 +336,8 @@ class ExamsController:
                 )
             return self.service.create_option(db, question_id, payload)
 
+    def _register_update_option(self):
+        """Реєструє маршрут для оновлення опції."""
         @self.router.patch("/{exam_id}/questions/{question_id}/options/{option_id}", summary="Update option")
         async def update_option(
             exam_id: UUID, 
@@ -296,6 +355,8 @@ class ExamsController:
                 )
             return self.service.update_option(db, option_id, patch)
 
+    def _register_delete_option(self):
+        """Реєструє маршрут для видалення опції."""
         @self.router.delete("/{exam_id}/questions/{question_id}/options/{option_id}", status_code=status.HTTP_204_NO_CONTENT, summary="Delete option")
         async def delete_option(
             exam_id: UUID, 
@@ -313,7 +374,8 @@ class ExamsController:
             self.service.delete_option(db, option_id)
             return None
 
-        # --- Ендпойнти для журналу іспиту ---
+    def _register_list_course_exams(self):
+        """Реєструє маршрут для списку іспитів курсу."""
         @self.router.get(
             "",
             response_model=CourseExamsPage,
@@ -324,9 +386,11 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            _require_teacher(current_user)
-            return await _safe_call(self.service.get_exams_for_course, db, course_id)
-        
+            self._require_teacher(current_user)
+            return await self._safe_call(self.service.get_exams_for_course, db, course_id)
+
+    def _register_get_exam_journal(self):
+        """Реєструє маршрут для отримання журналу іспиту."""
         @self.router.get(
             "/{exam_id}/journal",
             response_model=ExamJournalResponse,
@@ -337,6 +401,6 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            _require_teacher(current_user)
-            return await _safe_call(self.journal_service.get_journal_for_exam, db, exam_id)
+            self._require_teacher(current_user)
+            return await self._safe_call(self.journal_service.get_journal_for_exam, db, exam_id)
         
