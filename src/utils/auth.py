@@ -144,17 +144,28 @@ def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = De
 def require_role(role_name: str):
     """
     Return a FastAPI dependency that ensures the current user has the given role.
+    Checks all user roles, not just the first one.
 
     Usage:
         current_user: User = Depends(require_role('supervisor'))
     """
-    def _require(user: User = Depends(get_current_user_with_role)) -> User:
-        user_role = str(user.role).lower().strip() if getattr(user, 'role', None) else None
-        if user_role != role_name.lower().strip():
+    def _require(
+        user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ) -> User:
+        from src.api.repositories.user_repository import UserRepository
+        user_roles = UserRepository(db).get_user_roles(str(user.id))
+        required_role = role_name.lower().strip()
+        
+        # Перевіряємо, чи користувач має потрібну роль
+        if not any(r.lower().strip() == required_role for r in user_roles):
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
                 detail=f"This endpoint requires role '{role_name}'",
             )
+        
+        # Додаємо роль як атрибут для сумісності
+        user.role = required_role
         return user
 
     return _require

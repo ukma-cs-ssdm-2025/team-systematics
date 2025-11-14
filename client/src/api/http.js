@@ -29,8 +29,10 @@ http.interceptors.response.use(
             router.push('/unauthorized')
         } else if (status === 403) {
             // Недостатньо прав — перенаправляємо на сторінку 403
-            // Але не робимо це автоматично для всіх помилок, щоб користувач міг побачити повідомлення
-            // router.push('/forbidden')
+            // Перевіряємо, чи користувач вже не на сторінці /forbidden, щоб уникнути циклу
+            if (router.currentRoute.value.path !== '/forbidden') {
+                router.push('/forbidden')
+            }
             console.error('403 Forbidden:', error.response?.data?.detail || 'Недостатньо прав доступу')
         }
 

@@ -6,7 +6,8 @@ from uuid import uuid4
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.versioning import require_api_version
 from src.api.database import get_db
-from src.utils.auth import get_current_user
+from src.utils.auth import get_current_user_with_role
+from types import SimpleNamespace
 
 
 def test_get_exams_db_failure_returns_500():
@@ -36,11 +37,8 @@ def test_get_exams_db_failure_returns_500():
             ) from e
 
     app.dependency_overrides[get_db] = _broken_db
-    class FakeUser:
-        def __init__(self):
-            self.id = uuid4()
-
-    app.dependency_overrides[get_current_user] = lambda: FakeUser()
+    dummy_user = SimpleNamespace(id=uuid4(), role='student')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
 
     client = TestClient(app)
 

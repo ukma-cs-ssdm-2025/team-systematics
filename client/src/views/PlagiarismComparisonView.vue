@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <div v-if="loading" class="status-message">Завантаження...</div>
             <div v-else-if="error" class="status-message error">{{ error }}</div>
             
@@ -55,7 +56,6 @@
                 </div>
                 
                 <div class="comparison-actions">
-                    <CButton @click="goBack">Назад до списку</CButton>
                 </div>
             </div>
         </main>
@@ -64,14 +64,14 @@
 
 <script setup>
 import { ref, onMounted } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
+import { useRoute } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CTextarea from '../components/global/CTextarea.vue'
 import CButton from '../components/global/CButton.vue'
 import { compareAnswers, getFlaggedAnswers } from '../api/attempts.js'
 
 const route = useRoute()
-const router = useRouter()
 
 const loading = ref(true)
 const error = ref(null)
@@ -145,9 +145,6 @@ function getSimilarityStatus(score) {
     return 'Нормальна схожість'
 }
 
-function goBack() {
-    router.push('/plagiarism-check')
-}
 </script>
 
 <style scoped>

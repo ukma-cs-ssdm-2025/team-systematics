@@ -14,6 +14,7 @@ from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
 from src.models.exam_participants import AttendanceStatusEnum
+from src.models.exams import ExamStatusEnum
 
 EXAM_NOT_FOUND_MESSAGE = "Exam not found"
 
@@ -23,22 +24,40 @@ class ExamsService:
         Завжди повертає персоналізований список іспитів для користувача.
         """
         repo = ExamsRepository(db)
+        attempts_repo = AttemptsRepository(db)
         items_with_status, _ = repo.list(user_id=user_id, limit=limit, offset=offset)
         
         now = datetime.now(timezone.utc)
-        future_or_active = []
+        open_exams = []
+        future_exams = []
         completed_by_user = []
 
         for exam_model, user_attempts_count in items_with_status:
             exam_schema = Exam.model_validate(exam_model)
-
-            if user_attempts_count >= exam_schema.max_attempts:
-                completed_by_user.append(exam_schema)
             
-            elif exam_schema.end_at > now:
-                future_or_active.append(exam_schema)
+            # Отримуємо останню спробу для цього іспиту
+            last_attempt = attempts_repo.get_last_attempt_for_user_and_exam(user_id, exam_model.id)
+            last_attempt_id = str(last_attempt.id) if last_attempt else None
+            
+            # Додаємо last_attempt_id та user_attempts_count до схеми
+            exam_dict = exam_schema.model_dump()
+            exam_dict['last_attempt_id'] = last_attempt_id
+            exam_dict['user_attempts_count'] = user_attempts_count
+            exam_with_attempt = Exam(**exam_dict)
 
-        return {"future": future_or_active, "completed": completed_by_user}
+            # Якщо досягнуто max_attempts або є хоча б одна спроба, то іспит у секції "виконані"
+            # Перевіряємо, чи є спроби (user_attempts_count > 0) або досягнуто ліміт
+            if user_attempts_count > 0 or user_attempts_count >= exam_schema.max_attempts:
+                completed_by_user.append(exam_with_attempt)
+            # Якщо іспит має статус "open" і ще не завершився, він у секції "відкриті"
+            # Перевіряємо статус як з enum (exam_model.status), так і з рядка (exam_schema.status)
+            elif (exam_model.status == ExamStatusEnum.open or exam_schema.status == "open") and exam_schema.end_at > now:
+                open_exams.append(exam_with_attempt)
+            # Інакше, якщо іспит ще не завершився, він у секції "майбутні"
+            elif exam_schema.end_at > now:
+                future_exams.append(exam_with_attempt)
+
+        return {"open": open_exams, "future": future_exams, "completed": completed_by_user}
 
     def get(self, db: Session, exam_id: UUID) -> Exam:
         repo = ExamsRepository(db)
@@ -55,8 +74,10 @@ class ExamsService:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         
         # Форматуємо питання з опціями та matching_data
+        # Сортуємо питання за position перед форматуванням
+        sorted_questions = sorted(exam.questions, key=lambda q: q.position or 0)
         questions_data = []
-        for question in exam.questions:
+        for question in sorted_questions:
             question_dict = {
                 "id": question.id,
                 "exam_id": question.exam_id,
@@ -111,6 +132,7 @@ class ExamsService:
             "pass_threshold": exam.pass_threshold,
             "owner_id": exam.owner_id,
             "published": exam.status.value != "draft",
+            "status": exam.status.value,  # Додаємо поле status, яке обов'язкове для ExamWithQuestions
             "question_count": len(questions_data),
             "questions": questions_data
         }
@@ -161,7 +183,13 @@ class ExamsService:
         # Встановлюємо owner_id з параметра (якщо не встановлено в payload)
         if not payload.owner_id:
             payload.owner_id = owner_id
-        return repo.create(payload)
+        exam_model = repo.create(payload)
+        # Переконуємося, що статус встановлено як "draft"
+        if exam_model.status != ExamStatusEnum.draft:
+            exam_model.status = ExamStatusEnum.draft
+            db.commit()
+            db.refresh(exam_model)
+        return exam_model
     
     def link_to_course(self, db: Session, exam_id: UUID, course_id: UUID) -> None:
         """Зв'язує екзамен з курсом"""
@@ -189,66 +217,66 @@ class ExamsService:
         if not ok:
             raise NotFoundError("Exam not found for delete")
 
-def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
-    exams_repo = ExamsRepository(db)
-    exam = exams_repo.get(exam_id)
-    attempts_repo = AttemptsRepository(db)
+    def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
+        exams_repo = ExamsRepository(db)
+        exam = exams_repo.get(exam_id)
+        attempts_repo = AttemptsRepository(db)
 
-    if not exam:
-        raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
+        if not exam:
+            raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
 
-    # Дозвіл лише для учасників іспиту та не "відсутніх"
-    participants_repo = ExamParticipantsRepository(db)
-    ep = participants_repo.get(exam_id, user_id)
-    if not ep or not ep.is_active:
-        raise ConflictError("Користувач не зареєстрований як учасник іспиту")
+        # Дозвіл лише для учасників іспиту та не "відсутніх"
+        participants_repo = ExamParticipantsRepository(db)
+        ep = participants_repo.get(exam_id, user_id)
+        if not ep or not ep.is_active:
+            raise ConflictError("Користувач не зареєстрований як учасник іспиту")
 
-    if ep.attendance_status == AttendanceStatusEnum.absent:
-        raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
+        if ep.attendance_status == AttendanceStatusEnum.absent:
+            raise ConflictError("Користувача позначено як відсутнього — доступ до іспиту заборонено")
 
-    # Перевірка ліміту спроб
-    user_attempts_count = attempts_repo.get_user_attempt_count(
-        user_id=user_id,
-        exam_id=exam_id
-    )
-    if user_attempts_count >= exam.max_attempts:
-        raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
+        # Перевірка ліміту спроб
+        user_attempts_count = attempts_repo.get_user_attempt_count(
+            user_id=user_id,
+            exam_id=exam_id
+        )
+        if user_attempts_count >= exam.max_attempts:
+            raise ConflictError(f"Maximum number of attempts ({exam.max_attempts}) reached for this exam.")
 
-    # Створення спроби
-    return attempts_repo.create_attempt(
-        exam_id=exam_id,
-        user_id=user_id,
-        duration_minutes=exam.duration_minutes
-    )
-
-def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
-    course_repo = CoursesRepository(db)
-    course = course_repo.get(course_id)
-    if not course:
-        # було: stats.HTTP_404_NOT_FOUND
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
-    
-    total_students = course_repo.get_student_count(course_id)
-
-    exams_repo = ExamsRepository(db)
-    exam_stats = exams_repo.get_exams_stats_for_course(course_id)
-
-    exams_list = []
-    for exam, q_count, s_completed, avg_grade, p_reviews in exam_stats:
-        exams_list.append(
-            ExamInList(
-                id=exam.id,
-                title=exam.title,
-                status=exam.status,
-                questions_count=q_count or 0,
-                students_completed=f"{s_completed or 0} / {total_students}",
-                average_grade=avg_grade if avg_grade else None,
-                pending_reviews=p_reviews or 0
-            )
+        # Створення спроби
+        return attempts_repo.create_attempt(
+            exam_id=exam_id,
+            user_id=user_id,
+            duration_minutes=exam.duration_minutes
         )
 
-    return CourseExamsPage(
-        course_id=course.id,
-        course_name=course.name,
-        exams=exams_list
-    )
+    def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
+        course_repo = CoursesRepository(db)
+        course = course_repo.get(course_id)
+        if not course:
+            # було: stats.HTTP_404_NOT_FOUND
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Курс не знайдено.")
+        
+        total_students = course_repo.get_student_count(course_id)
+
+        exams_repo = ExamsRepository(db)
+        exam_stats = exams_repo.get_exams_stats_for_course(course_id)
+
+        exams_list = []
+        for exam, q_count, s_completed, avg_grade, p_reviews in exam_stats:
+            exams_list.append(
+                ExamInList(
+                    id=exam.id,
+                    title=exam.title,
+                    status=exam.status,
+                    questions_count=q_count or 0,
+                    students_completed=f"{s_completed or 0} / {total_students}",
+                    average_grade=avg_grade if avg_grade else None,
+                    pending_reviews=p_reviews or 0
+                )
+            )
+
+        return CourseExamsPage(
+            course_id=course.id,
+            course_name=course.name,
+            exams=exams_list
+        )

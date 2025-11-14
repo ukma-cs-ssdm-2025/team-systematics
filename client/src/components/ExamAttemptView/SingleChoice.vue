@@ -7,7 +7,7 @@
                     :value="option.id" :name="uniqueGroupName" :badgeContent="letter(i)" :disabled="isReviewMode" />
                 <div class="option-content">
                     <p class="option-text">{{ option.text }}</p>
-                    <p v-if="isReviewMode && (option.is_correct || option.is_selected)" class="option-points">
+                    <p v-if="isReviewMode && showCorrectAnswers && (option.is_correct || option.is_selected)" class="option-points">
                         ({{ getPointsForOption(option) }} б)
                     </p>
                 </div>
@@ -37,6 +37,10 @@ const props = defineProps({
         type: Number,
         default: null
     },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -72,10 +76,11 @@ function getOptionClasses(option) {
     }
 
     // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
+    // Але тільки якщо дозволено показувати правильні відповіді
     return {
         selected: option.is_selected,
-        correct: option.is_correct,
-        incorrect: option.is_selected && !option.is_correct
+        correct: props.showCorrectAnswers && option.is_correct,
+        incorrect: props.showCorrectAnswers && option.is_selected && !option.is_correct
     }
 }
 

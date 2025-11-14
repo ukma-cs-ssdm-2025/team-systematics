@@ -2,7 +2,7 @@ from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
 from datetime import datetime, timezone
-from pydantic import BaseModel, Field, conint, constr, validator
+from pydantic import BaseModel, Field, conint, constr, validator, model_validator
 from src.models.exams import ExamStatusEnum
 
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
@@ -133,8 +133,8 @@ class ExamUpdate(BaseModel):
     published: Optional[bool] = Field(None, description="Publish exam (true/false)")
 
     # Attach validators to this model
-    _validate_start_at_not_in_past = validator("start_at", allow_reuse=True)(datetime_must_not_be_in_past)
-    _validate_end_at_not_in_past = validator("end_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    # Для редагування не перевіряємо, чи дата в минулому, оскільки іспит міг бути створений раніше
+    # Залишаємо тільки перевірку, що end_at після start_at
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class Exam(BaseModel):
@@ -175,11 +175,36 @@ class Exam(BaseModel):
         ...,
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
-    published: bool = Field(False, description="Whether exam is published")
+    published: bool = Field(default=False, description="Whether exam is published")
+    status: str = Field(
+        ...,
+        description="Exam status: draft, published, open, or closed",
+        example="draft"
+    )
+    
+    @model_validator(mode='after')
+    def set_published_from_status(self):
+        """Встановлюємо published на основі status після валідації"""
+        # Переконуємося, що status - це рядок (не enum)
+        if hasattr(self.status, 'value'):
+            self.status = self.status.value
+        # Встановлюємо published на основі status
+        self.published = self.status != 'draft'
+        return self
     question_count: int = Field(
         0,
         description="Number of available questions",
         example=20
+    )
+    last_attempt_id: Optional[str] = Field(
+        None,
+        description="ID of the last attempt for this exam by the current user",
+        example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
+    )
+    user_attempts_count: Optional[int] = Field(
+        None,
+        description="Number of attempts made by the current user for this exam",
+        example=2
     )
 
     model_config = {"from_attributes": True}
@@ -221,8 +246,9 @@ class ExamsPage(BaseModel):
     model_config = {"from_attributes": True}
 
 class ExamsResponse(BaseModel):
-    future: List[ExamSchema]
-    completed: List[ExamSchema]
+    open: List[Exam] = Field(default_factory=list, description="Currently open exams")
+    future: List[Exam] = Field(default_factory=list, description="Upcoming exams")
+    completed: List[Exam] = Field(default_factory=list, description="Completed exams")
 
 class ExamInList(BaseModel):
     id: UUID

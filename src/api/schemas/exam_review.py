@@ -80,6 +80,7 @@ QuestionReview = Union[
 class ExamAttemptReviewResponse(BaseModel):
     exam_id: str  # Додаємо exam_id для навігації до журналу
     exam_title: str
+    show_correct_answers: bool = True  # Чи показувати правильні відповіді (False, якщо є ще доступні спроби)
     questions: List[
         Annotated[QuestionReview, Field(discriminator="question_type")]
     ]

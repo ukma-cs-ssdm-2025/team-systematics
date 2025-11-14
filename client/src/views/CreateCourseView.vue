@@ -2,7 +2,8 @@
     <div>
         <Header />
         <main class="container">
-            <section class="content-section">
+            <Breadcrumbs />
+            <div class="content-section">
                 <div class="page-header">
                     <h2>Створення нового курсу</h2>
                 </div>
@@ -56,7 +57,7 @@
                         <div v-if="error" class="status-message error"> {{ error }}</div>
                     </form>
                 </div>
-            </section>
+            </div>
         </main>
     </div>
 </template>
@@ -65,6 +66,7 @@
 import { ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import CInput from '../components/global/CInput.vue'
 import CTextarea from '../components/global/CTextarea.vue'

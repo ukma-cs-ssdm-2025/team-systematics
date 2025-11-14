@@ -2,12 +2,18 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <div v-if="loading" class="status-message">Завантаження...</div>
             <div v-else-if="error" class="status-message error">{{ error }}</div>
 
             <div v-else-if="reviewData" class="review-container">
                 <h2 class="exam-title">Іспит | {{ reviewData.exam_title }}</h2>
                 <h3 class="page-subtitle">Перегляд відповідей</h3>
+
+                <!-- Повідомлення про те, що правильні відповіді приховані -->
+                <div v-if="!reviewData.show_correct_answers && !auth.isTeacher.value" class="info-message">
+                    <p><strong>Увага!</strong> Правильні відповіді будуть доступні після використання всіх спроб для цього іспиту.</p>
+                </div>
 
                 <!-- Ітеруємо по кожному питанню і передаємо його в QuestionDisplay -->
                 <div v-for="question in reviewData.questions" :key="question.id" class="question-wrapper">
@@ -17,6 +23,7 @@
                         :is-review-mode="true"
                         :is-teacher="auth.isTeacher.value"
                         :attempt-id="attemptId"
+                        :show-correct-answers="reviewData.show_correct_answers"
                         @score-updated="handleScoreUpdate"
                     />
                 </div>
@@ -33,6 +40,7 @@
 import { ref, onMounted } from 'vue';
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
 import { getExamAttemptReview, getExamAttemptDetails } from '../api/attempts.js'
@@ -95,7 +103,9 @@ async function handleScoreUpdate(questionId, newScore) {
         // Оновлюємо локальні дані одразу для швидкого відображення
         const question = reviewData.value.questions.find(q => q.id === questionId)
         if (question) {
-            question.earned_points = newScore
+            // Важливо: 0 - це валідне значення, тому явно встановлюємо його
+            // Переконуємося, що newScore є числом (включаючи 0)
+            question.earned_points = typeof newScore === 'number' ? newScore : null
         }
         
         // Не перезавантажуємо дані з сервера одразу, оскільки оцінка вже збережена
@@ -115,5 +125,19 @@ async function handleScoreUpdate(questionId, newScore) {
 <style scoped>
 .question-wrapper {
     width: 60%;
+}
+
+.info-message {
+    background-color: var(--color-lavender);
+    border: 2px solid var(--color-purple);
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 24px;
+    width: 60%;
+}
+
+.info-message p {
+    margin: 0;
+    color: var(--color-dark-gray);
 }
 </style>

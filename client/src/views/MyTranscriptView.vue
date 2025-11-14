@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження атестату...
@@ -21,19 +22,40 @@
                     </p>
                 </div>
 
-                <section class="transcript-table">
+                <div class="transcript-table">
                     <table class="results-table">
                         <thead>
                             <tr>
-                                <th class="left"><span class="pill" @click="sortBy('course_name')">Назва
-                                        дисципліни</span></th>
-                                <th class="right"><span class="pill" @click="sortBy('rating')">Рейтинг</span></th>
-                                <th class="left"><span class="pill" @click="sortBy('ects_grade')">Оцінка ECTS</span>
-                                </th>
-                                <th class="left"><span class="pill" @click="sortBy('national_grade')">Національна
-                                        шкала</span></th>
-                                <th class="left"><span class="pill" @click="sortBy('pass_status')">Поріг виконано</span>
-                                </th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('course_name')">
+                                    Назва дисципліни
+                                    <span v-if="sortState.key === 'course_name'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="right"><span class="pill sortable" @click="sortBy('rating')">
+                                    Рейтинг
+                                    <span v-if="sortState.key === 'rating'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('ects_grade')">
+                                    Оцінка ECTS
+                                    <span v-if="sortState.key === 'ects_grade'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('national_grade')">
+                                    Національна шкала
+                                    <span v-if="sortState.key === 'national_grade'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('pass_status')">
+                                    Поріг виконано
+                                    <span v-if="sortState.key === 'pass_status'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
                             </tr>
                         </thead>
                         <tbody>
@@ -47,9 +69,9 @@
                             </tr>
                         </tbody>
                     </table>
-                </section>
+                </div>
 
-                <section>
+                <div>
                     <h2>Статистика</h2>
                     <ul class="statistics-list">
                         <li>Складено іспитів: {{ transcriptData.statistics.completed_courses }} / {{
@@ -57,7 +79,7 @@
                         <li>З них складено на A: {{ transcriptData.statistics.a_grades_count }}</li>
                         <li>Середньозважений рейтинг: {{ transcriptData.statistics.average_rating }}</li>
                     </ul>
-                </section>
+                </div>
             </div>
         </main>
     </div>
@@ -66,6 +88,7 @@
 <script setup>
 import { ref, onMounted, reactive } from 'vue'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import { useAuth } from '../store/loginInfo.js'
 import { getTranscript } from '../api/transcript.js'
 
@@ -107,3 +130,23 @@ function sortBy(key) {
 onMounted(fetchTranscriptData)
 
 </script>
+
+<style scoped>
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sortable:hover {
+    opacity: 0.8;
+}
+
+.sort-indicator {
+    font-size: 0.8rem;
+    color: var(--color-violet);
+    font-weight: bold;
+}
+</style>

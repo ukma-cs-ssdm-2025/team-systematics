@@ -11,7 +11,9 @@ from src.api.schemas.attempts import (
     Answer as AnswerSchema,
     Attempt as AttemptSchema,
     AttemptResultResponse,
-    AnswerScoreUpdate
+    AnswerScoreUpdate,
+    AddTimeRequest,
+    ActiveAttemptInfo
 )
 
 from src.api.schemas.plagiarism import (
@@ -587,4 +589,91 @@ class AttemptsService:
             student2_name=f"{student2.first_name} {student2.last_name}".strip(),
             exam_title=exam.title,
         )
+
+    def add_time_to_attempt(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        payload: AddTimeRequest,
+    ) -> AttemptSchema:
+        """
+        Додає додатковий час до спроби студента (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempt = repo.add_time_to_attempt(attempt_id, payload.additional_minutes)
+        
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        return AttemptSchema(
+            id=attempt.id,
+            exam_id=attempt.exam_id,
+            user_id=attempt.user_id,
+            status=attempt.status.value,
+            started_at=attempt.started_at,
+            due_at=attempt.due_at,
+            submitted_at=attempt.submitted_at,
+            score_percent=attempt.earned_points,
+            time_spent_seconds=attempt.time_spent_seconds,
+        )
+
+    def get_active_attempts_for_exam(
+        self,
+        db: Session,
+        exam_id: UUID,
+    ) -> List[ActiveAttemptInfo]:
+        """
+        Отримує список активних спроб для іспиту (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempts = repo.get_active_attempts_for_exam(exam_id)
+        
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        
+        result = []
+        for attempt in attempts:
+            remaining_seconds = max(0, int((attempt.due_at - now).total_seconds()))
+            remaining_minutes = remaining_seconds // 60
+            
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
+            
+            result.append(ActiveAttemptInfo(
+                attempt_id=attempt.id,
+                user_id=attempt.user_id,
+                user_full_name=user_full_name,
+                started_at=attempt.started_at,
+                due_at=attempt.due_at,
+                remaining_minutes=remaining_minutes,
+                status=attempt.status.value,
+            ))
+        
+        return result
+    
+    def get_completed_attempts_for_exam(
+        self,
+        db: Session,
+        exam_id: UUID,
+    ) -> List[dict]:
+        """
+        Отримує список завершених спроб для іспиту (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempts = repo.get_completed_attempts_for_exam(exam_id)
+        
+        result = []
+        for attempt in attempts:
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
+            
+            result.append({
+                'user_id': attempt.user_id,
+                'user_full_name': user_full_name,
+                'status': attempt.status.value,
+                'submitted_at': attempt.submitted_at,
+            })
+        
+        return result
     

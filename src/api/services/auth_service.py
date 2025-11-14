@@ -20,8 +20,8 @@ class AuthService:
         if not verify_password(request.password, user.hashed_password):
             raise HTTPException(status_code=401, detail="Invalid password")
 
-        roles = self.user_repo.get_user_roles(user.id)
-        major_name = self.user_repo.get_user_major(user.id)
+        roles = self.user_repo.get_user_roles(str(user.id))
+        major_name = self.user_repo.get_user_major(str(user.id))
 
         token = create_access_token({"sub": str(user.id), "roles": roles})
 

@@ -26,7 +26,19 @@ class ExamParticipantsService:
     def list(self, db: Session, exam_id: UUID):
         repo = ExamParticipantsRepository(db)
         items = repo.list_active(exam_id)
-        return [ExamParticipantResponse.model_validate(i) for i in items]
+        result = []
+        for item in items:
+            # Конвертуємо enum у рядок для Pydantic
+            item_dict = {
+                'exam_id': item.exam_id,
+                'user_id': item.user_id,
+                'joined_at': item.joined_at,
+                'removed_at': item.removed_at,
+                'is_active': item.is_active,
+                'attendance_status': item.attendance_status.value if item.attendance_status else 'unknown'
+            }
+            result.append(ExamParticipantResponse.model_validate(item_dict))
+        return result
 
     def add(self, db: Session, exam_id: UUID, payload: ExamParticipantCreate):
         exams_repo = ExamsRepository(db)
@@ -51,7 +63,14 @@ class ExamParticipantsService:
             raise ConflictError(ALREADY_ACTIVE_SESSION)
 
         ep = ExamParticipantsRepository(db).add(exam_id, payload.user_id)
-        return ExamParticipantResponse.model_validate(ep)
+        return ExamParticipantResponse(
+            exam_id=ep.exam_id,
+            user_id=ep.user_id,
+            joined_at=ep.joined_at,
+            removed_at=ep.removed_at,
+            is_active=ep.is_active,
+            attendance_status=ep.attendance_status.value if ep.attendance_status else 'unknown'
+        )
 
     def remove(self, db: Session, exam_id: UUID, user_id: UUID):
         exams_repo = ExamsRepository(db)
@@ -88,4 +107,11 @@ class ExamParticipantsService:
         if not ep:
             raise NotFoundError(NOT_A_PARTICIPANT)
 
-        return ExamParticipantResponse.model_validate(ep)
+        return ExamParticipantResponse(
+            exam_id=ep.exam_id,
+            user_id=ep.user_id,
+            joined_at=ep.joined_at,
+            removed_at=ep.removed_at,
+            is_active=ep.is_active,
+            attendance_status=ep.attendance_status.value if ep.attendance_status else 'unknown'
+        )

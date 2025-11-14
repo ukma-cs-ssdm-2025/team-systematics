@@ -11,7 +11,7 @@
                 <div class="option-content">
                     <p class="option-text">{{ option.text }}</p>
                     <p
-                        v-if="isReviewMode && (option.is_correct || option.is_selected)"
+                        v-if="isReviewMode && showCorrectAnswers && (option.is_correct || option.is_selected)"
                         class="option-points">
                             ({{ formattedPointsPerMatch(option) }} б)
                     </p>
@@ -40,6 +40,10 @@ const props = defineProps({
     earnedPoints: {
         type: Number,
         default: null
+    },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
     }
 })
 
@@ -82,10 +86,12 @@ function getOptionClasses(option) {
     if (!props.isReviewMode) {
         return { selected: isChecked(option) }
     }
+    // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
+    // Але тільки якщо дозволено показувати правильні відповіді
     return {
         selected: option.is_selected,
-        correct: option.is_correct,
-        incorrect: option.is_selected && !option.is_correct
+        correct: props.showCorrectAnswers && option.is_correct,
+        incorrect: props.showCorrectAnswers && option.is_selected && !option.is_correct
     }
 }
 

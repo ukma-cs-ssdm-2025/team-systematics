@@ -24,8 +24,8 @@
                 </div>
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
-                    <span class="review-text">{{ prompt.text }}</span>
-                    <span class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
+                    <span class="review-text">{{ prompt.student_match_id || '(не вибрано)' }}</span>
+                    <span v-if="showCorrectAnswers" class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
                 </div>
             </div>
 
@@ -54,6 +54,10 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -118,6 +122,10 @@ function updateMatch(promptId, selectedMatchId) {
 function getReviewClasses(prompt) {
     if (!props.isReviewMode)
         return {}
+    // Додаємо класи для правильних/неправильних відповідей тільки якщо дозволено показувати правильні відповіді
+    if (!props.showCorrectAnswers) {
+        return {}
+    }
     return {
         correct: prompt.student_match_id === prompt.correct_match_id,
         incorrect: prompt.student_match_id !== prompt.correct_match_id

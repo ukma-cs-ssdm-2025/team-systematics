@@ -44,6 +44,24 @@ export async function getAllExams() {
     }
 }
 
+// Отримує інформацію про іспит за ID
+export async function getExam(examId) {
+    if (USE_MOCK_DATA) {
+        // Повертаємо мокові дані, якщо потрібно
+        return mockExams.future_exams?.[0] || mockExams.completed_exams?.[0] || {}
+    }
+    try {
+        const response = await http.get(`/api/exams/${examId}`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error fetching exam ${examId}:`, error)
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити інформацію про іспит.')
+    }
+}
+
 // Отримує дані для журналу конкретного іспиту
 export async function getExamJournal(examId) {
     if (USE_MOCK_DATA) {
