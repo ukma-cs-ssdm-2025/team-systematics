@@ -235,8 +235,9 @@ class ExamsPage(BaseModel):
     model_config = {"from_attributes": True}
 
 class ExamsResponse(BaseModel):
-    future: List[ExamSchema]
-    completed: List[ExamSchema]
+    open: List[Exam] = Field(default_factory=list, description="Currently open exams")
+    future: List[Exam] = Field(default_factory=list, description="Upcoming exams")
+    completed: List[Exam] = Field(default_factory=list, description="Completed exams")
 
 class ExamInList(BaseModel):
     id: UUID

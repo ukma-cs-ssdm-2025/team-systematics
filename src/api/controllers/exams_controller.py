@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions, ExamsResponse
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
@@ -19,7 +19,7 @@ class ExamsController:
 
         # --- CRUD-Ендпойнти ---
 
-        @self.router.get("", summary="List exams")
+        @self.router.get("", response_model=ExamsResponse, summary="List exams")
         async def list_exams(
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user),
@@ -27,7 +27,8 @@ class ExamsController:
             offset: int = Query(0, ge=0)
             ):
             try:
-                return self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+                result = self.service.list(db, user_id=current_user.id, limit=limit, offset=offset)
+                return ExamsResponse(**result)
             except HTTPException as he:
                 # Re-raise HTTP exceptions (validation errors, etc.)
                 raise he

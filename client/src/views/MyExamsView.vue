@@ -15,10 +15,10 @@
 
             <!-- 3. Основний контент, коли дані завантажено -->
             <div v-if="!loading && !error">
-                <!-- Секція для майбутніх іспитів -->
-                <div class="exams-section">
-                    <h2>Майбутні іспити</h2>
-                    <table v-if="futureExams.length" class="exams-table">
+                <!-- Секція для відкритих іспитів -->
+                <div v-if="openExams.length" class="exams-section">
+                    <h2>Відкриті іспити</h2>
+                    <table class="exams-table">
                         <thead>
                             <tr>
                                 <th class="left"><span class="pill">Назва іспиту</span></th>
@@ -30,7 +30,38 @@
                             </tr>
                         </thead>
                         <tbody>
-                            <tr v-for="exam in futureExams" :key="exam.id">
+                            <tr v-for="exam in openExams" :key="exam.id">
+                                <td 
+                                    class="exam-title left"
+                                    @click="openStartExamPopup(exam)">
+                                    {{ exam.title }}
+                                </td>
+                                <td class="left">{{ formatDateTime(exam.start_at) }}</td>
+                                <td class="left">{{ formatDateTime(exam.end_at) }}</td>
+                                <td class="right">{{ exam.duration_minutes }} хв</td>
+                                <td class="right">{{ exam.max_attempts }}</td>
+                                <td class="right">{{ exam.pass_threshold }}</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Секція для майбутніх іспитів -->
+                <div class="exams-section">
+                    <h2>Майбутні іспити</h2>
+                    <table v-if="futureExamsFiltered.length" class="exams-table">
+                        <thead>
+                            <tr>
+                                <th class="left"><span class="pill">Назва іспиту</span></th>
+                                <th class="left"><span class="pill">Час початку</span></th>
+                                <th class="left"><span class="pill">Час закінчення</span></th>
+                                <th class="right"><span class="pill">Тривалість</span></th>
+                                <th class="right"><span class="pill">К-сть спроб</span></th>
+                                <th class="right"><span class="pill">Прохідний бал</span></th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr v-for="exam in futureExamsFiltered" :key="exam.id">
                                 <td 
                                     class="exam-title left"
                                     @click="openStartExamPopup(exam)">
@@ -110,9 +141,15 @@ import { useRouter } from 'vue-router'
 
 const router = useRouter()
 
-// Створюємо два окремих ref для кожного списку - майбутніх і виконаних іспитів
+// Створюємо окремі ref для кожного списку - відкритих, майбутніх і виконаних іспитів
+const openExams = ref([])
 const futureExams = ref([])
 const completedExams = ref([])
+
+// Computed property для майбутніх іспитів (для сумісності з існуючим кодом)
+const futureExamsFiltered = computed(() => {
+    return futureExams.value
+})
 
 const loading = ref(true)
 const error = ref(null)
@@ -178,9 +215,12 @@ function canStartExam(exam) {
 function openStartExamPopup(exam) {
     selectedExam.value = exam
     
-    // Перевіряємо, чи час початку вже настав
-    const canStart = canStartExam(exam)
-    if (canStart === false) {
+    // Для відкритих іспитів (статус "open") завжди дозволяємо почати без попередження
+    // Для інших іспитів перевіряємо, чи час початку вже настав
+    const isOpen = exam.status === 'open'
+    const canStart = isOpen || canStartExam(exam)
+    
+    if (!canStart) {
         // Показуємо попап з попередженням (тільки з кнопкою "Закрити")
         isWarningPopup.value = true
         isPopupVisible.value = true
@@ -313,8 +353,10 @@ async function handleStartExam() {
 onMounted(async () => {
     try {
         const data = await getExams()
-        futureExams.value = data.future
-        completedExams.value = data.completed
+        // Отримуємо окремі списки від бекенду
+        openExams.value = data.open || []
+        futureExams.value = data.future || []
+        completedExams.value = data.completed || []
 
     } catch (err) {
         error.value = err.message

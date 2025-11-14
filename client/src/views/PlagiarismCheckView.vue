@@ -150,7 +150,7 @@ function goToComparison() {
 .flagged-answers-container {
     display: flex;
     flex-direction: column;
-    gap: 16px;
+    gap:п 16px;
 }
 
 .selection-info {

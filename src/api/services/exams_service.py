@@ -14,6 +14,7 @@ from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
 from src.models.exam_participants import AttendanceStatusEnum
+from src.models.exams import ExamStatusEnum
 
 EXAM_NOT_FOUND_MESSAGE = "Exam not found"
 
@@ -27,7 +28,8 @@ class ExamsService:
         items_with_status, _ = repo.list(user_id=user_id, limit=limit, offset=offset)
         
         now = datetime.now(timezone.utc)
-        future_or_active = []
+        open_exams = []
+        future_exams = []
         completed_by_user = []
 
         for exam_model, user_attempts_count in items_with_status:
@@ -47,11 +49,15 @@ class ExamsService:
             # Перевіряємо, чи є спроби (user_attempts_count > 0) або досягнуто ліміт
             if user_attempts_count > 0 or user_attempts_count >= exam_schema.max_attempts:
                 completed_by_user.append(exam_with_attempt)
+            # Якщо іспит має статус "open" і ще не завершився, він у секції "відкриті"
+            # Перевіряємо статус як з enum (exam_model.status), так і з рядка (exam_schema.status)
+            elif (exam_model.status == ExamStatusEnum.open or exam_schema.status == "open") and exam_schema.end_at > now:
+                open_exams.append(exam_with_attempt)
             # Інакше, якщо іспит ще не завершився, він у секції "майбутні"
             elif exam_schema.end_at > now:
-                future_or_active.append(exam_with_attempt)
+                future_exams.append(exam_with_attempt)
 
-        return {"future": future_or_active, "completed": completed_by_user}
+        return {"open": open_exams, "future": future_exams, "completed": completed_by_user}
 
     def get(self, db: Session, exam_id: UUID) -> Exam:
         repo = ExamsRepository(db)
