@@ -12,7 +12,7 @@ from src.api.services.exams_service import ExamsService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.versioning import require_api_version
 from src.api.database import get_db
-from src.utils.auth import get_current_user
+from src.utils.auth import get_current_user_with_role
 
 
 class MockExamService:
@@ -63,8 +63,8 @@ def test_create_exam_end_at_before_start_returns_422():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
-    dummy_user = SimpleNamespace(id=uuid4())
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
+    dummy_user = SimpleNamespace(id=uuid4(), role='teacher')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
     client = TestClient(app)
 
     now = datetime.now(timezone.utc)
@@ -110,8 +110,8 @@ def test_create_exam_with_minimum_title_length_accepted():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
-    dummy_user = SimpleNamespace(id=uuid4())
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
+    dummy_user = SimpleNamespace(id=uuid4(), role='teacher')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
     client = TestClient(app)
 
     payload = _create_exam_payload(title="Abc", instructions="")
