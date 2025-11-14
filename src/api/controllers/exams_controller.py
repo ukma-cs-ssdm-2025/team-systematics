@@ -10,12 +10,38 @@ from src.api.services.exams_service import ExamsService
 from src.api.services.journal_service import JournalService
 from .versioning import require_api_version
 from src.api.database import get_db
+import inspect
 
 class ExamsController:
     def __init__(self, service: ExamsService) -> None:
         self.service = service
         self.journal_service = JournalService()
         self.router = APIRouter(prefix="/exams", tags=["Exams"], dependencies=[Depends(require_api_version)])
+
+        async def _safe_call(fn, *args, **kwargs):
+            """Run a function and convert unexpected exceptions to HTTP 500.
+
+            Supports both sync and async callables.
+            """
+            try:
+                result = fn(*args, **kwargs)
+                if inspect.isawaitable(result):
+                    return await result
+                return result
+            except HTTPException:
+                raise
+            except Exception as e:
+                raise HTTPException(
+                    status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                    detail={"code": "INTERNAL_ERROR", "message": str(e)},
+                )
+
+        def _require_teacher(user: User):
+            if user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для викладачів",
+                )
 
         # --- CRUD-Ендпойнти ---
 
@@ -25,7 +51,7 @@ class ExamsController:
             current_user: User = Depends(get_current_user_with_role),
             limit: int = Query(10, ge=1, le=100),
             offset: int = Query(0, ge=0)
-            ):
+        ):
             # Перевірка ролі: тільки студенти можуть переглядати список іспитів
             if current_user.role != 'student':
                 raise HTTPException(
@@ -298,12 +324,8 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            if current_user.role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
-                )
-            return self.service.get_exams_for_course(db, course_id)
+            _require_teacher(current_user)
+            return await _safe_call(self.service.get_exams_for_course, db, course_id)
         
         @self.router.get(
             "/{exam_id}/journal",
@@ -315,10 +337,6 @@ class ExamsController:
             db: Session = Depends(get_db),
             current_user: User = Depends(get_current_user_with_role),
         ):
-            if current_user.role != 'teacher':
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Цей функціонал доступний лише для викладачів",
-                )
-            return self.journal_service.get_journal_for_exam(db, exam_id)
+            _require_teacher(current_user)
+            return await _safe_call(self.journal_service.get_journal_for_exam, db, exam_id)
         

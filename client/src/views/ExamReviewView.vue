@@ -63,7 +63,7 @@ onMounted(async () => {
             const attemptDetails = await getExamAttemptDetails(attemptId)
             examId.value = attemptDetails.exam_id
         } catch (err) {
-            // Ігноруємо помилку, якщо не вдалося отримати exam_id з attempt details
+            // Логування помилки і перенаправлення на значення за замовчуванням
             console.warn('Failed to get exam_id from attempt details:', err)
         }
         
@@ -75,6 +75,8 @@ onMounted(async () => {
             examId.value = data.exam_id
         }
     } catch (err) {
+        // Обробка основної помилки
+        console.error('Error loading exam attempt review:', err)
         error.value = "Не вдалося завантажити дані для перегляду."
     } finally {
         loading.value = false
