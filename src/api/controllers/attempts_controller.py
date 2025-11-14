@@ -111,22 +111,60 @@ class AttemptsController:
             )
         
         @self.router.post("/{attempt_id}/answers", response_model=Answer, status_code=status.HTTP_201_CREATED, summary="Save or update an answer")
-        async def add_answer(payload: AnswerUpsert, attempt_id: UUID, db: Session = Depends(get_db)):
+        async def add_answer(
+            payload: AnswerUpsert, 
+            attempt_id: UUID, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
+            # Перевірка ролі: тільки студент може зберігати відповіді
+            if current_user.role != 'student':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Тільки студенти можуть зберігати відповіді"
+                )
             return self.service.add_answer(db, attempt_id, payload)
 
         @self.router.post("/{attempt_id}/submit", response_model=AttemptSchema, summary="Submit attempt")
-        async def submit(attempt_id: UUID, db: Session = Depends(get_db)):
+        async def submit(
+            attempt_id: UUID, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
+            # Перевірка ролі: тільки студент може завершувати спробу
+            if current_user.role != 'student':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Тільки студенти можуть завершувати спроби"
+                )
             return self.service.submit(db, attempt_id)
 
         @self.router.get("/{attempt_id}", summary="Get attempt details for UI")
-        async def get_attempt_details(attempt_id: UUID, db: Session = Depends(get_db)):
+        async def get_attempt_details(
+            attempt_id: UUID, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
+            # Перевірка ролі: студент або вчитель можуть переглядати деталі спроби
+            if current_user.role not in ['student', 'teacher']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Доступ дозволений тільки студентам та вчителям"
+                )
             return self.service.get_attempt_details(db, attempt_id)
 
         @self.router.get("/{attempt_id}/results", response_model=AttemptResultResponse, summary="Send exam results")
         async def read_attempt_result(
             attempt_id: UUID,
             db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
         ):
+            # Перевірка ролі: студент або вчитель можуть переглядати результати
+            if current_user.role not in ['student', 'teacher']:
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Доступ дозволений тільки студентам та вчителям"
+                )
             return self.service.get_attempt_result(db, attempt_id=attempt_id)
 
         @self.router.get("/{attempt_id}/review", response_model=ExamAttemptReviewResponse,
@@ -202,8 +240,14 @@ class AttemptsController:
             exam_id: UUID,
             max_uniqueness: Optional[float] = None,
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(get_current_user_with_role),
         ):
+            # Перевірка ролі: тільки вчитель може переглядати перевірки на плагіат
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
             return self.service.get_exam_plagiarism_checks(
                 db=db,
                 exam_id=exam_id,
@@ -220,8 +264,14 @@ class AttemptsController:
             attempt_id: UUID,
             other_attempt_id: UUID,
             db: Session = Depends(get_db),
-            current_user: User = Depends(get_current_user),
+            current_user: User = Depends(get_current_user_with_role),
         ):
+            # Перевірка ролі: тільки вчитель може порівнювати спроби
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей функціонал доступний лише для вчителів"
+                )
             return self.service.get_attempts_comparison(
                 db=db,
                 base_attempt_id=attempt_id,

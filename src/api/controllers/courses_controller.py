@@ -175,24 +175,50 @@ class CoursesController:
             return self.service.create(db, payload, owner_id=current_user.id)
 
         @self.router.get("/{course_id}", response_model=Course)
-        async def get_course(course_id: UUID, db: Session = Depends(get_db)):
+        async def get_course(
+            course_id: UUID, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
             """Отримує деталізовану інформацію про один курс за його ID."""
+            # Перевірка ролі: всі автентифіковані користувачі можуть переглядати курси
             return self.service.get(db, course_id)
 
         @self.router.patch("/{course_id}", response_model=Course)
-        async def update_course(course_id: UUID, patch: CourseUpdate, db: Session = Depends(get_db)):
+        async def update_course(
+            course_id: UUID, 
+            patch: CourseUpdate, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
             """
             Оновлює інформацію про курс. Дозволяє часткове оновлення полів.
             (Примітка: має бути реалізована перевірка власності курсу).
             """
+            # Перевірка ролі: тільки вчитель може оновлювати курси
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Тільки вчителі можуть оновлювати курси"
+                )
             return self.service.update(db, course_id, patch)
         
         @self.router.delete("/{course_id}", status_code=status.HTTP_204_NO_CONTENT)
-        async def delete_course(course_id: UUID, db: Session = Depends(get_db)):
+        async def delete_course(
+            course_id: UUID, 
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role)
+        ):
             """
             Видаляє курс за його ID.
             (Примітка: має бути реалізована перевірка власності курсу).
             """
+            # Перевірка ролі: тільки вчитель може видаляти курси
+            if current_user.role != 'teacher':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Тільки вчителі можуть видаляти курси"
+                )
             self.service.delete(db, course_id)
             return None
 
