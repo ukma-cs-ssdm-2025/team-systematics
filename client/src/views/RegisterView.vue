@@ -234,18 +234,21 @@ const majors = ref([])
 const auth = useAuth()
 const router = useRouter()
 
+// Оновлює значення спеціальності на основі введеного тексту
+function updateMajorFromInput(inputValue) {
+    const trimmedValue = inputValue.trim()
+    selectedMajorName.value = trimmedValue
+    updateMajorId(trimmedValue)
+}
+
 // Обробка введення спеціальності
 function handleMajorInput(event) {
-    const inputValue = event.target.value.trim()
-    selectedMajorName.value = inputValue
-    updateMajorId(inputValue)
+    updateMajorFromInput(event.target.value)
 }
 
 // Обробка зміни спеціальності (коли вибрано зі списку)
 function handleMajorChange(event) {
-    const inputValue = event.target.value.trim()
-    selectedMajorName.value = inputValue
-    updateMajorId(inputValue)
+    updateMajorFromInput(event.target.value)
 }
 
 // Оновлює ID спеціальності на основі назви

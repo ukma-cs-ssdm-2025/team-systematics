@@ -418,7 +418,7 @@ function createBins(scores, numBins) {
     const max = Math.max(...scores)
     const binSize = (max - min) / numBins
     
-    const bins = Array(numBins).fill(0)
+    const bins = new Array(numBins).fill(0)
     const labels = []
     
     for (let i = 0; i < numBins; i++) {
@@ -427,13 +427,13 @@ function createBins(scores, numBins) {
         labels.push(`${Math.round(binStart)}-${Math.round(binEnd)}`)
     }
     
-    scores.forEach(score => {
+    for (const score of scores) {
         const binIndex = Math.min(
             Math.floor((score - min) / binSize),
             numBins - 1
         )
         bins[binIndex]++
-    })
+    }
     
     return { labels, counts: bins }
 }
