@@ -1,10 +1,32 @@
+# Workflow: Run Api Tests
+#
+# Призначення:
+#   Запускає автоматичні тести для API бекенду при кожному push або PR.
+#   Перевіряє коректність роботи коду перед мерджем.
+#
+# Тригери:
+#   - Push до main або тестової гілки
+#   - Pull Request до main
+#
+# Що робить:
+#   1. Встановлює Python 3.11 та залежності (включаючи тестові)
+#   2. Запускає всі тести через pytest
+#   3. Використовує in-memory SQLite БД для тестів (не потрібна реальна БД)
+#
+# Змінні середовища:
+#   - DATABASE_URL: in-memory SQLite для ізоляції тестів
+#   - JWT_SECRET: тестовий секрет для перевірки JWT функціональності
+#
+# Результат:
+#   Статус проходження/провалу тестів відображається в PR checks
+
 name: Run Api Tests
 
 on:
   push:
     branches: 
       - main
-      - allyxandraaa/fix-test-workflow
+      - allyxandraaa/fix-test-workflow  # Тестова гілка
   pull_request:
     branches: [ main ]
 
@@ -12,10 +34,11 @@ jobs:
   test:
     runs-on: ubuntu-latest
 
+    # Змінні середовища для тестів
     env:
-      PYTHONPATH: ${{ github.workspace }}
-      DATABASE_URL: "sqlite:///:memory:"
-      JWT_SECRET: "test-secret"
+      PYTHONPATH: ${{ github.workspace }}  # Дозволяє імпортувати модулі з src/
+      DATABASE_URL: "sqlite:///:memory:"  # In-memory БД для ізоляції тестів
+      JWT_SECRET: "test-secret"  # Тестовий JWT секрет
 
     steps:
       - name: Checkout repository
@@ -25,13 +48,14 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          cache: 'pip'
+          cache: 'pip'  # Кешує pip залежності
 
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install -e ".[test]"
+          pip install -e ".[test]"  # Встановлює тестові залежності з pyproject.toml
 
       - name: Run tests with pytest
+        # Запускає всі тести з директорії tests/
         run: pytest
