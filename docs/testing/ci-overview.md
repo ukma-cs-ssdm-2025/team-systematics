@@ -17,16 +17,20 @@
 
 **Поточний стан:**
 - Workflow стабільно запускається при кожному коміті.  
-- Останні прогони містять помилки у тестах (через конфігурацію бази даних),  
-  але CI інтеграція працює правильно.  
+- CI інтеграція працює правильно.
+- Використовує оптимізовану стратегію з розділенням на швидкі unit тести (без ML) та повільніші ML тести (тільки на main).
+- Проблеми з сумісністю JSONB/SQLite вирішено через функцію `get_json_type()`.  
 
 
 ## Додаткові воркфлоу
 У репозиторії також налаштовано:
-- **Run Linters and Auto-format** — перевірка стилю коду;
-- **Generate and Auto-Merge API Docs** — автоматична генерація документації;
-- **Deploy Docs to GitHub Pages** — деплой документації;
-- **generate plantuml** — створення UML-діаграм.
+- **Run API Tests** (`run-api-test.yml`) — автоматичне тестування API з розділенням на unit тести (швидкі) та ML тести (повільніші);
+- **Generate and Auto-Merge API Docs** (`generate-docs.yml`) — автоматична генерація OpenAPI документації з бейджиком статусу в README;
+- **Deploy Docs to GitHub Pages** (`deploy-docs.yml`) — деплой документації на GitHub Pages;
+- **SonarCloud Analysis** (`sonarcloud.yml`) — статичний аналіз коду;
+- **Generate PlantUML Diagrams** (`uml-render.yml`) — створення UML-діаграм з .puml файлів.
+
+**Детальна інформація:** Див. [CI/CD Runbook](/docs/ci-cd/ci-cd-runbook.md) для повного опису всіх workflows.
 
 
 ## Quality Gate
