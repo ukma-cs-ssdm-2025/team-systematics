@@ -5,7 +5,7 @@
 #   Запускається тільки при змінах в директорії docs/api/.
 #
 # Тригери:
-#   - Push до main або тестової гілки
+#   - Push до main
 #   - Тільки якщо змінені файли в docs/api/**
 #
 # Що робить:
@@ -21,7 +21,6 @@ on:
   push:
     branches:
       - main
-      - allyxandraaa/configure-github-pages-workflows  # Тестова гілка
     paths:
       - 'docs/api/**'  # Запускається тільки при змінах в API документації
 

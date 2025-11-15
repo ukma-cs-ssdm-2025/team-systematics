@@ -5,8 +5,8 @@
 #   Конвертує текстові UML діаграми у візуальні зображення.
 #
 # Тригери:
-#   - Push до гілок з UML діаграмами
-#   - Запускається тільки на тестових гілках (можна розширити на main)
+#   - Push до main
+#   - Pull Request до main (тільки при змінах в .puml файлах)
 #
 # Що робить:
 #   1. Читає .puml файли з docs/architecture/uml/
@@ -20,8 +20,11 @@ name: generate plantuml
 on:
   push:
     branches:
-      - allyxandraaa/add-uml-diagrams  # Тестові гілки
-      - allyxandraaa/change-generate-puml-workflow
+      - main
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/architecture/uml/**/*.puml'  # Запускається при змінах в PlantUML файлах
 jobs:
   generate_plantuml:
     runs-on: ubuntu-latest

@@ -5,7 +5,7 @@
 #   Перевіряє коректність роботи коду перед мерджем.
 #
 # Тригери:
-#   - Push до main або тестової гілки
+#   - Push до main
 #   - Pull Request до main
 #
 # Що робить:
@@ -26,7 +26,6 @@ on:
   push:
     branches: 
       - main
-      - allyxandraaa/fix-test-workflow  # Тестова гілка
   pull_request:
     branches: [ main ]
 
