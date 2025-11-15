@@ -1,7 +1,6 @@
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=20518032)
+[![CI Test](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml) [![API Tests](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/run-api-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/run-api-test.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=ukma-cs-ssdm-2025_team-systematics&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ukma-cs-ssdm-2025_team-systematics)
 
 # Платформа онлайн-іспитів
-[![CI Test](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml)
 
 Розроблений командою _Systematics_, проєкт передбачає створення платформи для проведення онлайн-іспитів на базі веб-застосунку, що забезпечує __підтримку різних типів завдань, організацію сесій із обмеженням у часі та інструменти для виявлення плагіату__. Система передбачає ролі студента, викладача та наглядача, надає інструменти для автоматичного оцінювання, формування звітів, контролю доброчесності.
 
