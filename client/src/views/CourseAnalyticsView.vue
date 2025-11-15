@@ -212,19 +212,14 @@ async function loadExamProgress() {
         }
         
         const progress = await getExamProgress(courseId, selectedExamId.value)
-        console.log('Loaded exam progress:', progress)
         examProgress.value = progress || []
         
         await nextTick()
-        console.log('examProgress.value after nextTick:', examProgress.value)
-        console.log('progressChartRef.value:', progressChartRef.value)
         
         if (examProgress.value.length > 0) {
             setTimeout(() => {
                 renderProgressChart()
             }, 200)
-        } else {
-            console.warn('No progress data to display for exam:', selectedExamId.value)
         }
     } catch (err) {
         console.error('Error loading exam progress:', err)
@@ -363,23 +358,18 @@ function renderExamsComparisonChart() {
 
 function renderProgressChart() {
     if (!progressChartRef.value) {
-        console.warn('progressChartRef.value is null')
         return
     }
     if (examProgress.value.length === 0) {
-        console.warn('examProgress.value is empty')
         return
     }
     
     const canvas = progressChartRef.value
-    console.log('Rendering progress chart with data:', examProgress.value)
 
     // Сортуємо за датою
     const sortedProgress = [...examProgress.value].sort((a, b) => 
         new Date(a.date) - new Date(b.date)
     )
-    
-    console.log('Sorted progress:', sortedProgress)
 
     progressChart = new Chart(canvas, {
         type: 'line',
