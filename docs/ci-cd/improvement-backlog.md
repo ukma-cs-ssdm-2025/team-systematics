@@ -20,5 +20,5 @@
 | **Ownership** | Ніхто не слідкує за workflows | Немає сповіщень та метрик | 1. Увімкнути email сповіщення GitHub про failed workflows (вбудована функція)<br>2. Додати workflow status badge у README для візуального моніторингу<br>3. Перевіряти вкладку Actions перед мерджем PR<br> | High | Олександра Малій |
 | **Code Quality** | Застарілі гілки в тригерах | Немає процесу очищення | 1. Видалити feature branches з workflows<br> 2.Використовувати тільки main та PR<br>3. Додати автоматичне видалення старих гілок (опціонально) | Medium | Олександра Малій |
 | **Documentation** | Неясно що робить кожен workflow | Немає описів | 1. Додати коментарі до workflows<br> 2. Створити CI/CD runbook | Low | Олександра Малій |
-| **Consistency** | Різні версії Python в workflows | Немає централізованої конфігурації | 1. Створити shared-config.yml<br>2. Використати reusable workflows<br>3. Додати .python-version файл | Low | Олександра Малій |
+| **Consistency** | Різні версії Python в workflows | Немає централізованої конфігурації | ✅ 1. Створити shared-config.yml<br> 2. Додати .python-version файл<br> | Low | Олександра Малій |
 
