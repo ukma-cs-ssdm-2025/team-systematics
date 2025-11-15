@@ -292,6 +292,15 @@ class ExamsRepository:
         self.db.commit()
         return True
 
+    def get_by_course(self, course_id: UUID) -> List[Exam]:
+        """Отримує список іспитів для курсу"""
+        return (
+            self.db.query(Exam)
+            .join(CourseExam, Exam.id == CourseExam.exam_id)
+            .filter(CourseExam.course_id == course_id)
+            .all()
+        )
+
     def get_exams_stats_for_course(self, course_id: UUID) -> List[Tuple]:
         """
         Отримує список іспитів для курсу разом з розрахованою статистикою:
@@ -344,6 +353,6 @@ class ExamsRepository:
         """Метод для отримання статистики по іспиту"""
         attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
         
-        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
         
         return StatisticsService.calculate_statistics(scores)

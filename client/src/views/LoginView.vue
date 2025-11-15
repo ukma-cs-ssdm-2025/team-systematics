@@ -57,6 +57,7 @@ h1 {
     color: var(--color-white);
     min-width: 450px;
     padding: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .login-card-header {

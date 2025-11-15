@@ -82,26 +82,51 @@ class JournalService:
         )
 
     def get_exam_statistics_for_course(self, db: Session, course_id: UUID):
+        from src.api.repositories.attempts_repository import AttemptsRepository
+        
         journal_repo = JournalRepository(db)
+        attempt_repo = AttemptsRepository(db)
         
         exams = journal_repo.get_exams_for_course(course_id)
         statistics = []
 
         for exam in exams:
-            attempts = journal_repo.get_attempts_for_exam(exam.id)
-            students = []
-            for student in attempts:
-                max_grade = max(attempt.earned_points for attempt in student.attempts if attempt.earned_points is not None)
-                students.append({
-                    'student_id': student.id,
-                    'name': student.name,
-                    'max_grade': max_grade,
-                    'attempts': len(student.attempts)
+            attempts = attempt_repo.get_attempts_by_exam(exam.id)
+            
+            if not attempts:
+                statistics.append({
+                    'exam_id': exam.id,
+                    'min_score': None,
+                    'max_score': None,
+                    'median_score': None,
+                    'total_students': 0
                 })
+                continue
+            
+            scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
+            
+            if not scores:
+                statistics.append({
+                    'exam_id': exam.id,
+                    'min_score': None,
+                    'max_score': None,
+                    'median_score': None,
+                    'total_students': len(attempts)
+                })
+                continue
+            
+            min_score = min(scores)
+            max_score = max(scores)
+            sorted_scores = sorted(scores)
+            median_index = len(sorted_scores) // 2
+            median_score = sorted_scores[median_index] if len(sorted_scores) % 2 == 1 else (sorted_scores[median_index - 1] + sorted_scores[median_index]) / 2
+            
             statistics.append({
                 'exam_id': exam.id,
-                'exam_name': exam.title,
-                'students': students
+                'min_score': min_score,
+                'max_score': max_score,
+                'median_score': median_score,
+                'total_students': len(attempts)
             })
         
         return statistics

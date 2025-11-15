@@ -315,7 +315,7 @@ class AttemptsRepository:
         """Отримує статистику для спроб на іспиті"""
         attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
         
-        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
         
         return StatisticsService.calculate_statistics(scores)
 
@@ -334,6 +334,10 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(attempt)
         return attempt
+
+    def get_attempts_by_exam(self, exam_id: UUID) -> List[Attempt]:
+        """Отримує всі спроби для конкретного іспиту"""
+        return self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
 
     def get_active_attempts_for_exam(self, exam_id: UUID) -> List[Attempt]:
         """
