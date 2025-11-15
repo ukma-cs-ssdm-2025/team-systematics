@@ -19,8 +19,13 @@ http.interceptors.response.use(
     (response) => response,
     (error) => {
         const status = error.response?.status
+        const url = error.config?.url || ''
 
-        if (status === 401) {
+        // Не перенаправляємо на /unauthorized для запитів логіну
+        // щоб можна було показати повідомлення про помилку
+        const isLoginRequest = url.includes('/api/auth/login')
+
+        if (status === 401 && !isLoginRequest) {
             // Токен недійсний або минув строк — чистимо локальний стан і відправляємо на логін
             localStorage.removeItem('token')
             localStorage.removeItem('userRole')

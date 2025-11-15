@@ -22,8 +22,12 @@
                         placeholder="password123" autocomplete="current-password" />
                 </div>
 
-                <CButton type="submit" id="submitButton" class="submit-button">
-                    Увійти
+                <div v-if="errorMessage" class="error-message">
+                    {{ errorMessage }}
+                </div>
+
+                <CButton type="submit" id="submitButton" class="submit-button" :disabled="loading">
+                    {{ loading ? 'Вхід...' : 'Увійти' }}
                 </CButton>
 
                 <div class="register-link-container">
@@ -83,6 +87,7 @@ h1 {
     font-weight: bold;
 }
 
+
 .register-link {
     text-decoration: underline;
 }
@@ -102,6 +107,22 @@ h1 {
     background-color: var(--color-dark-lavender);
 }
 
+#submitButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: var(--color-red, #ff6b6d);
+    background-color: rgba(255, 107, 109, 0.1);
+    border: 1px solid var(--color-red, #ff6b6d);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    margin-top: 12px;
+}
+
 </style>
 
 <script setup>
@@ -113,12 +134,16 @@ import CButton from '../components/global/CButton.vue'
 
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const loading = ref(false)
 const auth = useAuth()
 const router = useRouter()
     
 // Відправляє дані на бекенд і зберігає токен
 const handleLogin = async (e) => {
   e.preventDefault()
+  errorMessage.value = ''
+  loading.value = true
 
   try {
     const data = await loginUser(email.value, password.value)
@@ -146,7 +171,9 @@ const handleLogin = async (e) => {
 
   } catch (err) {
     console.error(err)
-    alert(err.message)
+    errorMessage.value = err.message || 'Помилка входу. Спробуйте ще раз.'
+  } finally {
+    loading.value = false
   }
 }
 </script>
