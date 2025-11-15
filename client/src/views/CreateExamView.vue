@@ -942,6 +942,11 @@ async function confirmSaveExam() {
     display: flex;
     flex-direction: column;
     gap: 24px;
+    background: var(--color-white, #eeeeee);
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid var(--color-gray, #D9D9D9);
 }
 
 .form-group,

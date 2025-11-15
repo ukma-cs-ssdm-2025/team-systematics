@@ -10,12 +10,20 @@
                 <div class="exams-section">
                     <div class="page-header">
                         <h2>Іспити курсу {{ courseName }}</h2>
-                        <CButton 
-                            v-if="auth.isTeacher.value"
-                            @click="createNewExam" 
-                            class="create-exam-btn">
-                            + Створити новий іспит
-                        </CButton>
+                        <div class="header-actions">
+                            <CButton 
+                                v-if="auth.isTeacher.value"
+                                @click="goToAnalytics" 
+                                class="analytics-btn">
+                                📊 Аналітика
+                            </CButton>
+                            <CButton 
+                                v-if="auth.isTeacher.value"
+                                @click="createNewExam" 
+                                class="create-exam-btn">
+                                + Створити новий іспит
+                            </CButton>
+                        </div>
                     </div>
                     <table v-if="exams.length" class="exams-table">
                         <thead>
@@ -194,6 +202,10 @@ function editExam(examId) {
     router.push(`/courses/${courseId}/exams/${examId}/edit`)
 }
 
+function goToAnalytics() {
+    router.push(`/courses/${courseId}/analytics`)
+}
+
 function showPublishConfirm(examId) {
     examToPublish.value = examId
     showPublishDialog.value = true
@@ -294,6 +306,22 @@ const publishConfirmMessage = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.analytics-btn {
+    background-color: var(--color-lavender, #e1c9e8);
+    color: var(--color-black, #333);
+    transition: background-color 0.2s ease;
+}
+
+.analytics-btn:hover {
+    background-color: var(--color-dark-lavender, #d1bbd8);
 }
 
 .title-container {

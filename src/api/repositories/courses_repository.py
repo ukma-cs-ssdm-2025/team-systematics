@@ -7,6 +7,7 @@ from src.api.repositories.exams_repository import ExamsRepository
 from src.api.schemas.exams import Exam
 from src.models.courses import Course, CourseEnrollment
 from src.models.course_exams import CourseExam
+from src.models.course_supervisors import CourseSupervisor
 from src.api.schemas.courses import CourseCreate, CourseUpdate
 from src.models.users import User
 from src.models.user_roles import UserRole
@@ -468,6 +469,7 @@ class CoursesRepository:
 
     def list_with_stats_for_supervisor(
         self,
+        supervisor_id: UUID,
         title_filter: Optional[str] = None,
         teacher_filter: Optional[str] = None,
         min_students: Optional[int] = None,
@@ -477,6 +479,7 @@ class CoursesRepository:
     ) -> Tuple[List[dict], int]:
         """
         Повертає список курсів для наглядача з фільтрами.
+        Показує тільки курси, до яких прив'язаний даний наглядач.
         Формат: {id, name, code, students_count, teachers: [full_name, ...]}
         """
         # Підрахунок студентів
@@ -507,6 +510,8 @@ class CoursesRepository:
                 teacher_name_expr.label("teacher_name"),
                 owner_alias.email.label("teacher_email")
             )
+            .join(CourseSupervisor, CourseSupervisor.course_id == Course.id)
+            .filter(CourseSupervisor.supervisor_id == supervisor_id)
             .outerjoin(student_count_subquery, Course.id == student_count_subquery.c.course_id)
             .outerjoin(owner_alias, Course.owner_id == owner_alias.id)
         )

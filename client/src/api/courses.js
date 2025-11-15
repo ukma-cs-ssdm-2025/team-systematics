@@ -154,3 +154,4 @@ export async function getCourseDetailsForSupervisor(courseId) {
         console.error(`API Error fetching course details for supervisor ${courseId}:`, error)
         throw new Error('Не вдалося завантажити деталі курсу.')
     }
+}

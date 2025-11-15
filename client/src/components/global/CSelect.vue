@@ -57,7 +57,7 @@ function handleChange(event) {
     background-color: white;
     font-family: inherit;
     font-size: inherit;
-    transition: all 150ms ease;
+    transition: border-color 0.2s, outline 0.2s;
 
     cursor: pointer;
     appearance: none;
@@ -68,7 +68,7 @@ function handleChange(event) {
 }
 
 .custom-select:hover {
-    border-color: var(--color-dark-gray);
+    border-color: var(--color-dark-lavender, #d1bbd8);
 }
 
 .custom-select:focus-visible {

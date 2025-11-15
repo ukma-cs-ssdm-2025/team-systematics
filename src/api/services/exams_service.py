@@ -219,6 +219,11 @@ class ExamsService:
     def get_group_statistics(self, db: Session, course_id: UUID):
         exam_repo = ExamsRepository(db)
         attempt_repo = AttemptsRepository(db)
+        course_repo = CoursesRepository(db)
+
+        course = course_repo.get(course_id)
+        if not course:
+            return []
 
         exams = exam_repo.get_by_course(course_id)
         
@@ -230,15 +235,22 @@ class ExamsService:
             if total_students == 0:
                 continue
 
-            scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+            scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
+            if not scores:
+                continue
+                
             min_score = min(scores)
             max_score = max(scores)
-            median_score = sorted(scores)[len(scores) // 2]  # Просте обчислення медіани
+            sorted_scores = sorted(scores)
+            median_index = len(sorted_scores) // 2
+            median_score = sorted_scores[median_index] if len(sorted_scores) % 2 == 1 else (sorted_scores[median_index - 1] + sorted_scores[median_index]) / 2
 
             group_stats.append({
                 'exam_id': exam.id,
                 'exam_name': exam.title,
-                'average_score': sum(scores) / total_students,
+                'course_id': course_id,
+                'course_name': course.name,
+                'average_score': sum(scores) / len(scores),
                 'min_score': min_score,
                 'max_score': max_score,
                 'median_score': median_score
@@ -309,3 +321,70 @@ class ExamsService:
             course_name=course.name,
             exams=exams_list
         )
+
+    def get_exam_statistics(self, db: Session, exam_id: UUID):
+        """Отримує статистику по іспиту"""
+        attempt_repo = AttemptsRepository(db)
+        attempts = attempt_repo.get_attempts_by_exam(exam_id)
+        
+        if not attempts:
+            return {
+                'exam_id': exam_id,
+                'min_score': None,
+                'max_score': None,
+                'median_score': None,
+                'total_students': 0
+            }
+        
+        scores = [attempt.score_percent for attempt in attempts if attempt.score_percent is not None]
+        
+        if not scores:
+            return {
+                'exam_id': exam_id,
+                'min_score': None,
+                'max_score': None,
+                'median_score': None,
+                'total_students': len(attempts)
+            }
+        
+        sorted_scores = sorted(scores)
+        median_index = len(sorted_scores) // 2
+        median_score = sorted_scores[median_index] if len(sorted_scores) % 2 == 1 else (sorted_scores[median_index - 1] + sorted_scores[median_index]) / 2
+        
+        return {
+            'exam_id': exam_id,
+            'min_score': min(scores),
+            'max_score': max(scores),
+            'median_score': median_score,
+            'total_students': len(attempts)
+        }
+
+    def get_exam_progress(self, db: Session, exam_id: UUID):
+        """Отримує динаміку результатів по іспиту (середній бал по датах)"""
+        attempt_repo = AttemptsRepository(db)
+        attempts = attempt_repo.get_attempts_by_exam(exam_id)
+        
+        if not attempts:
+            return []
+        
+        # Групуємо спроби за датою завершення
+        from collections import defaultdict
+        progress_by_date = defaultdict(list)
+        
+        for attempt in attempts:
+            if attempt.earned_points is not None and attempt.submitted_at:
+                # Беремо тільки дату без часу для групування
+                date_key = attempt.submitted_at.date()
+                progress_by_date[date_key].append(attempt.earned_points)
+        
+        # Формуємо список прогресу
+        progress_list = []
+        for date, scores in sorted(progress_by_date.items()):
+            average_score = sum(scores) / len(scores)
+            progress_list.append({
+                'exam_id': exam_id,
+                'date': datetime.combine(date, datetime.min.time()).replace(tzinfo=timezone.utc),
+                'average_score': average_score
+            })
+        
+        return progress_list

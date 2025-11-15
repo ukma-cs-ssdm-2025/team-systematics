@@ -280,6 +280,9 @@ ALTER TABLE public.exam_participants
 CREATE INDEX IF NOT EXISTS idx_exam_participants_exam ON public.exam_participants (exam_id);
 CREATE INDEX IF NOT EXISTS idx_exam_participants_user ON public.exam_participants (user_id);
 
+CREATE INDEX IF NOT EXISTS idx_course_supervisors_course ON public.course_supervisors (course_id);
+CREATE INDEX IF NOT EXISTS idx_course_supervisors_supervisor ON public.course_supervisors (supervisor_id);
+
 
 CREATE TABLE public.course_enrollments (
     user_id uuid NOT NULL,

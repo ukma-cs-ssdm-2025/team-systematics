@@ -32,7 +32,7 @@
                     <button type="button" class="user-avatar" @click="toggleDropdown" tabindex="0"
                         @keydown="handleKeyDown" :aria-expanded="isDropdownVisible"
                         aria-label="Відкрити меню користувача">
-                        <img :src="auth.avatarUrl.value || defaultAvatar" alt="Аватар користувача">
+                        <img :src="avatarSrc" @error="handleAvatarError" alt="Аватар користувача">
                     </button>
 
                     <div v-if="isDropdownVisible" class="dropdown-content">
@@ -55,7 +55,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted } from 'vue'
+import { ref, computed, onMounted, onUnmounted } from 'vue'
 import { useRoute } from 'vue-router'
 import { useAuth } from '../../store/loginInfo'
 import defaultAvatar from '../../assets/icons/user-avatar-default.svg'
@@ -65,6 +65,25 @@ const route = useRoute()
 
 const isDropdownVisible = ref(false)
 const dropdownMenu = ref(null)
+const avatarError = ref(false)
+
+const avatarSrc = computed(() => {
+    const url = auth.avatarUrl.value
+    // Якщо є помилка або URL порожній/null, використовуємо дефолтну аватарку
+    if (avatarError.value || !url || (typeof url === 'string' && url.trim() === '')) {
+        return defaultAvatar
+    }
+    return url
+})
+
+function handleAvatarError(event) {
+    // Якщо зображення не завантажилося, встановлюємо помилку
+    avatarError.value = true
+    // Встановлюємо src на дефолтну аватарку
+    if (event.target) {
+        event.target.src = defaultAvatar
+    }
+}
 
 // Функція для перемикання видимості меню
 function toggleDropdown() {

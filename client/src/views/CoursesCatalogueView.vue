@@ -438,12 +438,12 @@ async function handleUnenrollConfirm() {
     background-color: white;
     color: inherit;
     box-sizing: border-box;
-    transition: border-color 0.2s ease;
+    transition: border-color 0.2s ease, outline 0.2s ease;
 }
 
 .filter-input:focus {
-    outline: none;
-    border-color: var(--color-violet, #6b46c1);
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
 }
 
 .filter-input::placeholder {
@@ -478,6 +478,7 @@ async function handleUnenrollConfirm() {
     display: flex;
     flex-direction: column;
     gap: 16px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .course-code {

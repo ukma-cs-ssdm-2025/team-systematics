@@ -1,10 +1,13 @@
 from fastapi import APIRouter, Depends, status, UploadFile, File
 from sqlalchemy.orm import Session
+from typing import List
 from src.models.users import User
+from src.models.majors import Major
 from src.api.database import get_db
 from src.utils.auth import get_current_user
 from src.api.services.users_service import UsersService
 from src.api.schemas.users import UserProfileResponse, NotificationSettingsSchema, AvatarUpdateResponse
+from src.api.schemas.majors import MajorResponse
 
 class UsersController:
     def __init__(self, service: UsersService):
@@ -62,3 +65,13 @@ class UsersController:
             та оновлює посилання на аватар у профілі користувача."""
             updated_user = self.service.update_avatar(current_user.id, avatar_file, db)
             return {"avatar_url": updated_user.avatar_url}
+
+        @self.router.get(
+            "/majors",
+            response_model=List[MajorResponse],
+            summary="Отримати список усіх спеціальностей"
+        )
+        async def get_majors(db: Session = Depends(get_db)):
+            """Повертає список усіх доступних спеціальностей."""
+            majors = db.query(Major).order_by(Major.name).all()
+            return [MajorResponse(id=major.id, name=major.name) for major in majors]

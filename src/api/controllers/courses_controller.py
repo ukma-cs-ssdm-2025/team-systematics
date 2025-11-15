@@ -72,6 +72,42 @@ class CoursesController:
             ) 
             return {"items": items, "total": total, "limit": limit, "offset": offset}
 
+        @self.router.get(
+            "",
+            response_model=CoursesPage,
+            summary="Список усіх курсів (для студентів)",
+        )
+        async def list_courses(
+            name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
+            teacher_name: Optional[str] = Query(None, description="Фільтр за ПІБ або email викладача"),
+            min_students: Optional[int] = Query(None, ge=0, description=MIN_STUDENTS_DESCRIPTION),
+            max_students: Optional[int] = Query(None, ge=0, description=MAX_STUDENTS_DESCRIPTION),
+            limit: int = Query(100, ge=1, le=100),
+            offset: int = Query(0, ge=0),
+            db: Session = Depends(get_db),
+            current_user: User = Depends(get_current_user_with_role),
+        ):
+            """
+            Отримує список усіх курсів з підтримкою фільтрації.
+            Доступно для студентів.
+            """
+            if current_user.role != 'student':
+                raise HTTPException(
+                    status_code=status.HTTP_403_FORBIDDEN,
+                    detail="Цей ендпоінт доступний лише для студентів"
+                )
+            items, total = self.service.list(
+                db=db,
+                current_user_id=current_user.id,
+                limit=limit,
+                offset=offset,
+                name_filter=name,
+                teacher_filter=teacher_name,
+                min_students=min_students,
+                max_students=max_students,
+            )
+            return {"items": items, "total": total, "limit": limit, "offset": offset}
+
         # Важливо: маршрути /supervisor мають бути перед /{course_id}
         # щоб FastAPI не інтерпретував "supervisor" як UUID
         @self.router.get(

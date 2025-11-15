@@ -4,6 +4,8 @@ from uuid import UUID
 from datetime import datetime
 
 class GroupAnalytics(BaseModel):
+    exam_id: UUID
+    exam_name: str
     course_id: UUID
     course_name: str
     average_score: Optional[float]
