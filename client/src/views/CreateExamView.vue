@@ -121,6 +121,7 @@ import QuestionEditor from '../components/CreateExamView/QuestionEditor.vue'
 import QuestionTypeSelector from '../components/CreateExamView/QuestionTypeSelector.vue'
 import CPopup from '../components/global/CPopup.vue'
 import { createExam, getExamForEdit, updateExam } from '../api/exams.js'
+import { normalizeQuestionPoints } from '../utils/pointsNormalizer.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -440,6 +441,9 @@ onMounted(async () => {
                 })
             }
             
+            // Нормалізуємо бали питань, щоб сума дорівнювала точно 100
+            exam.value.questions = normalizeQuestionPoints(exam.value.questions)
+            
             // В режимі редагування не валідуємо дати на предмет того, чи вони в минулому
             // Просто очищаємо можливі помилки
             startDateError.value = null
@@ -743,6 +747,9 @@ async function confirmSaveExam() {
     success.value = false
 
     try {
+        // Нормалізуємо бали питань, щоб сума дорівнювала точно 100
+        const normalizedQuestions = normalizeQuestionPoints(exam.value.questions)
+        
         // Підготовка даних для відправки
         const examData = {
             title: exam.value.title,
@@ -753,7 +760,7 @@ async function confirmSaveExam() {
             max_attempts: exam.value.max_attempts,
             pass_threshold: exam.value.pass_threshold,
             course_id: courseId,
-            questions: exam.value.questions.map(q => {
+            questions: normalizedQuestions.map(q => {
                 const questionData = {
                     title: q.title,
                     question_type: q.question_type,
