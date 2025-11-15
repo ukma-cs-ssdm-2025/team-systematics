@@ -13,9 +13,10 @@ export function normalizeQuestionPoints(questions) {
 
     // Створюємо мапу з початковими значеннями
     const pointsMap = new Map()
-    questions.forEach((q, index) => {
+    for (let index = 0; index < questions.length; index++) {
+        const q = questions[index]
         pointsMap.set(index, q.points || 1)
-    })
+    }
 
     // Розраховуємо суму початкових балів
     const totalPoints = Array.from(pointsMap.values()).reduce((sum, val) => sum + (val || 1), 0)
@@ -30,7 +31,7 @@ export function normalizeQuestionPoints(questions) {
 
     // Створюємо структуру для сортування з заокругленими значеннями та залишками
     const processedItems = []
-    pointsMap.forEach((value, index) => {
+    for (const [index, value] of pointsMap) {
         const scaledValue = value * scaleFactor
         const floorValue = Math.floor(scaledValue)
         const fractionalPart = scaledValue - floorValue
@@ -40,7 +41,7 @@ export function normalizeQuestionPoints(questions) {
             fractional: fractionalPart,
             originalValue: value
         })
-    })
+    }
 
     // Розраховуємо різницю між 100 та сумою заокруглених значень
     const currentTotal = processedItems.reduce((sum, item) => sum + item.floorValue, 0)
@@ -51,9 +52,9 @@ export function normalizeQuestionPoints(questions) {
 
     // Створюємо фінальну мапу з початковими заокругленими значеннями
     const finalValuesMap = new Map()
-    processedItems.forEach(item => {
+    for (const item of processedItems) {
         finalValuesMap.set(item.index, item.floorValue)
-    })
+    }
 
     // Розподіляємо "загублені" бали між елементами з найбільшим залишком
     for (let i = 0; i < difference; i++) {
