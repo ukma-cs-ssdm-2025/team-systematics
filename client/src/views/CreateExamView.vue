@@ -121,6 +121,7 @@ import QuestionEditor from '../components/CreateExamView/QuestionEditor.vue'
 import QuestionTypeSelector from '../components/CreateExamView/QuestionTypeSelector.vue'
 import CPopup from '../components/global/CPopup.vue'
 import { createExam, getExamForEdit, updateExam } from '../api/exams.js'
+import { normalizeQuestionPoints } from '../utils/pointsNormalizer.js'
 
 const router = useRouter()
 const route = useRoute()
@@ -135,13 +136,6 @@ const showConfirmDialog = ref(false)
 const startDateError = ref(null)
 const endDateError = ref(null)
 const titleError = ref(null)
-// Флаг для відстеження автоматичних оновлень, щоб уникнути зациклення
-const isUpdatingDuration = ref(false)
-const isUpdatingEndDate = ref(false)
-// Флаг для відстеження, чи тривалість була змінена вручну (не через оновлення часу завершення)
-const isDurationManuallyChanged = ref(false)
-// Флаг для відстеження, чи час завершення був змінений вручну (не через оновлення тривалості)
-const isEndDateManuallyChanged = ref(false)
 
 // Ключ для localStorage
 const STORAGE_KEY = isEditMode.value ? `exam-draft-${examId}` : `exam-draft-${courseId}`
@@ -236,19 +230,14 @@ function clearPastDateError() {
     }
 }
 
-// Допоміжна функція для синхронізації дати завершення з датою початку
+// Допоміжна функція для виправлення некоректної дати завершення (якщо вона раніше за дату початку)
 function syncEndDateWithStartDate(startDate, endDate, now) {
     if (endDate && endDate <= startDate) {
-        if (exam.value.duration_minutes && exam.value.duration_minutes > 0) {
-            updateEndDateFromDuration()
-        } else {
-            const minEndDate = new Date(startDate.getTime() + 60000)
-            const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
-            const newEndDate = new Date(Math.max(minEndDate.getTime(), roundedNow.getTime()))
-            exam.value.end_at = formatDateTimeForInput(newEndDate)
-        }
-    } else if (endDate && exam.value.duration_minutes) {
-        updateEndDateFromDuration()
+        // Встановлюємо мінімальну дату завершення (початок + 1 хвилина або поточний час)
+        const minEndDate = new Date(startDate.getTime() + 60000)
+        const roundedNow = new Date(Math.ceil(now.getTime() / 60000) * 60000)
+        const newEndDate = new Date(Math.max(minEndDate.getTime(), roundedNow.getTime()))
+        exam.value.end_at = formatDateTimeForInput(newEndDate)
     }
 }
 
@@ -272,89 +261,12 @@ function validateStartDate(value) {
         clearPastDateError()
     }
     
-    if (!isEditMode.value) {
+    // Виправляємо дату завершення, якщо вона некоректна (раніше за дату початку)
+    if (!isEditMode.value && endDate && endDate <= startDate) {
         syncEndDateWithStartDate(startDate, endDate, now)
     }
 }
 
-// Оновлення часу завершення на основі тривалості
-// forceUpdate - чи примусово оновити, навіть якщо час завершення був змінений вручну (для виправлення некоректних значень)
-function updateEndDateFromDuration(forceUpdate = false) {
-    if (isUpdatingEndDate.value || !exam.value.start_at || !exam.value.duration_minutes) {
-        return
-    }
-    
-    // Перевіряємо, чи час завершення некоректний (раніше за час початку)
-    const startDate = new Date(exam.value.start_at)
-    const currentEndDate = exam.value.end_at ? new Date(exam.value.end_at) : null
-    const isInvalid = currentEndDate && currentEndDate <= startDate
-    
-    // Не оновлюємо час завершення, якщо він був змінений вручну І час завершення коректний
-    // Але завжди оновлюємо, якщо час завершення некоректний або це примусове оновлення
-    if (!forceUpdate && !isInvalid && isEndDateManuallyChanged.value) {
-        return
-    }
-    
-    // Якщо час завершення некоректний, скидаємо флаг ручної зміни
-    if (isInvalid) {
-        isEndDateManuallyChanged.value = false
-    }
-    
-    isUpdatingEndDate.value = true
-    try {
-        const durationMs = exam.value.duration_minutes * 60 * 1000
-        const newEndDate = new Date(startDate.getTime() + durationMs)
-        const newEndDateFormatted = formatDateTimeForInput(newEndDate)
-        
-        exam.value.end_at = newEndDateFormatted
-        // Викликаємо валідацію дати завершення без оновлення тривалості (щоб уникнути зациклення)
-        validateEndDate(exam.value.end_at, false)
-    } finally {
-        // Використовуємо nextTick, щоб watch для end_at не спрацював одразу
-        setTimeout(() => {
-            isUpdatingEndDate.value = false
-        }, 10)
-    }
-}
-
-// Оновлення тривалості на основі часу завершення
-function updateDurationFromEndDate() {
-    if (isUpdatingDuration.value || !exam.value.start_at || !exam.value.end_at) {
-        return
-    }
-    
-    // Не оновлюємо тривалість, якщо вона була змінена вручну
-    // Але якщо час завершення був змінений вручну, оновлюємо тривалість (це нормально)
-    if (isDurationManuallyChanged.value && !isEndDateManuallyChanged.value) {
-        return
-    }
-    
-    isUpdatingDuration.value = true
-    try {
-        const startDate = new Date(exam.value.start_at)
-        const endDate = new Date(exam.value.end_at)
-        const durationMs = endDate.getTime() - startDate.getTime()
-        const durationMinutes = Math.floor(durationMs / (60 * 1000))
-        
-        // Якщо час завершення раніше за час початку, це некоректно
-        // У такому випадку не оновлюємо тривалість, а залишаємо як є
-        // (валідація покаже помилку)
-        if (durationMinutes <= 0) {
-            return
-        }
-        
-        // Оновлюємо тривалість, якщо вона відрізняється від поточної
-        const currentDuration = exam.value.duration_minutes || 0
-        if (durationMinutes !== currentDuration) {
-            exam.value.duration_minutes = durationMinutes
-        }
-    } finally {
-        // Використовуємо nextTick, щоб watch для duration_minutes не спрацював одразу
-        setTimeout(() => {
-            isUpdatingDuration.value = false
-        }, 10)
-    }
-}
 
 // Допоміжна функція для перевірки дати завершення в минулому
 function checkEndDateInPast(endDate, now) {
@@ -370,8 +282,10 @@ function clearPastEndDateError() {
 
 // Допоміжна функція для перевірки та виправлення некоректної дати завершення
 function fixInvalidEndDate(startDate, endDate) {
-    if (!isEditMode.value && exam.value.duration_minutes && exam.value.duration_minutes > 0) {
-        updateEndDateFromDuration(true)
+    if (!isEditMode.value) {
+        // Виправляємо дату завершення, встановлюючи мінімальне значення
+        const now = currentTime.value
+        syncEndDateWithStartDate(startDate, endDate, now)
         return true
     }
     endDateError.value = 'Дата та час завершення не можуть бути раніше або дорівнювати часу початку'
@@ -379,8 +293,7 @@ function fixInvalidEndDate(startDate, endDate) {
 }
 
 // Валідація дати завершення
-// updateDuration - чи потрібно оновлювати тривалість на основі часу завершення (за замовчуванням true)
-function validateEndDate(value, updateDuration = true) {
+function validateEndDate(value) {
     if (!value) {
         endDateError.value = null
         return
@@ -406,10 +319,6 @@ function validateEndDate(value, updateDuration = true) {
     }
     
     endDateError.value = null
-    
-    if (!isEditMode.value && updateDuration && !endDateError.value && !isUpdatingDuration.value) {
-        updateDurationFromEndDate()
-    }
 }
 
 // Валідація для числових полів - видаляє нечислові символи та від'ємні числа
@@ -426,7 +335,6 @@ function validatePositiveNumber(field, value) {
     // Якщо після очищення значення порожнє, встановлюємо мінімальне значення
     if (cleanedValue === '') {
         exam.value[field] = field === 'pass_threshold' ? 0 : 1
-        // watch для duration_minutes автоматично викличе updateEndDateFromDuration
         return
     }
     
@@ -436,14 +344,12 @@ function validatePositiveNumber(field, value) {
     // Якщо не число або NaN, встановлюємо мінімальне значення
     if (Number.isNaN(numValue)) {
         exam.value[field] = field === 'pass_threshold' ? 0 : 1
-        // watch для duration_minutes автоматично викличе updateEndDateFromDuration
         return
     }
     
     // Якщо від'ємне число, встановлюємо мінімальне значення
     if (numValue < 0) {
         exam.value[field] = field === 'pass_threshold' ? 0 : 1
-        // watch для duration_minutes автоматично викличе updateEndDateFromDuration
         return
     }
     
@@ -455,7 +361,6 @@ function validatePositiveNumber(field, value) {
     
     // Округлюємо до цілого числа
     exam.value[field] = Math.floor(numValue)
-    // watch для duration_minutes автоматично викличе updateEndDateFromDuration
 }
 
 // Ініціалізація exam - спробуємо завантажити з localStorage, інакше використовуємо значення за замовчуванням
@@ -536,6 +441,9 @@ onMounted(async () => {
                 })
             }
             
+            // Нормалізуємо бали питань, щоб сума дорівнювала точно 100
+            exam.value.questions = normalizeQuestionPoints(exam.value.questions)
+            
             // В режимі редагування не валідуємо дати на предмет того, чи вони в минулому
             // Просто очищаємо можливі помилки
             startDateError.value = null
@@ -590,31 +498,9 @@ watch(() => exam.value.start_at, (newValue) => {
 }, { immediate: false })
 
 // Валідуємо дату завершення при зміні (тільки якщо не завантажуємо зі сховища)
-watch(() => exam.value.end_at, (newValue, oldValue) => {
-    if (newValue && !isLoadingFromStorage.value && !isUpdatingEndDate.value) {
-        // Якщо час завершення змінився не через автоматичне оновлення (isUpdatingEndDate = false),
-        // то це ручна зміна користувача
-        if (oldValue && newValue !== oldValue) {
-            isEndDateManuallyChanged.value = true
-            // Скидаємо флаг ручної зміни тривалості, бо тепер користувач змінює час завершення
-            isDurationManuallyChanged.value = false
-        }
+watch(() => exam.value.end_at, (newValue) => {
+    if (newValue && !isLoadingFromStorage.value) {
         validateEndDate(newValue)
-    }
-})
-
-// Оновлюємо час завершення при зміні тривалості (тільки якщо не завантажуємо зі сховища)
-watch(() => exam.value.duration_minutes, (newValue, oldValue) => {
-    // У режимі редагування не синхронізуємо тривалість та час завершення
-    if (!isEditMode.value && newValue && !isLoadingFromStorage.value && !isUpdatingDuration.value) {
-        // Якщо тривалість змінилася не через автоматичне оновлення (isUpdatingDuration = false),
-        // то це ручна зміна користувача
-        if (oldValue && newValue !== oldValue) {
-            isDurationManuallyChanged.value = true
-            // Скидаємо флаг ручної зміни часу завершення, бо тепер користувач змінює тривалість
-            isEndDateManuallyChanged.value = false
-        }
-        updateEndDateFromDuration()
     }
 })
 
@@ -861,6 +747,9 @@ async function confirmSaveExam() {
     success.value = false
 
     try {
+        // Нормалізуємо бали питань, щоб сума дорівнювала точно 100
+        const normalizedQuestions = normalizeQuestionPoints(exam.value.questions)
+        
         // Підготовка даних для відправки
         const examData = {
             title: exam.value.title,
@@ -871,7 +760,7 @@ async function confirmSaveExam() {
             max_attempts: exam.value.max_attempts,
             pass_threshold: exam.value.pass_threshold,
             course_id: courseId,
-            questions: exam.value.questions.map(q => {
+            questions: normalizedQuestions.map(q => {
                 const questionData = {
                     title: q.title,
                     question_type: q.question_type,

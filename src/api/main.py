@@ -4,7 +4,11 @@ import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import Request
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from src.api.errors.app_errors import install_exception_handlers
+from src.api.services.exam_status_scheduler import update_exam_statuses
 from src.api.services.exams_service import ExamsService
 from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
@@ -25,6 +29,43 @@ from src.core.cloudinary import configure_cloudinary
 from src.models import exam_participants, course_exams, course_supervisors
 from src.api.services.exam_participants_service import ExamParticipantsService
 from src.api.controllers.exam_participants_controller import ExamParticipantsController
+
+
+# Глобальна змінна для scheduler
+scheduler = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager для FastAPI.
+    Запускає scheduler при старті додатку та зупиняє його при завершенні.
+    """
+    global scheduler
+    
+    # Запускаємо scheduler
+    scheduler = BackgroundScheduler()
+    # Запускаємо завдання кожну хвилину для перевірки статусів іспитів
+    scheduler.add_job(
+        update_exam_statuses,
+        trigger=IntervalTrigger(minutes=1),
+        id='update_exam_statuses',
+        name='Update exam statuses from published to open',
+        replace_existing=True
+    )
+    scheduler.start()
+    print("Scheduler started: exam status updates will run every minute")
+    
+    # Запускаємо перевірку статусів одразу при старті
+    update_exam_statuses()
+    print("Initial exam status check completed")
+    
+    yield
+    
+    # Зупиняємо scheduler при завершенні
+    if scheduler:
+        scheduler.shutdown()
+        print("Scheduler stopped")
 
 
 def create_app() -> FastAPI:
@@ -50,6 +91,7 @@ def create_app() -> FastAPI:
         docs_url="/api-docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        lifespan=lifespan,
     )
 
     origins = [
