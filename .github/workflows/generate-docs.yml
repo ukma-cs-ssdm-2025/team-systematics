@@ -56,9 +56,11 @@ jobs:
           cache: 'pip'  # Кешує pip залежності для прискорення
 
       - name: Install dependencies
+        # Використовуємо тільки базові залежності (без ML) для швидшої генерації документації
+        # ML бібліотеки не потрібні для генерації OpenAPI специфікації
         run: |
           python -m pip install --upgrade pip
-          pip install -r requirements.txt
+          pip install -r requirements-base.txt
 
       - name: Generate OpenAPI docs
         # Генерує OpenAPI специфікацію з FastAPI app
