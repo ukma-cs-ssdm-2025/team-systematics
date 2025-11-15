@@ -28,3 +28,32 @@ export async function loginUser(email, password) {
         throw new Error('Помилка входу: не вдалося зв\'язатися з сервером або невідома помилка.')
     }
 }
+
+export async function registerUser(email, password, firstName, lastName, patronymic = null, majorId = null) {
+    try {
+        const response = await http.post('/api/auth/register', {
+            email,
+            password,
+            first_name: firstName,
+            last_name: lastName,
+            patronymic: patronymic || null,
+            major_id: majorId || null,
+        })
+        return response.data
+
+    } catch (error) {
+        if (error.response?.status === 400) {
+            const detail = error.response?.data?.detail || ''
+            if (detail.includes('вже існує') || detail.includes('already exists')) {
+                throw new Error('Користувач з такою електронною поштою вже існує.')
+            }
+            throw new Error(detail || 'Помилка реєстрації. Перевірте введені дані.')
+        }
+        
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+
+        throw new Error('Помилка реєстрації: не вдалося зв\'язатися з сервером або невідома помилка.')
+    }
+}

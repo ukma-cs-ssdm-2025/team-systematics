@@ -19,6 +19,7 @@ import PlagiarismComparisonView from '../views/PlagiarismComparisonView.vue'
 import CreateCourseView from '../views/CreateCourseView.vue'
 import CreateExamView from '../views/CreateExamView.vue'
 import CourseAnalyticsView from '../views/CourseAnalyticsView.vue'
+import RegisterView from '../views/RegisterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -34,6 +35,14 @@ const router = createRouter({
       component: LoginView,
       meta: {
         title: 'Увійти'
+      }
+    },
+    {
+      path: '/register',
+      name: 'Register',
+      component: RegisterView,
+      meta: {
+        title: 'Реєстрація'
       }
     },
     {

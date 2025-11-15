@@ -31,8 +31,8 @@
                 </CButton>
 
                 <div class="register-link-container">
-                    <div class="register-text">Ще не маєте акаунту? <a href="#" class="register-link"
-                            aria-label="Зареєструватися">Зареєструватися</a></div>
+                    <div class="register-text">Ще не маєте акаунту? <router-link to="/register" class="register-link"
+                            aria-label="Зареєструватися">Зареєструватися</router-link></div>
                 </div>
             </form>
         </div>
@@ -43,16 +43,18 @@
 .container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
     width: 100%;
-    gap: 40px;
     margin: 0;
+    padding-top: calc(50vh - 300px);
+    padding-bottom: 120px;
 }
 
 h1 {
     text-align: center;
+    margin: 0;
 }
 
 .login-card {
@@ -69,6 +71,8 @@ h1 {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    height: 180px;
+    margin-bottom: 40px;
 }
 
 #loginForm {
@@ -90,6 +94,7 @@ h1 {
 
 .register-link {
     text-decoration: underline;
+    color: var(--color-white);
 }
 
 .register-link-container {

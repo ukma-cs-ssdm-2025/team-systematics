@@ -7,6 +7,15 @@ class LoginRequest(BaseModel):
     email: EmailStr
     password: str
 
+class RegisterRequest(BaseModel):
+    """Схема для запиту на реєстрацію нового користувача."""
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    patronymic: Optional[str] = None
+    major_id: Optional[int] = None  # Опціональна спеціальність (обов'язкова для студентів, опціональна для інших)
+
 class UserResponse(BaseModel):
     """Схема для відображення публічної інформації про користувача."""
     id: UUID
