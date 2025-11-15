@@ -6,12 +6,14 @@
 #
 # Тригери:
 #   - Push до гілки main (крім комітів від github-actions[bot] для запобігання циклічним оновленням)
+#   - Pull Request до main (для тестування перед мерджем)
+#   - Ручний запуск через workflow_dispatch (для тестування)
 #
 # Що робить:
 #   1. Встановлює Python 3.11 та залежності
 #   2. Генерує OpenAPI YAML файл через src.api.export-openapi
 #   3. Створює PR з оновленнями документації
-#   4. Автоматично мерджить PR (squash merge)
+#   4. Автоматично мерджить PR (squash merge) - тільки при push до main
 #
 # Змінні середовища:
 #   - DATABASE_URL: використовує in-memory SQLite для генерації (не потрібна реальна БД)
@@ -26,6 +28,10 @@ on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Дозволяє запускати workflow вручну з GitHub UI
 
 permissions:
   contents: write
@@ -34,7 +40,8 @@ permissions:
 jobs:
   build:  
     # Запобігає циклічним оновленням: не запускається для комітів від бота
-    if: github.actor != 'github-actions[bot]'
+    # При ручному запуску (workflow_dispatch) або pull_request також працює
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     
     runs-on: ubuntu-latest
     
@@ -81,5 +88,6 @@ jobs:
           
           labels: automerge, documentation
           assignees: allyxandraaa
-          auto-merge: true  # Автоматичний merge після проходження checks
+          # Автоматичний merge тільки при push до main, не при ручному запуску або pull_request
+          auto-merge: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
           merge-method: squash  # Squash merge для чистої історії

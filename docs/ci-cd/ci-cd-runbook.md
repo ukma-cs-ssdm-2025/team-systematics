@@ -19,7 +19,7 @@
 | Workflow | Призначення | Тригери | Статус |
 |----------|-------------|---------|--------|
 | **run-api-test.yml** | Запуск автоматичних тестів API<br/>• `test-unit`: швидкі тести без ML<br/>• `test-ml`: тести з ML (тільки на main) | Push, PR до main | ✅ Активний |
-| **generate-docs.yml** | Генерація OpenAPI документації<br/>(використовує requirements-base.txt) | Push до main | ✅ Активний |
+| **generate-docs.yml** | Генерація OpenAPI документації<br/>(використовує requirements-base.txt) | Push до main, PR до main, Manual | ✅ Активний |
 | **deploy-docs.yml** | Деплой документації на GitHub Pages | Push до main (тільки docs/api/) | ✅ Активний |
 | **sonarcloud.yml** | Статичний аналіз коду | Push, PR до main | ✅ Активний |
 | **uml-render.yml** | Генерація UML діаграм | Push, PR до main (тільки .puml файли) | ✅ Активний |
@@ -135,7 +135,9 @@
 **Призначення:** Автоматична генерація OpenAPI специфікації з FastAPI додатку та оновлення документації.
 
 **Тригери:**
-- Push до гілки `main`
+- Push до гілки `main` (автоматичний merge PR)
+- Pull Request до гілки `main` (для тестування перед мерджем, без автоматичного merge)
+- Ручний запуск через `workflow_dispatch` (для тестування, без автоматичного merge)
 - ⚠️ Не запускається для комітів від `github-actions[bot]` (запобігає циклічним оновленням)
 
 **Процес виконання:**
@@ -144,7 +146,7 @@
 3. Встановлення базових залежностей з `requirements-base.txt` (без ML бібліотек)
 4. Генерація OpenAPI YAML через `python -m src.api.export-openapi`
 5. Створення Pull Request з оновленнями
-6. Автоматичний merge PR (squash merge)
+6. Автоматичний merge PR (squash merge) - **тільки при push до main**
 
 **Змінні середовища:**
 - `DATABASE_URL`: `sqlite:///:memory:` (не потрібна реальна БД)
@@ -160,8 +162,14 @@
 
 **Особливості:**
 - Автоматично створює PR з міткою `automerge` та `documentation`
-- PR автоматично мерджиться після проходження checks
+- PR автоматично мерджиться після проходження checks **тільки при push до main**
+- При `pull_request` або `workflow_dispatch` PR створюється, але не мерджиться автоматично (дозволяє перевірити зміни)
 - Гілка `openapi-auto-update` видаляється після мерджу
+
+**Тестування:**
+- Можна протестувати workflow без push в main через:
+  1. Створення PR до main (workflow запуститься автоматично)
+  2. Ручний запуск через GitHub Actions UI (кнопка "Run workflow")
 
 ---
 
