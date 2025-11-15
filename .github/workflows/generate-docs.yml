@@ -1,9 +1,37 @@
+# Workflow: Generate and Auto-Merge API Docs
+# 
+# Призначення:
+#   Автоматично генерує OpenAPI специфікацію з FastAPI додатку та створює PR з оновленнями.
+#   PR автоматично мерджиться для підтримки документації в актуальному стані.
+#
+# Тригери:
+#   - Push до гілки main (крім комітів від github-actions[bot] для запобігання циклічним оновленням)
+#   - Pull Request до main (для тестування перед мерджем)
+#   - Ручний запуск через workflow_dispatch (для тестування)
+#
+# Що робить:
+#   1. Встановлює Python 3.11 та залежності
+#   2. Генерує OpenAPI YAML файл через src.api.export-openapi
+#   3. Створює PR з оновленнями документації
+#   4. Автоматично мерджить PR (squash merge) - тільки при push до main
+#
+# Змінні середовища:
+#   - DATABASE_URL: використовує in-memory SQLite для генерації (не потрібна реальна БД)
+#   - JWT_SECRET: дефолтне значення з config.py для коректної роботи app
+#
+# Результат:
+#   Оновлений файл docs/api/openapi-generated.yaml в main гілці
+
 name: Generate and Auto-Merge API Docs
 
 on:
   push:
     branches:
       - main
+  pull_request:
+    branches:
+      - main
+  workflow_dispatch:  # Дозволяє запускати workflow вручну з GitHub UI
 
 permissions:
   contents: write
@@ -11,9 +39,19 @@ permissions:
 
 jobs:
   build:  
-    if: github.actor != 'github-actions[bot]'
+    # Запобігає циклічним оновленням: не запускається для комітів від бота
+    # При ручному запуску (workflow_dispatch) або pull_request також працює
+    if: github.actor != 'github-actions[bot]' || github.event_name == 'workflow_dispatch' || github.event_name == 'pull_request'
     
     runs-on: ubuntu-latest
+    
+    # Змінні середовища для коректної роботи FastAPI app під час генерації OpenAPI
+    env:
+      DATABASE_URL: "sqlite:///:memory:"  # In-memory БД, не потрібна реальна
+      JWT_SECRET: "supersecretkey"  # Дефолтне значення з config.py
+      JWT_ALGORITHM: "HS256"
+      JWT_EXPIRATION_MINUTES: "60"
+    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -22,14 +60,22 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
+          cache: 'pip'  # Кешує pip залежності для прискорення
 
       - name: Install dependencies
-        run: pip install -r requirements.txt
+        # Використовуємо тільки базові залежності (без ML) для швидшої генерації документації
+        # ML бібліотеки не потрібні для генерації OpenAPI специфікації
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements-base.txt
 
       - name: Generate OpenAPI docs
+        # Генерує OpenAPI специфікацію з FastAPI app
         run: python -m src.api.export-openapi
+        continue-on-error: false
 
       - name: Create and Auto-Merge Pull Request
+        # Створює PR з оновленнями та автоматично мерджить його
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
@@ -37,10 +83,11 @@ jobs:
           title: "[AUTO] Update OpenAPI Documentation"
           body: "OpenAPI specification file was automatically updated. This PR will be auto-merged."
           branch: openapi-auto-update
-          delete-branch: true
+          delete-branch: true  # Видаляє гілку після мерджу
           base: main
           
           labels: automerge, documentation
           assignees: allyxandraaa
-          auto-merge: true
-          merge-method: squash
+          # Автоматичний merge тільки при push до main, не при ручному запуску або pull_request
+          auto-merge: ${{ github.event_name == 'push' && github.ref == 'refs/heads/main' }}
+          merge-method: squash  # Squash merge для чистої історії
