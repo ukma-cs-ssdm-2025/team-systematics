@@ -22,7 +22,7 @@ from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
 from src.core.cloudinary import configure_cloudinary
-from src.models import exam_participants, course_exams
+from src.models import exam_participants, course_exams, course_supervisors
 from src.api.services.exam_participants_service import ExamParticipantsService
 from src.api.controllers.exam_participants_controller import ExamParticipantsController
 
@@ -38,6 +38,7 @@ def create_app() -> FastAPI:
     user_majors.Base.metadata.create_all(bind=engine)
     attempts.Base.metadata.create_all(bind=engine)
     course_exams.Base.metadata.create_all(bind=engine)
+    course_supervisors.Base.metadata.create_all(bind=engine)
     exam_participants.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(

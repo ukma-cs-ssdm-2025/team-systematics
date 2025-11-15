@@ -9,6 +9,7 @@ from src.models.courses import Course
 from src.api.repositories.user_repository import UserRepository
 from src.api.errors.app_errors import NotFoundError, ForbiddenError
 from src.models.users import User
+from src.models.course_supervisors import CourseSupervisor
 from src.api.services.exams_service import ExamsService
 
 SUPERVISOR_ONLY = "Доступ дозволений лише наглядачам"
@@ -105,14 +106,27 @@ class CoursesService:
         roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
-        return CoursesRepository(db).list_with_stats_for_supervisor(**filters)
+        return CoursesRepository(db).list_with_stats_for_supervisor(supervisor_id=current_user.id, **filters)
 
     def get_course_details_for_supervisor(self, db: Session, current_user: User, course_id: UUID):
         roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
 
-        result = CoursesRepository(db).get_course_participants_for_supervisor(course_id)
+        # Перевіряємо, чи наглядач прив'язаний до цього курсу
+        repo = CoursesRepository(db)
+        course_supervisor = (
+            db.query(CourseSupervisor)
+            .filter(
+                CourseSupervisor.course_id == course_id,
+                CourseSupervisor.supervisor_id == current_user.id
+            )
+            .first()
+        )
+        if not course_supervisor:
+            raise ForbiddenError("Ви не маєте доступу до цього курсу")
+
+        result = repo.get_course_participants_for_supervisor(course_id)
         if not result:
             raise NotFoundError("Курс не знайдено")
         if not result["students"] and not result["teachers"]:
