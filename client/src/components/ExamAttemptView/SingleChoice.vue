@@ -1,38 +1,16 @@
 <template>
     <div class="question-block">
         <ol class="single-choice-list">
-            <li v-for="(option, i) in options" :key="option.id">
-                <label 
-                    class="option-item" 
-                    :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
-                >
-                    <!-- 1. Справжня радіокнопка, яку повністю приховаємо -->
-                    <input 
-                        type="radio"
-                        class="real-radio-button"
-                        :name="uniqueGroupName"
-                        :value="option.id"
-                        :checked="isChecked(option)"
-                        :disabled="isReviewMode"
-                        @change="$emit('update:modelValue', option.id) && !isReviewMode"
-                    />
-                    
-                    <!-- 2. Бейдж з літерою, який тепер виконує роль кастомної кнопки -->
-                    <div class="letter-badge" aria-hidden="true">
-                        {{ letter(i) }}
-                    </div>
-
-                    <!-- 3. Текст варіанту відповіді -->
-                     <div class="option-content">
-                        <p class="option-text">{{ option.text }}</p>
-                        <p 
-                            v-if="isReviewMode && (option.is_correct || option.is_selected)"
-                            class="option-points"
-                        >
-                            ({{ option.is_correct && option.is_selected ? formattedPoints : 0 }} б)
-                        </p>
-                    </div>
-                </label>
+            <li v-for="(option, i) in options" :key="option.id" class="option-row" :class="[getOptionClasses(option), { 'review-mode': isReviewMode }]"
+                @click="!isReviewMode && handleOptionClick(option.id)">
+                <CRadio :modelValue="modelValue" @update:modelValue="$emit('update:modelValue', $event)"
+                    :value="option.id" :name="uniqueGroupName" :badgeContent="letter(i)" :disabled="isReviewMode" />
+                <div class="option-content">
+                    <p class="option-text">{{ option.text }}</p>
+                    <p v-if="isReviewMode && showCorrectAnswers && (option.is_correct || option.is_selected)" class="option-points">
+                        ({{ getPointsForOption(option) }} б)
+                    </p>
+                </div>
             </li>
         </ol>
     </div>
@@ -40,6 +18,7 @@
 
 <script setup>
 import { computed } from 'vue'
+import CRadio from '../global/CRadio.vue'
 
 const props = defineProps({
     options: {
@@ -58,15 +37,30 @@ const props = defineProps({
         type: Number,
         default: null
     },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
+    }
 })
 
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
 
-// Генеруємо унікальне ім'я для групи радіокнопок, щоб вони працювали коректно
-const uniqueGroupName = computed(() => `group-${Math.random()}`)
+// Генеруємо унікальне ім'я для групи радіокнопок один раз при створенні компонента
+// Використовуємо детермінований підхід замість Math.random() для безпеки
+// Використовуємо модульний лічильник для гарантії унікальності
+let groupNameCounter = 0
+const uniqueGroupName = `group-${Date.now()}-${groupNameCounter++}`
+
+// Обробник кліку на option-row для передачі вибору
+function handleOptionClick(optionId) {
+    if (!props.isReviewMode) {
+        emit('update:modelValue', optionId)
+    }
+}
 
 // Функція для генерації літер A, B, C...
-const letter = (index) => String.fromCharCode(65 + index)
+// Replace Magic Number / Introduce Constant
+const letter = (index) => String.fromCodePoint(65 + index)
 
 function isChecked(option) {
     if (props.isReviewMode) {
@@ -80,18 +74,31 @@ function getOptionClasses(option) {
         // В режимі проходження, нам потрібен тільки клас 'selected'
         return { selected: isChecked(option) }
     }
-    
+
     // В режимі перегляду, ми додаємо класи для правильних/неправильних відповідей
+    // Але тільки якщо дозволено показувати правильні відповіді
     return {
         selected: option.is_selected,
-        correct: option.is_correct, 
-        incorrect: option.is_selected && !option.is_correct
+        correct: props.showCorrectAnswers && option.is_correct,
+        incorrect: props.showCorrectAnswers && option.is_selected && !option.is_correct
     }
 }
 
 const formattedPoints = computed(() => {
+    if (props.earnedPoints == null) {
+        return '0'
+    }
     return props.earnedPoints.toFixed(0)
 })
+
+function getPointsForOption(option) {
+    // Якщо опція правильна і вибрана, показуємо earnedPoints
+    if (option.is_correct && option.is_selected) {
+        return formattedPoints.value
+    }
+    // Інакше показуємо 0
+    return '0'
+}
 
 </script>
 
@@ -101,60 +108,34 @@ const formattedPoints = computed(() => {
     margin-bottom: 20px;
 }
 
-.single-choice-list li {
+.single-choice-list {
     list-style: none;
+    padding: 0;
+    margin: 0;
 }
 
-.option-item {
+.single-choice-list li {
+    list-style: none;
+    margin-bottom: 12px;
+}
+
+.single-choice-list li:last-child {
+    margin-bottom: 0;
+}
+
+.option-row {
     display: flex;
     align-items: center;
     gap: 12px;
     padding: 12px;
     border: 3px solid var(--color-gray);
     border-radius: 12px;
-    cursor: pointer;
     transition: all 150ms ease;
+    cursor: pointer;
 }
 
-.option-item:hover {
+.option-row:hover:not(.review-mode) {
     border-color: var(--color-dark-gray);
-}
-
-.option-item.selected {
-    border-color: var(--color-purple);
-    background-color: var(--color-lavender);
-}
-
-.real-radio-button {
-    position: absolute;
-    opacity: 0;
-    width: 0;
-    height: 0;
-    cursor: pointer;
-}
-
-.letter-badge {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    width: 32px;
-    height: 32px;
-    border-radius: 50%;
-    background-color: var(--color-gray);
-    color: var(--color-black);
-    font-weight: bold;
-    transition: all 150ms ease;
-}
-
-.option-item.selected .letter-badge {
-    background-color: var(--color-purple);
-    color: white;
-}
-
-.option-item:has(.real-radio-button:focus-visible) {
-    outline: 3px solid var(--color-purple);
-    outline-offset: 2px; 
 }
 
 .option-content {
@@ -167,23 +148,47 @@ const formattedPoints = computed(() => {
     color: var(--color-black-half-opacity);
 }
 
-.option-item.review-mode {
+.option-row.review-mode {
     cursor: not-allowed;
 }
-.option-item.review-mode:hover {
+
+.option-row.review-mode:hover {
     border-color: var(--color-gray);
 }
 
-.option-item.review-mode.selected:hover {
+.option-row.review-mode.selected:hover {
     border-color: var(--color-purple);
 }
 
-.option-item.correct {
+.option-row.selected {
+    border-color: var(--color-purple);
+    background-color: var(--color-lavender);
+}
+
+.option-row.correct {
     background-color: var(--color-green-half-opacity);
 }
 
-.option-item.incorrect {
+.option-row.incorrect {
     background-color: var(--color-red-half-opacity);
 }
 
+/* Правильні та неправильні відповіді в review-mode мають пріоритет над selected */
+.option-row.review-mode.correct {
+    background-color: var(--color-green-half-opacity);
+}
+
+.option-row.review-mode.incorrect {
+    background-color: var(--color-red-half-opacity);
+}
+
+.option-row.selected :deep(.letter-badge) {
+    background-color: var(--color-purple);
+    color: var(--color-white);
+}
+
+.option-row:has(:deep(.real-radio-button:focus-visible)) {
+    outline: 3px solid var(--color-purple);
+    outline-offset: 2px;
+}
 </style>

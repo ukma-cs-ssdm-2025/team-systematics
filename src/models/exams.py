@@ -1,10 +1,12 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, Integer, ForeignKey, Enum as SQLAlchemyEnum, Boolean, TIMESTAMP
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 from src.api.database import Base
 from src.models.matching_options import MatchingOption 
 import enum
+
+CASCADE_ALL_DELETE_ORPHAN = "all, delete-orphan"
 
 class QuestionType(str, enum.Enum):
     single_choice = "single_choice"
@@ -23,6 +25,12 @@ class QuestionTypeWeight(Base):
     )
     weight = Column(Integer, nullable=False, default=1)
 
+class ExamStatusEnum(str, enum.Enum):
+    draft = "draft"
+    published = "published"
+    open = "open"
+    closed = "closed"
+
 class Exam(Base):
     __tablename__ = "exams"
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -33,12 +41,19 @@ class Exam(Base):
     duration_minutes = Column(Integer, nullable=False, default=60)
     max_attempts = Column(Integer, default=1)
     pass_threshold = Column(Integer, default=60)
+    question_count = Column(Integer, nullable=False, default=0)
+    status = Column(SQLAlchemyEnum(
+        ExamStatusEnum,
+        name="exam_status_enum",
+        create_type=False
+    ), nullable=False, default=ExamStatusEnum.draft)
     
     owner_id = Column(UUID(as_uuid=True), ForeignKey("users.id"), nullable=False)
     owner = relationship("User")
     
-    questions = relationship("Question", back_populates="exam", cascade="all, delete-orphan")
-    attempts = relationship("Attempt", back_populates="exam")
+    questions = relationship("Question", back_populates="exam", cascade=CASCADE_ALL_DELETE_ORPHAN)
+    attempts = relationship("Attempt", back_populates="exam", cascade="all, delete-orphan")
+    courses = relationship("Course", secondary="course_exams", back_populates="exams")
 
 class Question(Base):
     __tablename__ = "questions"
@@ -50,11 +65,12 @@ class Question(Base):
     position = Column(Integer, default=0)
     
     exam = relationship("Exam", back_populates="questions")
-    options = relationship("Option", back_populates="question", cascade="all, delete-orphan")
+    options = relationship("Option", back_populates="question", cascade=CASCADE_ALL_DELETE_ORPHAN)
     matching_options = relationship("MatchingOption", 
                                     foreign_keys=[MatchingOption.question_id], 
                                     primaryjoin="Question.id == MatchingOption.question_id",
-                                    cascade="all, delete-orphan")
+                                    cascade=CASCADE_ALL_DELETE_ORPHAN)
+
 
 class Option(Base):
     __tablename__ = "options"

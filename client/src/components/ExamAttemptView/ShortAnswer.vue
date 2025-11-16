@@ -12,21 +12,21 @@
             <div 
                 class="student-answer"
                 :class="{
-                    'correct': isCorrect,
-                    'incorrect': !isCorrect && questionData.student_answer_text !== null
+                    'correct': showCorrectAnswers && isCorrect,
+                    'incorrect': showCorrectAnswers && !isCorrect && questionData.student_answer_text !== null
                 }"
             >
                 <div class="answer-content">
                     <span class="answer-text">
                         {{ questionData.student_answer_text }}
                     </span>
-                    <span class="answer-points">
+                    <span v-if="showCorrectAnswers" class="answer-points">
                         ({{ isCorrect ? formattedPoints : 0 }} б)
                     </span>
                 </div>
             </div>
         
-            <div v-if="!isCorrect" class="correct-answer">
+            <div v-if="showCorrectAnswers && !isCorrect && questionData.correct_answer_text" class="correct-answer">
                 <strong>Правильна відповідь:</strong> {{ questionData.correct_answer_text }}
             </div>
         </div>
@@ -52,6 +52,10 @@ const props = defineProps({
     questionData: { 
         type: Object, 
         default: () => ({}) 
+    },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
     }
 })
 
@@ -60,8 +64,8 @@ const emit = defineEmits(['update:modelValue'])
 function handleInput(event) {
     let value = event.target.value
     if (props.inputType === 'number') {
-        const parsedValue = parseFloat(value)
-        if (value.trim() !== '' && !isNaN(parsedValue)) {
+        const parsedValue = Number.parseFloat(value)
+        if (value.trim() !== '' && !Number.isNaN(parsedValue)) {
             value = parsedValue
         }
     }
@@ -73,7 +77,13 @@ const isCorrect = computed(() => {
 })
 
 const formattedPoints = computed(() => {
-    return props.questionData.earned_points.toFixed(0)
+    // 1. Використовуємо опціональний ланцюжок (?.) на випадок відсутності questionData
+    // 2. Перевіряємо, що earned_points є числом
+    if (typeof props.questionData?.earned_points === 'number') {
+        return props.questionData.earned_points.toFixed(0)
+    }
+    // 3. Повертаємо безпечне значення за замовчуванням
+    return '0';
 })
 
 </script>

@@ -1,9 +1,30 @@
+# Workflow: Generate PlantUML Diagrams
+#
+# Призначення:
+#   Генерує SVG діаграми з PlantUML (.puml) файлів для документації архітектури.
+#   Конвертує текстові UML діаграми у візуальні зображення.
+#
+# Тригери:
+#   - Push до main
+#   - Pull Request до main (тільки при змінах в .puml файлах)
+#
+# Що робить:
+#   1. Читає .puml файли з docs/architecture/uml/
+#   2. Генерує SVG зображення через PlantUML
+#   3. Зберігає результати в docs/architecture/uml/uml-svgs/
+#
+# Результат:
+#   SVG файли UML діаграм для документації
+
 name: generate plantuml
 on:
   push:
     branches:
-      - allyxandraaa/add-uml-diagrams
-      - allyxandraaa/change-generate-puml-workflow
+      - main
+  pull_request:
+    branches: [ main ]
+    paths:
+      - 'docs/architecture/uml/**/*.puml'  # Запускається при змінах в PlantUML файлах
 jobs:
   generate_plantuml:
     runs-on: ubuntu-latest
@@ -12,9 +33,10 @@ jobs:
       - name: checkout
         uses: actions/checkout@v2
       - name: plantuml
+        # Генерує SVG з PlantUML файлів
         id: plantuml
         uses: grassedge/generate-plantuml-action@master
         with:
-          path: docs/architecture/uml/uml-svgs
+          path: docs/architecture/uml/uml-svgs  # Вихідна директорія для результатів
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Потрібно для коміту результатів

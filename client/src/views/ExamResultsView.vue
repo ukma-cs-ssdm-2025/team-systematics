@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження результатів...
@@ -59,6 +60,7 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import { getExamAttemptResults } from '../api/attempts.js'
 import Tooltip from '../components/global/CTooltip.vue'
@@ -91,7 +93,6 @@ onMounted(async () => {
     try {
         const data = await getExamAttemptResults(attemptId)
         results.value = data
-        console.log(data)
         document.title = `Результати ${data.exam_title} | Systematics`
     } catch (err) {
         error.value = "Не вдалося завантажити результати."
@@ -111,7 +112,12 @@ const formattedTimeSpent = computed(() => {
 })
 
 function viewAnswers() {
-    router.push(`/exam/${attemptId}/review`)
+    // Зберігаємо examId з query параметрів для breadcrumbs
+    const examId = route.query.examId
+    router.push({ 
+        path: `/exam/${attemptId}/review`,
+        query: examId ? { examId } : {}
+    })
 }
 </script>
 

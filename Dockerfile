@@ -19,6 +19,9 @@ RUN npm run build
 # Build the Final Production Image ----
 FROM python:3.11-slim
 
+# 1) створити non-root користувача
+RUN groupadd -g 10001 app && useradd -r -u 10001 -g app app
+
 WORKDIR /app
 
 # Python looks in app directory
@@ -29,9 +32,12 @@ COPY requirements.txt requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy Python source code from the src directory into the container.
-COPY src/ ./src/
+COPY --chown=root:root --chmod=0555 src/ /app/src/
 
-COPY --from=builder /app/client/dist /app/client/dist
+COPY --from=builder --chown=root:root --chmod=0555 /app/client/dist /app/client/dist
+
+# запустити від non-root
+USER app
 
 EXPOSE 3000
 

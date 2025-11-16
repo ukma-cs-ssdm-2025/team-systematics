@@ -1,17 +1,16 @@
-[![Open in Codespaces](https://classroom.github.com/assets/launch-codespace-2972f46106e565e64193e422d61a12cf1da4916b45550586e14ef0a7c637dd04.svg)](https://classroom.github.com/open-in-codespaces?assignment_repo_id=20518032)
+[![CI Test](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml) [![API Tests](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/run-api-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/run-api-test.yml) [![Generate Docs](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/generate-docs.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/generate-docs.yml) [![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=ukma-cs-ssdm-2025_team-systematics&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=ukma-cs-ssdm-2025_team-systematics)
 
 # Платформа онлайн-іспитів
-[![CI Test](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml/badge.svg)](https://github.com/ukma-cs-ssdm-2025/team-systematics/actions/workflows/ci-test.yml)
 
 Розроблений командою _Systematics_, проєкт передбачає створення платформи для проведення онлайн-іспитів на базі веб-застосунку, що забезпечує __підтримку різних типів завдань, організацію сесій із обмеженням у часі та інструменти для виявлення плагіату__. Система передбачає ролі студента, викладача та наглядача, надає інструменти для автоматичного оцінювання, формування звітів, контролю доброчесності.
 
 ## Наші учасники:
-| Прізвище Ім'я           | GitHub                                                 | Ролі
-| ----------------------- | ------------------------------------------------------ |---------------------|
-| Малій Олександра        | [@allyxandraaa](https://github.com/allyxandraaa)       | Debugger            |
-| Фломбойм Мирослава      | [@MyroslavaFlom](https://github.com/MyroslavaFlom)     | QA Planner          |
-| Колінько Владислава     | [@SlavaKolinko](https://github.com/SlavaKolinko)       | Test Lead           |
-| Бакалина Анастасія      | [@bakalynaa](https://github.com/bakalynaa)             | Integration Lead    |
+| Прізвище Ім'я        | GitHub                                             | Ролі
+| ---------------------| ---------------------------------------------------|----------------------|
+| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Reliability Explorer |
+| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Risk Documentarian   |
+| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Resilience Engineer  |
+| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Fault Classifier     |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
@@ -40,6 +39,11 @@
  - [Прогрес розробки](/docs/code-quality/progress.md)
  - [Рев'ю коду](/docs/code-quality/review-report.md)
  - [Статичний аналіз бекенду](/docs/code-quality/static-analysis.md)
+
+ **Рефакторинг**
+ - [Стан коду до](/docs/refactoring/screen_after.jpg)
+ - [Стан коду після](/docs/refactoring/screen_before.jpg)
+ - [Звіт про рефакторинг](/docs/refactoring/sonarcloud-report.md)
 
  **Вимоги**
  - [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
@@ -92,6 +96,16 @@ DB_PORT=5432
 POSTGRES_DB=${DB_NAME}
 POSTGRES_USER=${DB_USER}
 POSTGRES_PASSWORD=${DB_PASSWORD}
+
+CLOUDINARY_CLOUD_NAME=dsiiuchan
+CLOUDINARY_API_KEY=394654662846574
+CLOUDINARY_API_SECRET=Mf5wPAIS_e_aQpSTCSAmy3LZmHg
+
+SMTP_HOST="smtp.gmail.com"
+SMTP_PORT=587
+SMTP_USER="t.systematics@gmail.com"
+SMTP_PASSWORD="prib hrjf azlh xkcv"
+SMTP_FROM="t.systematics@gmail.com"
 ```
 
 ### 2. Активувати  віртуальне середовище Python
@@ -108,4 +122,13 @@ docker compose up --build
 ### 3. Запустити сервер за посиланням
 ```bash
 http://localhost:3000/
+```
+
+### 4. Запустити тести
+``` bash
+pytest tests
+```
+- подивитись покриття
+``` bash
+pytest -q
 ```

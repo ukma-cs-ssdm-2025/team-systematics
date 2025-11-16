@@ -1,6 +1,7 @@
     <template>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження іспиту...
@@ -30,7 +31,7 @@
                             </CButton>
                         </div>
                         <div class="exam-timer">
-                            <CTimer :durationMinutes="durationMinutes" :startedAt="startedAt" @time-up="finalizeAndLeave" />
+                            <CTimer :durationMinutes="durationMinutes" :startedAt="startedAt" :dueAt="dueAt" @time-up="finalizeAndLeave" />
                         </div>
                     </div>
                 </div>
@@ -41,13 +42,20 @@
                     disclaimer="Ви не зможете повернутися до тестування після завершення." fstButton="Завершити"
                     sndButton="Скасувати" @fstAction="finalizeAndLeave" @sndAction="cancelLeave" />
             </div>
+
+            <div class="leave-test-popup" v-if="isRemovedPopupVisible">
+                <CPopup :visible="isRemovedPopupVisible" header="Вас було видалено з іспиту"
+                    :disclaimer="removedMessage" fstButton="Зрозуміло"
+                    fst-button-variant="red" @fstAction="handleRemovedConfirm" />
+            </div>
         </main>
     </template>
 
     <script setup>
-    import { onMounted, ref, computed } from 'vue'
+    import { onMounted, onUnmounted, ref, computed } from 'vue'
     import { useRoute, useRouter, onBeforeRouteLeave } from 'vue-router'
     import Header from '../components/global/Header.vue'
+    import Breadcrumbs from '../components/global/Breadcrumbs.vue'
     import CButton from '../components/global/CButton.vue'
     import QuestionDisplay from '../components/ExamAttemptView/QuestionDisplay.vue'
     import CPopup from '../components/global/CPopup.vue'
@@ -84,6 +92,10 @@
     const isPopupVisible = ref(false)
     let resolveNavigation = null
 
+    // Попап про видалення з іспиту
+    const isRemovedPopupVisible = ref(false)
+    const removedMessage = ref('')
+
     function cancelLeave() {
         isPopupVisible.value = false
         if (resolveNavigation) {
@@ -106,6 +118,53 @@
     })
 
 
+    async function refreshAttemptDetails() {
+        try {
+            const data = await getExamAttemptDetails(attemptId)
+            // Оновлюємо тільки dueAt, щоб таймер реагував на зміни
+            if (data.due_at) {
+                dueAt.value = data.due_at
+            }
+            // Перевіряємо, чи статус змінився несподівано (студента видалили)
+            if (data.status) {
+                const oldStatus = status.value
+                status.value = data.status
+                
+                // Якщо статус змінився з 'in_progress' на 'completed' або 'submitted' несподівано
+                if (oldStatus === 'in_progress' && (data.status === 'completed' || data.status === 'submitted')) {
+                    // Перевіряємо, чи це не було завершення через таймер або самостійне завершення
+                    // Якщо попап про завершення не був показаний, значить студента видалили
+                    if (!isPopupVisible.value) {
+                        showRemovedPopup(data.exam_title || examTitle.value)
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Помилка оновлення даних спроби:', err)
+            // Якщо отримуємо помилку 404 або 403, можливо студента видалили
+            if (err?.response?.status === 404 || err?.response?.status === 403) {
+                showRemovedPopup(examTitle.value)
+            }
+        }
+    }
+
+    function showRemovedPopup(examTitleText) {
+        removedMessage.value = `Вас було видалено з іспиту "${examTitleText}". Ваша спроба була автоматично завершена.`
+        isRemovedPopupVisible.value = true
+        // Блокуємо інтерфейс
+        loading.value = true
+    }
+
+    function handleRemovedConfirm() {
+        isRemovedPopupVisible.value = false
+        // Перенаправляємо на сторінку результатів або головну
+        if (attemptId) {
+            router.push(`/exams-results/${attemptId}`)
+        } else {
+            router.push('/')
+        }
+    }
+
     onMounted(async () => {
         if (!attemptId) {
             error.value = "Помилка: Відсутній ID спроби."
@@ -127,16 +186,35 @@
             const savedIndex = localStorage.getItem(localStorageKey)
             if (savedIndex) {
                 // Перетворюємо рядок з localStorage назад в число
-                const parsedIndex = parseInt(savedIndex, 10)
+                const parsedIndex = Number.parseInt(savedIndex, 10)
                 // Перевіряємо, чи індекс валідний (на випадок зміни кількості питань)
                 if (parsedIndex < questionsList.value.length) {
                     currentQuestionIndex.value = parsedIndex
                 }
             }
 
+            // Оновлюємо дані спроби кожні 5 секунд, щоб таймер швидко реагував на зміни часу від наглядача
+            const refreshInterval = setInterval(() => {
+                if (status.value === 'in_progress') {
+                    refreshAttemptDetails()
+                } else {
+                    clearInterval(refreshInterval)
+                }
+            }, 5000) // 5 секунд
+
+            // Очищаємо інтервал при розмонтуванні компонента
+            onUnmounted(() => {
+                clearInterval(refreshInterval)
+            })
+
         } catch (err) {
             console.error(err)
-            error.value = "Не вдалося завантажити дані іспиту. Спробуйте пізніше."
+            // Перевіряємо, чи студента видалили (404 або 403)
+            if (err?.response?.status === 404 || err?.response?.status === 403) {
+                showRemovedPopup('іспиту')
+            } else {
+                error.value = "Не вдалося завантажити дані іспиту. Спробуйте пізніше."
+            }
         } finally {
             loading.value = false
         }
@@ -174,7 +252,12 @@
 
         } catch (err) {
             console.error(err)
-            alert("Помилка збереження відповіді. Будь ласка, перевірте з'єднання та спробуйте ще раз.")
+            // Перевіряємо, чи студента видалили під час збереження
+            if (err?.response?.status === 404 || err?.response?.status === 403) {
+                showRemovedPopup(examTitle.value)
+            } else {
+                alert("Помилка збереження відповіді. Будь ласка, перевірте з'єднання та спробуйте ще раз.")
+            }
         } finally {
             isSaving.value = false
         }

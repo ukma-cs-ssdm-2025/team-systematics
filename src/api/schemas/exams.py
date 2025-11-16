@@ -1,8 +1,34 @@
 from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
-from datetime import datetime
-from pydantic import BaseModel, Field, conint, constr, validator
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, conint, constr, validator, model_validator
+from src.models.exams import ExamStatusEnum
+
+DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
+DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретичних питань."
+EXAMPLE_TITLE = "Вступ до Docker"
+EXAM_DURATION_DESCRIPTION = "Duration of the exam in minutes"
+
+def datetime_must_not_be_in_past(cls, v):
+    """Перевіряє, що дата/час не в минулому відносно поточного часу.
+
+    Args:
+        v: Значення поля datetime, яке проходить валідацію.
+
+    Returns:
+        Не змінене значення, якщо валідація успішна.
+
+    Raises:
+        ValueError: Якщо дата/час в минулому.
+    """
+    if v:
+        now = datetime.now(timezone.utc)
+        # Якщо datetime не має timezone, вважаємо його UTC
+        v_with_tz = v.replace(tzinfo=timezone.utc) if v.tzinfo is None else v
+        if v_with_tz < now:
+            raise ValueError("Дата та час не можуть бути в минулому")
+    return v
 
 def end_at_must_be_after_start_at(cls, v, values):
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
@@ -23,15 +49,15 @@ def end_at_must_be_after_start_at(cls, v, values):
     return v
 
 class ExamCreate(BaseModel):
-    title: constr(min_length=3, max_length=100) = Field(
+    title: constr(min_length=3, max_length=100) = Field( # type: ignore
         ...,
         description="Exam title",
-        example="Вступ до Docker"
+        example=EXAMPLE_TITLE,
     )
-    instructions: Optional[constr(max_length=2000)] = Field(
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
-        example="Іспит складається з 20 теоретичних питань."
+        example=DEFAULT_INSTRUCTIONS
     )
     start_at: datetime = Field(
         ...,
@@ -40,40 +66,41 @@ class ExamCreate(BaseModel):
     )
     end_at: datetime = Field(
         ...,
-        example="2027-10-08T10:00:00Z",
+        example=DEFAULT_END_AT_EXAMPLE,
         description="End datetime (UTC)"
     )
     duration_minutes: int = Field(
         60,
-        description="Duration of the exam in minutes",
+        description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
-    max_attempts: conint(ge=1, le=10) = Field(
+    max_attempts: conint(ge=1, le=10) = Field( # type: ignore
         1,
         description="Max attempts per user",
         example=3
     )
-    pass_threshold: conint(ge=0, le=100) = Field(
+    pass_threshold: conint(ge=0, le=100) = Field( # type: ignore
         60,
         description="Passing threshold in percent",
         example=75
     )
-    owner_id: UUID = Field(
-        ...,
-        description="Instructor user id",
+    owner_id: Optional[UUID] = Field(
+        None,
+        description="Instructor user id (automatically set from token if not provided)",
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
 
+    _validate_start_at_not_in_past = validator("start_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    _validate_end_at_not_in_past = validator("end_at", allow_reuse=True)(datetime_must_not_be_in_past)
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
-
 class ExamUpdate(BaseModel):
-    title: Optional[constr(min_length=3, max_length=100)] = Field(
+    title: Optional[constr(min_length=3, max_length=100)] = Field( # type: ignore
         None,
         description="Exam title",
         example="Docker: Просунутий рівень"
     )
-    instructions: Optional[constr(max_length=2000)] = Field(
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
         example="Оновлені інструкції: додано практичне завдання."
@@ -90,21 +117,24 @@ class ExamUpdate(BaseModel):
     )
     duration_minutes: Optional[int] = Field(
         None,
-        description="Duration of the exam in minutes",
+        description=EXAM_DURATION_DESCRIPTION,
         example=120
     )
-    max_attempts: Optional[conint(ge=1, le=10)] = Field(
+    max_attempts: Optional[conint(ge=1, le=10)] = Field( # type: ignore
         None,
         description="Max attempts per user",
         example=2
     )
-    pass_threshold: Optional[conint(ge=0, le=100)] = Field(
+    pass_threshold: Optional[conint(ge=0, le=100)] = Field( # type: ignore
         None,
         description="Passing threshold in percent",
         example=80
     )
+    published: Optional[bool] = Field(None, description="Publish exam (true/false)")
 
-    # Attach the same validator to this model
+    # Attach validators to this model
+    # Для редагування не перевіряємо, чи дата в минулому, оскільки іспит міг бути створений раніше
+    # Залишаємо тільки перевірку, що end_at після start_at
     _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class Exam(BaseModel):
@@ -114,11 +144,11 @@ class Exam(BaseModel):
     )
     title: str = Field(
         ...,
-        example="Вступ до Docker"
+        example=EXAMPLE_TITLE,
     )
     instructions: Optional[str] = Field(
         None,
-        example="Іспит складається з 20 теоретичних питань."
+        example=DEFAULT_INSTRUCTIONS
     )
     start_at: datetime = Field(
         ...,
@@ -126,12 +156,12 @@ class Exam(BaseModel):
     )
     end_at: datetime = Field(
         ...,
-        example="2027-10-08T10:00:00Z"
+        example=DEFAULT_END_AT_EXAMPLE
     )
     duration_minutes: int = Field(
         ...,
         example=60,
-        description="Duration of the exam in minutes"
+        description=EXAM_DURATION_DESCRIPTION
     )
     max_attempts: int = Field(
         ...,
@@ -145,12 +175,49 @@ class Exam(BaseModel):
         ...,
         example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
+    published: bool = Field(default=False, description="Whether exam is published")
+    status: str = Field(
+        ...,
+        description="Exam status: draft, published, open, or closed",
+        example="draft"
+    )
+    
+    @model_validator(mode='after')
+    def set_published_from_status(self):
+        """Встановлюємо published на основі status після валідації"""
+        # Переконуємося, що status - це рядок (не enum)
+        if hasattr(self.status, 'value'):
+            self.status = self.status.value
+        # Встановлюємо published на основі status
+        self.published = self.status != 'draft'
+        return self
     question_count: int = Field(
         0,
         description="Number of available questions",
         example=20
     )
+    last_attempt_id: Optional[str] = Field(
+        None,
+        description="ID of the last attempt for this exam by the current user",
+        example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
+    )
+    user_attempts_count: Optional[int] = Field(
+        None,
+        description="Number of attempts made by the current user for this exam",
+        example=2
+    )
 
+    model_config = {"from_attributes": True}
+
+# Схема для іспиту з питаннями (для редагування)
+from src.api.schemas.questions import QuestionSchema
+
+class ExamWithQuestions(Exam):
+    questions: List[QuestionSchema] = Field(
+        default_factory=list,
+        description="List of exam questions with options"
+    )
+    
     model_config = {"from_attributes": True}
 
 class ExamsPage(BaseModel):
@@ -159,10 +226,10 @@ class ExamsPage(BaseModel):
         example=[
             {
                 "id": "a1b2c3d4-e5f6-7890-1234-567890abcdef",
-                "title": "Вступ до Docker",
-                "instructions": "Іспит складається з 20 теоретичних питань.",
+                "title": EXAMPLE_TITLE,
+                "instructions": DEFAULT_INSTRUCTIONS,
                 "start_at": "2024-10-08T10:00:00Z",
-                "end_at": "2027-10-08T10:00:00Z",
+                "end_at": DEFAULT_END_AT_EXAMPLE,
                 "max_attempts": 3,
                 "duration_minutes": 120,
                 "pass_threshold": 75,
@@ -179,5 +246,30 @@ class ExamsPage(BaseModel):
     model_config = {"from_attributes": True}
 
 class ExamsResponse(BaseModel):
-    future: List[ExamSchema]
-    completed: List[ExamSchema]
+    open: List[Exam] = Field(default_factory=list, description="Currently open exams")
+    future: List[Exam] = Field(default_factory=list, description="Upcoming exams")
+    completed: List[Exam] = Field(default_factory=list, description="Completed exams")
+
+class ExamInList(BaseModel):
+    id: UUID
+    title: str
+    status: ExamStatusEnum
+    questions_count: int = Field(0)
+    students_completed: str
+    average_grade: Optional[float] = None
+    pending_reviews: int = Field(0)
+
+    class Config:
+        from_attributes = True
+
+class CourseExamsPage(BaseModel):
+    course_id: UUID
+    course_name: str
+    exams: List[ExamInList]
+
+class ExamStatistics(BaseModel):
+    exam_id: UUID
+    min_score: Optional[float]
+    max_score: Optional[float]
+    median_score: Optional[float]
+    total_students: int

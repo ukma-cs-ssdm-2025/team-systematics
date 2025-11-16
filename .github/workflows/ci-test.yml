@@ -1,9 +1,33 @@
+# Workflow: CI Test
+#
+# Призначення:
+#   Простий тестовий workflow для перевірки базової роботи GitHub Actions.
+#
+# Тригери:
+#   - Push до будь-якої гілки
+#
+# Процес виконання:
+#   - Виводить "Hello, World!"
+#
+# Статус: ⚠️ Застарілий - містить лише тестовий код.
+# Рекомендація: Використовувати run-api-test.yml для реального тестування.
+
 name: CI Test
-on: [push]
+
+on:
+  push:
+    branches:
+      - '**'  # Запускається на всіх гілках
+
 jobs:
-   build:
-     runs-on: ubuntu-latest
-     steps:
-     - uses: actions/checkout@v3
-     - name: Run Hello World
-       run: echo "Hello, World!"
+  test:
+    runs-on: ubuntu-latest
+    name: Test GitHub Actions
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      
+      - name: Hello World
+        run: echo "Hello, World!"
+

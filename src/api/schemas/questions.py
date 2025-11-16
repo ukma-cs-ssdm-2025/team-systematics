@@ -1,7 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional
 from uuid import UUID
-from ..models.exam import QuestionType # Імпортуємо enum з моделі
+from src.models.exams import QuestionType  # import enum from models
 
 # --- Схеми для Варіантів відповіді ---
 
@@ -17,7 +17,7 @@ class OptionSchema(OptionBase):
     question_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Схеми для Питань ---
 
@@ -26,7 +26,7 @@ class QuestionBase(BaseModel):
     question_type: QuestionType
     points: int = 1
     position: int = 0
-    matching_data: Optional[dict] = None # Для питань на відповідність
+    matching_data: Optional[dict] = None  # Для питань на відповідність
 
 class QuestionCreate(QuestionBase):
     options: List[OptionCreate] = []
@@ -37,4 +37,4 @@ class QuestionSchema(QuestionBase):
     options: List[OptionSchema] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

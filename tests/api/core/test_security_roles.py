@@ -9,14 +9,15 @@ def test_case_insensitive_and_trim_whitespace():
     assert has_roles(user_roles, ["student", "admin"], mode="all") is True
 
 def test_english_synonyms_are_mapped_to_canonical():
-    """'instructor' -> teacher; 'invigilator' -> proctor."""
+    """'instructor' -> teacher; 'invigilator' -> supervisor."""
     assert has_roles(["instructor"], ["teacher"]) is True
-    assert has_roles(["invigilator"], ["proctor"]) is True
+    assert has_roles(["invigilator"], ["supervisor"]) is True
+    assert has_roles(["proctor"], ["supervisor"]) is True
 
 def test_ukrainian_synonyms_supported():
     """Ukrainian synonyms map to canonical roles."""
     assert has_roles(["викладач"], ["teacher"]) is True
-    assert has_roles(["наглядач"], ["proctor"]) is True
+    assert has_roles(["наглядач"], ["supervisor"]) is True
     assert has_roles(["студент"], ["student"]) is True
 
 def test_unknown_roles_ignored_by_default():
@@ -29,6 +30,6 @@ def test_strict_mode_raises_on_unknown():
         has_roles(["student", "mystery"], ["student"], strict=True)
 
 def test_generators_are_supported():
-    user_iter = (r for r in ["student", "admin"])
-    req_iter = (r for r in ["admin"])
+    user_iter = iter(["student", "admin"])
+    req_iter = iter(["admin"])
     assert has_roles(user_iter, req_iter) is True

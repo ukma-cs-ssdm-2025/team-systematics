@@ -1,0 +1,56 @@
+version = 1
+
+python_targets = ["3.11"]
+
+[[python_targets]]
+target = "3.11"
+
+[analysis]
+python_targets = ["3.11"]
+
+[[analyzers]]
+name = "python"
+enabled = true
+
+[analyzers.meta]
+runtime_version = "3.11"
+
+[[analyzers]]
+name = "security"
+enabled = true
+
+[[analyzers]]
+name = "coverage"
+enabled = true
+
+[[analyzers]]
+name = "git-secrets"
+enabled = true
+
+[[analyzers]]
+name = "documentation"
+enabled = true
+
+[test_patterns]
+python = [
+    "tests/**/*.py",
+    "**/test_*.py",
+    "**/*_test.py"
+]
+
+[exclude_patterns]
+python = [
+    "__pycache__",
+    "venv",
+    ".venv",
+    ".venv311",
+    "htmlcov",
+    "node_modules",
+    "*.egg-info",
+    "build",
+    "dist",
+    ".git"
+]
+
+[python]
+requirement_files = ["requirements.txt", "pyproject.toml"]

@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from collections import defaultdict
 from src.api.repositories.transcript_repository import TranscriptRepository
 from src.api.schemas.transcript import TranscriptResponse, CourseResult, Statistics
+from typing import List, Optional
 
 class TranscriptService:
     def _convert_rating_to_grades(self, rating: float) -> tuple[str, str]:
@@ -22,10 +23,33 @@ class TranscriptService:
         else: # 1-34
             return ("F", "Незадовільно")
 
-    def get_transcript_for_user(self, user_id: UUID, db: Session) -> TranscriptResponse:
+    def _sort_results(self, results: List[CourseResult], sort_by: str, order: str) -> List[CourseResult]:
+        """
+        Сортує список результатів курсів за вказаним полем та напрямком.
+        Значення None завжди розміщуються в кінці списку.
+        """
+        reverse_order = (order == "desc")
+            
+        def sort_key(course_result):
+            value = getattr(course_result, sort_by, None)
+            if value is None:
+                return (float('inf'),) if order == 'asc' else (float('-inf'),)
+            return (0, value)
+
+        results.sort(key=sort_key, reverse=reverse_order)
+        return results
+
+    def get_transcript_for_user(
+            self, 
+            user_id: UUID,
+            db: Session,
+            sort_by: Optional[str] = None,
+            order: str = "asc"
+        )-> TranscriptResponse:
+
         repository = TranscriptRepository(db)
         
-        all_exams = repository.get_all_exams()
+        students_exams = repository.get_exams_for_student(user_id)
         user_attempts = repository.get_all_attempts_by_user(user_id)
 
         max_scores = defaultdict(float)
@@ -40,7 +64,7 @@ class TranscriptService:
         # Сумуємо не заокруглені бали для точності середнього
         total_raw_rating_sum = 0.0
 
-        for exam in all_exams:
+        for exam in students_exams:
             if exam.id in max_scores:
                 # Отримуємо точний, не заокруглений рейтинг
                 raw_rating = max_scores[exam.id]
@@ -76,10 +100,14 @@ class TranscriptService:
         
         # Заокруглюємо фінальний середній рейтинг ВГОРУ
         final_average_rating = math.ceil(raw_average_rating)
+
+        # Якщо передано параметри сортування, то сортуємо за ними
+        if sort_by:
+            course_results = self._sort_results(course_results, sort_by, order)
         
         statistics = Statistics(
             completed_courses=completed_courses_count,
-            total_courses=len(all_exams),
+            total_courses=len(students_exams),
             a_grades_count=a_grades_count,
             average_rating=final_average_rating
         )

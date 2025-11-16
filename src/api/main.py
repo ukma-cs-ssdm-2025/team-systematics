@@ -4,25 +4,69 @@ import os
 from fastapi.staticfiles import StaticFiles
 from fastapi.responses import FileResponse
 from fastapi import Request
+from contextlib import asynccontextmanager
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.triggers.interval import IntervalTrigger
 from src.api.errors.app_errors import install_exception_handlers
+from src.api.services.exam_status_scheduler import update_exam_statuses
 from src.api.services.exams_service import ExamsService
 from src.api.services.attempts_service import AttemptsService as AttemptsSvc
 from src.api.services.auth_service import AuthService
 from src.api.services.exam_review_service import ExamReviewService
 from src.api.services.courses_service import CoursesService
+from src.api.services.users_service import UsersService
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.attempts_controller import AttemptsController
 from src.api.controllers.auth_controller import AuthController
 from src.api.controllers.courses_controller import CoursesController
+from src.api.controllers.users_controller import UsersController
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
-from src.models import exam_email_notifications
-import asyncio
-from fastapi import BackgroundTasks
-from src.api.background.exam_email_scheduler import run_exam_email_scheduler
+from src.models import attempts
 from src.api.database import SessionLocal, engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
-from src.api.repositories.transcript_repository import TranscriptRepository
+from src.core.cloudinary import configure_cloudinary
+from src.models import exam_participants, course_exams, course_supervisors
+from src.api.services.exam_participants_service import ExamParticipantsService
+from src.api.controllers.exam_participants_controller import ExamParticipantsController
+
+
+# Глобальна змінна для scheduler
+scheduler = None
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """
+    Lifespan context manager для FastAPI.
+    Запускає scheduler при старті додатку та зупиняє його при завершенні.
+    """
+    global scheduler
+    
+    # Запускаємо scheduler
+    scheduler = BackgroundScheduler()
+    # Запускаємо завдання кожну хвилину для перевірки статусів іспитів
+    scheduler.add_job(
+        update_exam_statuses,
+        trigger=IntervalTrigger(minutes=1),
+        id='update_exam_statuses',
+        name='Update exam statuses from published to open',
+        replace_existing=True
+    )
+    scheduler.start()
+    print("Scheduler started: exam status updates will run every minute")
+    
+    # Запускаємо перевірку статусів одразу при старті
+    update_exam_statuses()
+    print("Initial exam status check completed")
+    
+    yield
+    
+    # Зупиняємо scheduler при завершенні
+    if scheduler:
+        scheduler.shutdown()
+        print("Scheduler stopped")
+
 
 def create_app() -> FastAPI:
     # Створюємо всі таблиці з усіх моделей при старті
@@ -33,7 +77,10 @@ def create_app() -> FastAPI:
     courses.Base.metadata.create_all(bind=engine)
     majors.Base.metadata.create_all(bind=engine)
     user_majors.Base.metadata.create_all(bind=engine)
-    exam_email_notifications.Base.metadata.create_all(bind=engine)
+    attempts.Base.metadata.create_all(bind=engine)
+    course_exams.Base.metadata.create_all(bind=engine)
+    course_supervisors.Base.metadata.create_all(bind=engine)
+    exam_participants.Base.metadata.create_all(bind=engine)
 
     app = FastAPI(
         title="Online Exams API",
@@ -44,6 +91,7 @@ def create_app() -> FastAPI:
         docs_url="/api-docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
+        lifespan=lifespan,
     )
 
     origins = [
@@ -69,7 +117,9 @@ def create_app() -> FastAPI:
     attempts_service = AttemptsSvc()
     exam_review_service = ExamReviewService()
     auth_service = AuthService()
+    users_service = UsersService()
     transcript_service = TranscriptService()
+    exam_participants_service = ExamParticipantsService()
 
     # Ініціалізуємо контролери
     exams_controller = ExamsController(exams_service)
@@ -77,8 +127,11 @@ def create_app() -> FastAPI:
     auth_controller = AuthController(auth_service)
     courses_controller = CoursesController(CoursesService())
     transcript_controller = TranscriptController(transcript_service)
+    users_controller = UsersController(users_service)
+    exam_participants_controller = ExamParticipantsController(exam_participants_service)
 
-    transcript_repository = TranscriptRepository(SessionLocal())
+    #Ініціалізуємо конфігурацію cloudinary
+    configure_cloudinary()
 
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
@@ -86,6 +139,8 @@ def create_app() -> FastAPI:
     app.include_router(attempts_controller.router, prefix="/api")
     app.include_router(courses_controller.router, prefix="/api")
     app.include_router(transcript_controller.router, prefix="/api")
+    app.include_router(users_controller.router, prefix="/api")
+    app.include_router(exam_participants_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
@@ -102,11 +157,7 @@ def create_app() -> FastAPI:
             if os.path.exists(index_path):
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
-
-    @app.on_event("startup")
-    async def _start_scheduler():
-        asyncio.create_task(run_exam_email_scheduler())
-
+ 
     return app
 
 app = create_app()

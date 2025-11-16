@@ -1,0 +1,4 @@
+{
+  "enabled": true,
+  "remind_before_hours": [8, 1]
+}

@@ -3,7 +3,7 @@ from uuid import UUID
 from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from src.core.config import JWT_SECRET, JWT_ALGORITHM
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 from src.api.database import get_db
 from src.models.users import User
 from src.models.roles import Role
@@ -93,6 +93,7 @@ def get_current_user_id(credentials: HTTPAuthorizationCredentials = Depends(secu
 def get_user_role(db: Session, user_id: UUID) -> str:
     """
     Знаходить та повертає назву ролі для вказаного користувача.
+    Повертає роль у нижньому регістрі для консистентності.
     """
     role_name = db.query(Role.name).join(UserRole).filter(UserRole.user_id == user_id).scalar()
     
@@ -101,8 +102,9 @@ def get_user_role(db: Session, user_id: UUID) -> str:
             status_code=status.HTTP_403_FORBIDDEN,
             detail="User has no assigned role. Access denied."
         )
-        
-    return role_name
+    
+    # Повертаємо роль у нижньому регістрі для консистентності
+    return role_name.lower().strip()
 
 
 def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_current_user_id)) -> User:
@@ -111,7 +113,10 @@ def get_current_user(db: Session = Depends(get_db), user_id: UUID = Depends(get_
     завантажує об'єкт користувача, перевіряє наявність ролі та додає
     її як атрибут до об'єкта.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.major)
+    ).filter(User.id == user_id).first()
+
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -123,7 +128,9 @@ def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = De
     """
     Завантажує об'єкт користувача та додає до нього атрибут 'role'.
     """
-    user = db.query(User).filter(User.id == user_id).first()
+    user = db.query(User).options(
+        joinedload(User.major)
+    ).filter(User.id == user_id).first()
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -132,3 +139,33 @@ def get_current_user_with_role(db: Session = Depends(get_db), user_id: UUID = De
     
     user.role = get_user_role(db, user_id)
     return user
+
+
+def require_role(role_name: str):
+    """
+    Return a FastAPI dependency that ensures the current user has the given role.
+    Checks all user roles, not just the first one.
+
+    Usage:
+        current_user: User = Depends(require_role('supervisor'))
+    """
+    def _require(
+        user: User = Depends(get_current_user),
+        db: Session = Depends(get_db)
+    ) -> User:
+        from src.api.repositories.user_repository import UserRepository
+        user_roles = UserRepository(db).get_user_roles(str(user.id))
+        required_role = role_name.lower().strip()
+        
+        # Перевіряємо, чи користувач має потрібну роль
+        if not any(r.lower().strip() == required_role for r in user_roles):
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=f"This endpoint requires role '{role_name}'",
+            )
+        
+        # Додаємо роль як атрибут для сумісності
+        user.role = required_role
+        return user
+
+    return _require

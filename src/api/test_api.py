@@ -1,19 +1,19 @@
 import pytest
 from fastapi.testclient import TestClient
 from uuid import uuid4
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 import sys
 import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from api.main import app
+from src.api.main import app
 
 client = TestClient(app)
 
 def create_exam_payload(title="Test Exam", description="Some instructions"):
     """Генерує payload для створення екзамену відповідно до ExamCreate"""
-    now = datetime.utcnow()
+    now = datetime.now(timezone.utc)
     return {
         "title": title,
         "instructions": description,

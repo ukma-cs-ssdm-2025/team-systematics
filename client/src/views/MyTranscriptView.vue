@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження атестату...
@@ -21,31 +22,56 @@
                     </p>
                 </div>
 
-                <section class="transcript-table">
+                <div class="transcript-table">
                     <table class="results-table">
                         <thead>
                             <tr>
-                                <th class="left"><span class="pill">Назва дисципліни</span></th>
-                                <th class="right"><span class="pill">Рейтинг</span></th>
-                                <th class="left"><span class="pill">Оцінка ECTS</span></th>
-                                <th class="left"><span class="pill">Національна шкала</span></th>
-                                <th class="left"><span class="pill">Поріг виконано</span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('course_name')">
+                                    Назва дисципліни
+                                    <span v-if="sortState.key === 'course_name'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="right"><span class="pill sortable" @click="sortBy('rating')">
+                                    Рейтинг
+                                    <span v-if="sortState.key === 'rating'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('ects_grade')">
+                                    Оцінка ECTS
+                                    <span v-if="sortState.key === 'ects_grade'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('national_grade')">
+                                    Національна шкала
+                                    <span v-if="sortState.key === 'national_grade'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
+                                <th class="left"><span class="pill sortable" @click="sortBy('pass_status')">
+                                    Поріг виконано
+                                    <span v-if="sortState.key === 'pass_status'" class="sort-indicator">
+                                        {{ sortState.order === 'asc' ? '↑' : '↓' }}
+                                    </span>
+                                </span></th>
                             </tr>
                         </thead>
                         <tbody>
-                            <!-- ЗМІНЕНО: Тепер просто відображаємо готові дані -->
                             <tr v-for="course in transcriptData.courses" :key="course.id">
                                 <td class="left">{{ course.course_name }}</td>
-                                <td class="right">{{ course.rating || '--' }}</td>
+                                <td class="right">{{ course.rating !== null && course.rating !== undefined ?
+                                    course.rating : '--' }}</td>
                                 <td class="left">{{ course.ects_grade || '--' }}</td>
                                 <td class="left">{{ course.national_grade || '--' }}</td>
                                 <td class="left">{{ course.pass_status || '--' }}</td>
                             </tr>
                         </tbody>
                     </table>
-                </section>
+                </div>
 
-                <section>
+                <div>
                     <h2>Статистика</h2>
                     <ul class="statistics-list">
                         <li>Складено іспитів: {{ transcriptData.statistics.completed_courses }} / {{
@@ -53,15 +79,16 @@
                         <li>З них складено на A: {{ transcriptData.statistics.a_grades_count }}</li>
                         <li>Середньозважений рейтинг: {{ transcriptData.statistics.average_rating }}</li>
                     </ul>
-                </section>
+                </div>
             </div>
         </main>
     </div>
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, reactive } from 'vue'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import { useAuth } from '../store/loginInfo.js'
 import { getTranscript } from '../api/transcript.js'
 
@@ -71,17 +98,55 @@ const error = ref(null)
 
 const { fullName, major } = useAuth()
 
-onMounted(async () => {
+const sortState = reactive({
+    key: null, // Поле, за яким сортуємо
+    order: 'asc' // Напрямок сортування
+})
+
+async function fetchTranscriptData() {
+    loading.value = true
     try {
-        const data = await getTranscript()
+        const data = await getTranscript(sortState.key, sortState.order)
         transcriptData.value = data
     } catch (err) {
         error.value = err.message || "Не вдалося завантажити дані."
     } finally {
         loading.value = false
     }
-})
+}
+
+function sortBy(key) {
+    // Якщо клікнули на ту саму колонку, змінюємо напрямок
+    if (sortState.key === key) {
+        sortState.order = sortState.order === 'asc' ? 'desc' : 'asc'
+    } else {
+        // Якщо клікнули на нову колонку, встановлюємо її і скидаємо напрямок
+        sortState.key = key
+        sortState.order = 'asc'
+    }
+    fetchTranscriptData()
+}
+
+onMounted(fetchTranscriptData)
 
 </script>
 
-<style scoped></style>
+<style scoped>
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.sortable:hover {
+    opacity: 0.8;
+}
+
+.sort-indicator {
+    font-size: 0.8rem;
+    color: var(--color-violet);
+    font-weight: bold;
+}
+</style>

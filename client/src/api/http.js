@@ -19,8 +19,13 @@ http.interceptors.response.use(
     (response) => response,
     (error) => {
         const status = error.response?.status
+        const url = error.config?.url || ''
 
-        if (status === 401) {
+        // Не перенаправляємо на /unauthorized для запитів логіну
+        // щоб можна було показати повідомлення про помилку
+        const isLoginRequest = url.includes('/api/auth/login')
+
+        if (status === 401 && !isLoginRequest) {
             // Токен недійсний або минув строк — чистимо локальний стан і відправляємо на логін
             localStorage.removeItem('token')
             localStorage.removeItem('userRole')
@@ -29,7 +34,11 @@ http.interceptors.response.use(
             router.push('/unauthorized')
         } else if (status === 403) {
             // Недостатньо прав — перенаправляємо на сторінку 403
-            router.push('/forbidden')
+            // Перевіряємо, чи користувач вже не на сторінці /forbidden, щоб уникнути циклу
+            if (router.currentRoute.value.path !== '/forbidden') {
+                router.push('/forbidden')
+            }
+            console.error('403 Forbidden:', error.response?.data?.detail || 'Недостатньо прав доступу')
         }
 
         return Promise.reject(error)
