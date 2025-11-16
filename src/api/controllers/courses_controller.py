@@ -26,6 +26,7 @@ TEACHER_ONLY_ACCESS = "Цей функціонал доступний лише �
 FILTER_NAME_DESCRIPTION = "Фільтр за назвою/кодом курсу"
 MIN_STUDENTS_DESCRIPTION = "Мін. к-сть студентів"
 MAX_STUDENTS_DESCRIPTION = "Макс. к-сть студентів"
+COURSE_ID_PATH = "/{course_id}"
 
 
 class CoursesController:
@@ -84,17 +85,17 @@ class CoursesController:
         )(self.create_course)
 
         self.router.get(
-            "/{course_id}",
+            COURSE_ID_PATH,
             response_model=Course,
         )(self.get_course)
 
         self.router.patch(
-            "/{course_id}",
+            COURSE_ID_PATH,
             response_model=Course,
         )(self.update_course)
 
         self.router.delete(
-            "/{course_id}",
+            COURSE_ID_PATH,
             status_code=status.HTTP_204_NO_CONTENT,
         )(self.delete_course)
 
