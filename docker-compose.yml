@@ -11,6 +11,11 @@ services:
       - ./src:/app/src
     env_file:
       - ./.env
+    environment:
+      # Override DB_HOST to use Docker service name instead of localhost
+      - DB_HOST=db
+      # Set Hugging Face cache directory to writable location
+      - TRANSFORMERS_CACHE=/tmp/huggingface_cache
     depends_on:
       db:
         condition: service_healthy
