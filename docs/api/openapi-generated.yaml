@@ -2886,7 +2886,9 @@ paths:
       - Auth
   /api/courses:
     get:
-      description: Отримує список усіх курсів. Доступно для студентів.
+      description: 'Отримує список усіх курсів з підтримкою фільтрації.
+
+        Доступно для студентів.'
       operationId: list_courses_api_courses_get
       parameters:
       - description: Фільтр за назвою/кодом курсу
@@ -2976,6 +2978,12 @@ paths:
       tags:
       - Courses
     post:
+      description: 'Створює новий курс. Власником курсу автоматично стає
+
+        поточний автентифікований викладач.
+
+
+        Доступно лише для користувачів з роллю ''teacher''.'
       operationId: create_course_api_courses_post
       parameters:
       - description: API version (e.g., 1.0)
@@ -3013,7 +3021,14 @@ paths:
       - Courses
   /api/courses/me:
     get:
-      description: Отримує список курсів, які були створені поточним викладачем.
+      description: 'Отримує список курсів, які були створені поточним автентифікованим
+
+        викладачем. Повертає дані з пагінацією та додатковою статистикою
+
+        (кількість студентів та іспитів) з підтримкою фільтрації.
+
+
+        Доступно лише для користувачів з роллю ''teacher''.'
       operationId: list_my_courses_api_courses_me_get
       parameters:
       - description: Фільтр за назвою/кодом курсу
@@ -3116,7 +3131,10 @@ paths:
       - Courses
   /api/courses/supervisor:
     get:
-      description: Список курсів для наглядача з фільтрами.
+      description: 'Повертає список курсів для наглядача з фільтрами (назва/викладач/к-сть
+        студентів).
+
+        Перевірка ролі ''supervisor'' виконується в сервісі.'
       operationId: list_courses_for_supervisor_api_courses_supervisor_get
       parameters:
       - description: Фільтр за назвою/кодом курсу
@@ -3211,7 +3229,13 @@ paths:
       - Courses
   /api/courses/supervisor/{course_id}:
     get:
-      description: Деталізована інформація про курс для наглядача.
+      description: 'Повертає детальну інформацію про курс для наглядача:
+
+        списки студентів (ім''я, email, статус) та викладачів.
+
+        Якщо немає зареєстрованих користувачів — повертається повідомлення.
+
+        Перевірка ролі ''supervisor'' виконується в сервісі.'
       operationId: get_course_details_for_supervisor_api_courses_supervisor__course_id__get
       parameters:
       - in: path
@@ -3250,7 +3274,9 @@ paths:
       - Courses
   /api/courses/{course_id}:
     delete:
-      description: Видаляє курс за його ID.
+      description: 'Видаляє курс за його ID.
+
+        (Примітка: має бути реалізована перевірка власності курсу).'
       operationId: delete_course_api_courses__course_id__delete
       parameters:
       - in: path
@@ -3322,7 +3348,9 @@ paths:
       tags:
       - Courses
     patch:
-      description: Оновлює інформацію про курс.
+      description: 'Оновлює інформацію про курс. Дозволяє часткове оновлення полів.
+
+        (Примітка: має бути реалізована перевірка власності курсу).'
       operationId: update_course_api_courses__course_id__patch
       parameters:
       - in: path
@@ -3405,7 +3433,10 @@ paths:
       - Courses
   /api/courses/{course_id}/enroll:
     delete:
-      description: Виписує поточного студента з курсу.
+      description: 'Виписує поточного автентифікованого студента з вказаного курсу.
+
+
+        Доступно лише для користувачів з роллю ''student''.'
       operationId: unenroll_api_courses__course_id__enroll_delete
       parameters:
       - in: path
@@ -3439,7 +3470,10 @@ paths:
       tags:
       - Courses
     post:
-      description: Записує поточного студента на курс.
+      description: 'Записує поточного автентифікованого студента на вказаний курс.
+
+
+        Доступно лише для користувачів з роллю ''student''.'
       operationId: enroll_api_courses__course_id__enroll_post
       parameters:
       - in: path
@@ -3474,7 +3508,11 @@ paths:
       - Courses
   /api/courses/{course_id}/exams:
     get:
-      description: Отримує список іспитів для курсу. Доступно для викладачів та наглядачів.
+      description: 'Отримує список всіх іспитів, пов''язаних з конкретним курсом,
+
+        разом з розширеною статистикою по кожному іспиту.
+
+        Доступно для викладачів та наглядачів.'
       operationId: list_course_exams_api_courses__course_id__exams_get
       parameters:
       - in: path
