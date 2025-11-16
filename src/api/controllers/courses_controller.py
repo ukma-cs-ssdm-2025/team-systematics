@@ -38,7 +38,7 @@ class CoursesController:
             dependencies=[Depends(require_api_version)],
         )
 
-        # реєстрація маршрутів, без вкладених функцій
+        # реєстрація маршрутів
         self.router.get(
             "/me",
             response_model=CoursesPage,
@@ -130,7 +130,7 @@ class CoursesController:
 
     # ---- ендпоінти ----
 
-    async def list_my_courses(
+    def list_my_courses(
         self,
         name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
         min_students: Optional[int] = Query(
@@ -149,7 +149,7 @@ class CoursesController:
         """
         Отримує список курсів, які були створені поточним викладачем.
         """
-        self._ensure_role({current_user}, {"teacher"}, TEACHER_ONLY_ACCESS)
+        self._ensure_role(current_user, {"teacher"}, TEACHER_ONLY_ACCESS)
 
         items, total = self.service.list_my_courses(
             db=db,
@@ -164,7 +164,7 @@ class CoursesController:
         )
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 
-    async def list_courses(
+    def list_courses(
         self,
         name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
         teacher_name: Optional[str] = Query(
@@ -202,7 +202,7 @@ class CoursesController:
         )
         return {"items": items, "total": total, "limit": limit, "offset": offset}
 
-    async def list_courses_for_supervisor(
+    def list_courses_for_supervisor(
         self,
         name: Optional[str] = Query(None, description=FILTER_NAME_DESCRIPTION),
         teacher_name: Optional[str] = Query(
@@ -234,7 +234,7 @@ class CoursesController:
         )
         return items
 
-    async def get_course_details_for_supervisor(
+    def get_course_details_for_supervisor(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
@@ -247,25 +247,25 @@ class CoursesController:
             db, current_user, course_id
         )
 
-    async def get_course_analytics(
+    def get_course_analytics(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
-        self._ensure_role({current_user}, {"teacher"}, TEACHER_ONLY_ACCESS)
+        self._ensure_role(current_user, {"teacher"}, TEACHER_ONLY_ACCESS)
         return self.service.get_course_exam_statistics(db, course_id)
 
-    async def get_group_analytics(
+    def get_group_analytics(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
-        self._ensure_role({current_user}, {"teacher"}, TEACHER_ONLY_ACCESS)
+        self._ensure_role(current_user, {"teacher"}, TEACHER_ONLY_ACCESS)
         return self.service.get_group_analytics(db, current_user.id, course_id)
 
-    async def create_course(
+    def create_course(
         self,
         payload: CourseCreate,
         db: Session = Depends(get_db),
@@ -278,21 +278,25 @@ class CoursesController:
         )
         return self.service.create(db, payload, owner_id=current_user.id)
 
-    async def get_course(
+    def get_course(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """Отримує деталізовану інформацію про один курс за його ID."""
         return self.service.get(db, course_id)
 
-    async def update_course(
+    def update_course(
         self,
         course_id: UUID,
         patch: CourseUpdate,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """
+        Оновлює інформацію про курс.
+        """
         self._ensure_role(
             current_user,
             {"teacher"},
@@ -300,12 +304,15 @@ class CoursesController:
         )
         return self.service.update(db, course_id, patch)
 
-    async def delete_course(
+    def delete_course(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """
+        Видаляє курс за його ID.
+        """
         self._ensure_role(
             current_user,
             {"teacher"},
@@ -314,12 +321,15 @@ class CoursesController:
         self.service.delete(db, course_id)
         return None
 
-    async def enroll(
+    def enroll(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """
+        Записує поточного студента на курс.
+        """
         self._ensure_role(
             current_user,
             {"student"},
@@ -328,12 +338,15 @@ class CoursesController:
         self.service.enroll(db, current_user.id, course_id)
         return None
 
-    async def unenroll(
+    def unenroll(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """
+        Виписує поточного студента з курсу.
+        """
         self._ensure_role(
             current_user,
             {"student"},
@@ -342,12 +355,15 @@ class CoursesController:
         self.service.unenroll(db, current_user.id, course_id)
         return None
 
-    async def list_course_exams(
+    def list_course_exams(
         self,
         course_id: UUID,
         db: Session = Depends(get_db),
         current_user: User = Depends(get_current_user_with_role),
     ):
+        """
+        Отримує список іспитів для курсу. Доступно для викладачів та наглядачів.
+        """
         self._ensure_role(
             current_user,
             {"teacher", "supervisor"},
