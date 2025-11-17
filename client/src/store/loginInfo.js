@@ -9,7 +9,6 @@ const userMajor = ref(localStorage.getItem('userMajor') || null)
 const avatarUrl = ref(localStorage.getItem('avatarUrl') || null)
 
 let inactivityTimer = null
-let updateAvatarUrl = null
 
 export function useAuth() {
   const router = useRouter()
