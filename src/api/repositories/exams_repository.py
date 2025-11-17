@@ -248,7 +248,6 @@ class ExamsRepository:
             if key not in excluded_fields:
                 # Конвертуємо published в status, якщо потрібно
                 if key == 'published':
-                    from src.models.exams import ExamStatusEnum
                     exam.status = ExamStatusEnum.published if value else ExamStatusEnum.draft
                 else:
                     setattr(exam, key, value)
@@ -276,7 +275,7 @@ class ExamsRepository:
         # 1. Спочатку видаляємо plagiarism_checks (вони посилаються на attempts)
         # 2. Потім видаляємо attempts (вони посилаються на exams)
         # 3. Нарешті видаляємо exam
-        from src.models.attempts import Attempt, PlagiarismCheck
+        from src.models.attempts import PlagiarismCheck
         
         # Отримуємо всі attempt_id для цього іспиту
         attempt_ids = [attempt.id for attempt in self.db.query(Attempt.id).filter(Attempt.exam_id == exam_id).all()]
