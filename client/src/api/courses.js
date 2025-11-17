@@ -84,7 +84,7 @@ export async function createNewCourse(payload) {
         const response = await http.post('/api/courses', payload)
         return response.data
     } catch (error) {
-        console.error(`API Error fetching students for course:`, error)
+        console.error("API Error fetching students for course:", error)
         throw error
     }
 }

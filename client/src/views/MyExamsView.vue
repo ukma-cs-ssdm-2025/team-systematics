@@ -170,7 +170,7 @@ const popupHeader = computed(() => {
     }
     
     if (isWarningPopup.value) {
-        return `Іспит ще не розпочався`
+        return "Іспит ще не розпочався"
     }
     
     if (isChoicePopup.value) {
