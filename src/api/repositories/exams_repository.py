@@ -324,7 +324,7 @@ class ExamsRepository:
         attempt_stats_sq = (
             self.db.query(
                 Attempt.exam_id,
-                func.count(case((Attempt.earned_points != None, Attempt.id))).label("students_completed"),
+                func.count(case((Attempt.earned_points is not None, Attempt.id))).label("students_completed"),
                 func.avg(Attempt.earned_points).label("average_grade"),
                 func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
             )
