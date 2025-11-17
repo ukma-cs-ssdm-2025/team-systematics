@@ -1,10 +1,5 @@
 version = 1
 
-python_targets = ["3.11"]
-
-[[python_targets]]
-target = "3.11"
-
 [analysis]
 python_targets = ["3.11"]
 
@@ -16,6 +11,14 @@ enabled = true
 runtime_version = "3.11"
 
 [[analyzers]]
+name = "javascript"
+enabled = true
+
+[[analyzers]]
+name = "dockerfile"
+enabled = true
+
+[[analyzers]]
 name = "security"
 enabled = true
 
@@ -23,19 +26,17 @@ enabled = true
 name = "coverage"
 enabled = true
 
-[[analyzers]]
-name = "git-secrets"
-enabled = true
-
-[[analyzers]]
-name = "documentation"
-enabled = true
-
 [test_patterns]
 python = [
     "tests/**/*.py",
     "**/test_*.py",
     "**/*_test.py"
+]
+javascript = [
+    "**/*.test.js",
+    "**/*.spec.js",
+    "**/tests/**/*.js",
+    "**/__tests__/**/*.js"
 ]
 
 [exclude_patterns]
@@ -49,8 +50,30 @@ python = [
     "*.egg-info",
     "build",
     "dist",
-    ".git"
+    ".git",
+    "client/node_modules",
+    "client/dist",
+    "client/build"
+]
+javascript = [
+    "node_modules",
+    "**/node_modules/**",
+    "dist",
+    "build",
+    ".git",
+    "coverage",
+    "*.min.js",
+    "*.bundle.js",
+    "vendor",
+    "**/vendor/**",
+    "__pycache__",
+    "venv",
+    ".venv",
+    "htmlcov"
 ]
 
 [python]
 requirement_files = ["requirements.txt", "pyproject.toml"]
+
+[javascript]
+package_manager = "npm"
