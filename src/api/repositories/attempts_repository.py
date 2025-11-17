@@ -152,7 +152,8 @@ class AttemptsRepository:
         self.db.refresh(attempt)
         return attempt    
 
-    def _get_question_type(self, q: Question) -> str:
+    @staticmethod
+    def _get_question_type(q: Question) -> str:
         return q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
 
     def _load_options_by_question(self, question_ids: List[UUID]) -> Dict[UUID, List[Dict[str, Any]]]:

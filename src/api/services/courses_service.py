@@ -14,8 +14,8 @@ from src.api.services.exams_service import ExamsService
 
 SUPERVISOR_ONLY = "Доступ дозволений лише наглядачам"
 class CoursesService:
+    @staticmethod
     def list(
-        self,
         db: Session,
         current_user_id: UUID,
         limit: int,
@@ -39,10 +39,12 @@ class CoursesService:
             max_exams=max_exams,
         )
 
-    def get(self, db: Session, course_id: UUID) -> Optional[Course]:
+    @staticmethod
+    def get(db: Session, course_id: UUID) -> Optional[Course]:
         return CoursesRepository(db).get(course_id)
 
-    def create(self, db: Session, payload: CourseCreate, owner_id: UUID) -> Course: 
+    @staticmethod
+    def create(db: Session, payload: CourseCreate, owner_id: UUID) -> Course: 
         """
         Створює новий курс після перевірки на унікальність назви та коду.
         """
@@ -66,21 +68,25 @@ class CoursesService:
         return repo.create(payload, owner_id=owner_id)
 
 
-    def update(self, db: Session, course_id: UUID, patch: CourseUpdate) -> Optional[Course]:
+    @staticmethod
+    def update(db: Session, course_id: UUID, patch: CourseUpdate) -> Optional[Course]:
         return CoursesRepository(db).update(course_id, patch)
 
-    def delete(self, db: Session, course_id: UUID) -> None:
+    @staticmethod
+    def delete(db: Session, course_id: UUID) -> None:
         return CoursesRepository(db).delete(course_id)
 
-    def enroll(self, db: Session, user_id, course_id: UUID) -> None:
+    @staticmethod
+    def enroll(db: Session, user_id, course_id: UUID) -> None:
         return CoursesRepository(db).enroll(user_id, course_id)
 
-    def unenroll(self, db: Session, user_id, course_id: UUID) -> None:
+    @staticmethod
+    def unenroll(db: Session, user_id, course_id: UUID) -> None:
         """Виписує студента з курсу."""
         return CoursesRepository(db).unenroll(user_id, course_id)
 
+    @staticmethod
     def list_my_courses(
-        self,
         db: Session,
         user_id,
         limit: int,
@@ -102,13 +108,15 @@ class CoursesService:
             max_exams=max_exams,
         )
 
-    def list_for_supervisor(self, db: Session, current_user: User, **filters):
+    @staticmethod
+    def list_for_supervisor(db: Session, current_user: User, **filters):
         roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
         return CoursesRepository(db).list_with_stats_for_supervisor(supervisor_id=current_user.id, **filters)
 
-    def get_course_details_for_supervisor(self, db: Session, current_user: User, course_id: UUID):
+    @staticmethod
+    def get_course_details_for_supervisor(db: Session, current_user: User, course_id: UUID):
         roles = UserRepository(db).get_user_roles(str(current_user.id))
         if "supervisor" not in roles:
             raise ForbiddenError(SUPERVISOR_ONLY)
@@ -133,7 +141,8 @@ class CoursesService:
             return {"message": "Немає зареєстрованих студентів/викладачів"}
         return result
     
-    def get_course_exam_statistics(self, db: Session, course_id: UUID):
+    @staticmethod
+    def get_course_exam_statistics(db: Session, course_id: UUID):
         exams_service = ExamsService()
         journal_service = JournalService()
 
@@ -157,7 +166,8 @@ class CoursesService:
         
         return self.get_course_exam_statistics(db, course_id)
 
-    def get_group_analytics(self, db: Session, user_id: UUID, course_id: UUID):
+    @staticmethod
+    def get_group_analytics(db: Session, user_id: UUID, course_id: UUID):
         """
         Повертає загальну аналітику оцінок групи для курсу.
         Перевіряє, що запит виконує викладач-власник курсу.

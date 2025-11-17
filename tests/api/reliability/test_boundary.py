@@ -16,7 +16,8 @@ from src.utils.auth import get_current_user_with_role
 
 
 class MockExamService:
-    def create(self, db: pytest.Session, payload: ExamCreate, owner_id=None) -> dict:
+    @staticmethod
+    def create(db: pytest.Session, payload: ExamCreate, owner_id=None) -> dict:
         if payload.end_at <= payload.start_at:
             raise ValueError("end_at must be after start_at")
 
@@ -88,7 +89,8 @@ def test_create_exam_with_minimum_title_length_accepted():
     app.dependency_overrides[require_api_version] = lambda: None
 
     class DummyService:
-        def create(self, db, payload, owner_id=None):
+        @staticmethod
+        def create(db, payload, owner_id=None):
             exam_id = str(uuid4())
             now = datetime.now(timezone.utc)
             return {

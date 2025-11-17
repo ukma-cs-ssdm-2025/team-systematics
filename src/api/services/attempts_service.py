@@ -49,8 +49,9 @@ class AttemptsService:
                 paraphrase_model=ParaphraseModel(),
             )
 
+    @staticmethod
     def add_answer(
-        self, db: Session, attempt_id: UUID, payload: AnswerUpsert
+        db: Session, attempt_id: UUID, payload: AnswerUpsert
     ) -> AnswerSchema:
         repo = AttemptsRepository(db)
         att = repo.get_attempt(attempt_id)
@@ -129,15 +130,16 @@ class AttemptsService:
 
         return attempt    
 
-    def get_attempt_details(self, db: Session, attempt_id: UUID):
+    @staticmethod
+    def get_attempt_details(db: Session, attempt_id: UUID):
         repo = AttemptsRepository(db)
         att = repo.get_attempt_with_details(attempt_id)
         if not att:
             raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         return att
 
+    @staticmethod
     def get_attempt_result(
-        self,
         db: Session,
         attempt_id: UUID,
     ) -> AttemptResultResponse:
@@ -255,7 +257,8 @@ class AttemptsService:
             saved_at=answer.saved_at
         )
     
-    def _calculate_final_points_map(self, db: Session, attempt: Attempt) -> dict:
+    @staticmethod
+    def _calculate_final_points_map(db: Session, attempt: Attempt) -> dict:
         """Розраховує фінальну мапу балів для питань (масштабовані до 100 балів)."""
         weights_repo = WeightsRepository(db)
         weights_map = weights_repo.get_all_weights()
@@ -276,14 +279,15 @@ class AttemptsService:
         
         return distribute_largest_remainder(true_points_map, target_total=100)
     
-    def _calculate_long_answer_score(self, answer: Answer) -> float:
+    @staticmethod
+    def _calculate_long_answer_score(answer: Answer) -> float:
         """Розраховує бали для long_answer питання."""
         if answer and answer.earned_points is not None:
             return answer.earned_points
         return 0.0
     
+    @staticmethod
     def _calculate_auto_graded_score(
-        self, 
         question: Question, 
         answer: Answer, 
         question_points: float,
@@ -341,7 +345,8 @@ class AttemptsService:
         attempt.earned_points = min(100.0, max(0.0, total_earned))
         db.commit()
     
-    def _check_and_update_attempt_status(self, db: Session, attempt: Attempt) -> None:
+    @staticmethod
+    def _check_and_update_attempt_status(db: Session, attempt: Attempt) -> None:
         """
         Перевіряє, чи всі long_answer питання оцінені.
         Якщо так, і статус submitted, змінює статус на completed.
@@ -368,7 +373,8 @@ class AttemptsService:
             attempt.pending_count = 0
             db.commit()
 
-    def _is_teacher(self, db: Session, user: User) -> bool:
+    @staticmethod
+    def _is_teacher(db: Session, user: User) -> bool:
         """
         Перевіряємо, чи має користувач роль викладача через таблицю user_roles.
         TEACHER_ROLE_ID = 2.
@@ -590,8 +596,8 @@ class AttemptsService:
             exam_title=exam.title,
         )
 
+    @staticmethod
     def add_time_to_attempt(
-        self,
         db: Session,
         attempt_id: UUID,
         payload: AddTimeRequest,
@@ -618,8 +624,8 @@ class AttemptsService:
             time_spent_seconds=attempt.time_spent_seconds,
         )
 
+    @staticmethod
     def get_active_attempts_for_exam(
-        self,
         db: Session,
         exam_id: UUID,
     ) -> List[ActiveAttemptInfo]:
@@ -652,8 +658,8 @@ class AttemptsService:
         
         return result
     
+    @staticmethod
     def get_completed_attempts_for_exam(
-        self,
         db: Session,
         exam_id: UUID,
     ) -> List[dict]:

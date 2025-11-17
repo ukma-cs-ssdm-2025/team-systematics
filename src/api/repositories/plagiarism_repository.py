@@ -7,7 +7,8 @@ from src.models.attempts import PlagiarismCheck, PlagiarismStatus
 
 
 class PlagiarismRepository:
-    def get_by_attempt_id(self, db: Session, attempt_id: UUID) -> Optional[PlagiarismCheck]:
+    @staticmethod
+    def get_by_attempt_id(db: Session, attempt_id: UUID) -> Optional[PlagiarismCheck]:
         return (
             db.query(PlagiarismCheck)
             .filter(PlagiarismCheck.attempt_id == attempt_id)
@@ -42,8 +43,8 @@ class PlagiarismRepository:
         db.add(check)
         return check
 
+    @staticmethod
     def list_by_exam_with_filter(
-        self,
         db: Session,
         *,
         exam_id: UUID,

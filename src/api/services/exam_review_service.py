@@ -141,7 +141,8 @@ class ExamReviewService:
 
     # --- Функції-конструктори для кожного типу питання ---
 
-    def _build_single_choice_data(self, base_data, question, student_answer, show_correct_answers=True):
+    @staticmethod
+    def _build_single_choice_data(base_data, question, student_answer, show_correct_answers=True):
         options_data = []
         earned_points = 0
         
@@ -167,7 +168,8 @@ class ExamReviewService:
             earned_points=earned_points if show_correct_answers else None  # Приховуємо бали, якщо не показуємо правильні відповіді
         )
 
-    def _build_multi_choice_data(self, base_data, question, student_answer, show_correct_answers=True):
+    @staticmethod
+    def _build_multi_choice_data(base_data, question, student_answer, show_correct_answers=True):
         options_data = []
         total_earned_points = 0
         correct_option_ids = {opt.id for opt in question.options if opt.is_correct}
@@ -200,7 +202,8 @@ class ExamReviewService:
             earned_points=total_earned_points if show_correct_answers else None  # Приховуємо бали, якщо не показуємо правильні відповіді
         )
 
-    def _build_long_answer_data(self, base_data, student_answer, db: Session = None):
+    @staticmethod
+    def _build_long_answer_data(base_data, student_answer, db: Session = None):
         # earned_points може бути встановлено вчителем вручну
         # Якщо earned_points встановлено в Answer, використовуємо його
         answer_id = str(student_answer.id) if student_answer else None
@@ -226,7 +229,8 @@ class ExamReviewService:
             is_flagged=is_flagged
         )
         
-    def _build_short_answer_data(self, base_data, question, student_answer, show_correct_answers=True):
+    @staticmethod
+    def _build_short_answer_data(base_data, question, student_answer, show_correct_answers=True):
         # Отримуємо всі правильні відповіді
         correct_texts = [opt.text for opt in question.options if opt.is_correct]
         # Визначаємо, чи питання числове
@@ -253,7 +257,8 @@ class ExamReviewService:
             earned_points=earned_points if show_correct_answers else None  # Приховуємо бали, якщо не показуємо правильні відповіді
         )
         
-    def _build_matching_data(self, base_data, question, student_answer, show_correct_answers=True):
+    @staticmethod
+    def _build_matching_data(base_data, question, student_answer, show_correct_answers=True):
         prompts_data = []
         total_earned_points = 0.0
         

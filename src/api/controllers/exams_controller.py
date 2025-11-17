@@ -60,7 +60,8 @@ class ExamsController:
         self._register_list_course_exams()
         self._register_get_exam_journal()
 
-    async def _safe_call(self, fn, *args, **kwargs):
+    @staticmethod
+    async def _safe_call(fn, *args, **kwargs):
         """Run a function and convert unexpected exceptions to HTTP 500.
 
         Supports both sync and async callables.
@@ -78,7 +79,8 @@ class ExamsController:
                 detail={"code": "INTERNAL_ERROR", "message": str(e)},
             )
 
-    def _require_teacher(self, user: User):
+    @staticmethod
+    def _require_teacher(user: User):
         if user.role != 'teacher':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

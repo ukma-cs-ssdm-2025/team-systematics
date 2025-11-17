@@ -10,7 +10,8 @@ class JournalService:
     def __init__(self):
         self.repo = None
 
-    def _get_overall_status(self, attempts: list) -> AttemptStatus | str:
+    @staticmethod
+    def _get_overall_status(attempts: list) -> AttemptStatus | str:
         """Визначає загальний статус студента на основі його спроб."""
         if not attempts:
             return "not_started" # Якщо спроб немає
@@ -81,7 +82,8 @@ class JournalService:
             students=students_list
         )
 
-    def get_exam_statistics_for_course(self, db: Session, course_id: UUID):
+    @staticmethod
+    def get_exam_statistics_for_course(db: Session, course_id: UUID):
         from src.api.repositories.attempts_repository import AttemptsRepository
         
         journal_repo = JournalRepository(db)
