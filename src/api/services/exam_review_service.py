@@ -1,9 +1,7 @@
 from uuid import UUID
-from fastapi import HTTPException, status
-from sqlalchemy.orm import Session, joinedload
-from collections import defaultdict
-from src.models.attempts import Attempt, Answer
-from src.models.exams import Exam, Question, Option, MatchingOption, QuestionType
+from sqlalchemy.orm import Session
+from src.models.attempts import Answer
+from src.models.exams import Question, QuestionType
 from src.models.users import User
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.weights_repository import WeightsRepository

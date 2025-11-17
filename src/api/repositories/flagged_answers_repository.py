@@ -2,7 +2,6 @@ from typing import Optional, List
 from uuid import UUID
 
 from sqlalchemy.orm import Session
-from sqlalchemy import and_
 
 from src.models.attempts import FlaggedAnswer, Answer
 from src.models.attempts import Attempt

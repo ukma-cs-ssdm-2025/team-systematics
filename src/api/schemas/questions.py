@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
 from src.models.exams import QuestionType  # import enum from models

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload, selectinload, load_only
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
 from sqlalchemy import func
 from uuid import UUID
@@ -17,7 +17,6 @@ from src.api.schemas.attempts import (
 )
 
 from src.api.schemas.plagiarism import (
-    PlagiarismReport,
     PlagiarismCheckSummary,
     PlagiarismComparisonResponse,
 )
