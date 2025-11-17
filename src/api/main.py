@@ -22,7 +22,7 @@ from src.api.controllers.courses_controller import CoursesController
 from src.api.controllers.users_controller import UsersController
 from src.models import users, roles, user_roles, exams, courses, majors, user_majors
 from src.models import attempts
-from src.api.database import SessionLocal, engine
+from src.api.database import engine
 from src.api.controllers.transcript_controller import TranscriptController
 from src.api.services.transcript_service import TranscriptService
 from src.core.cloudinary import configure_cloudinary

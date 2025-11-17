@@ -9,7 +9,8 @@ from src.api.repositories.user_repository import UserRepository
 class UsersService:
     # stateless, __init__ не потрібен
 
-    def get_user_profile(self, user: User) -> dict:
+    @staticmethod
+    def get_user_profile(user: User) -> dict:
         """Формує дані для відповіді профілю."""
         return {
             "id": user.id,
@@ -19,11 +20,13 @@ class UsersService:
             "avatar_url": user.avatar_url
         }
 
-    def get_notification_settings(self, user: User) -> dict:
+    @staticmethod
+    def get_notification_settings(user: User) -> dict:
         """Повертає налаштування сповіщень."""
         return user.notification_settings
 
-    def update_notification_settings(self, user_id: UUID, settings_data: dict, db: Session):
+    @staticmethod
+    def update_notification_settings(user_id: UUID, settings_data: dict, db: Session):
         """Оновлює налаштування сповіщень."""
         user_repo = UserRepository(db)
         user = user_repo.get_user_by_id(user_id)
@@ -32,7 +35,8 @@ class UsersService:
         
         user_repo.update_user_settings(user, 'notification_settings', settings_data)
 
-    def update_avatar(self, user_id: UUID, file: UploadFile, db: Session) -> User:
+    @staticmethod
+    def update_avatar(user_id: UUID, file: UploadFile, db: Session) -> User:
         """Завантажує аватар в Cloudinary та оновлює URL в профілі."""
         import logging
         logger = logging.getLogger(__name__)

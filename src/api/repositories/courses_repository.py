@@ -66,14 +66,15 @@ class CoursesRepository:
                 user_enrollment,
                 (user_enrollment.course_id == Course.id) & (user_enrollment.user_id == current_user_id)
             ).add_columns(
-                (user_enrollment.user_id != None).label("is_enrolled")
+                (user_enrollment.user_id is not None).label("is_enrolled")
             )
         else:
             query = query.add_columns(literal(False).label("is_enrolled"))
             
         return query
     
-    def _get_teacher_name(self, owner) -> str:
+    @staticmethod
+    def _get_teacher_name(owner) -> str:
         """Отримує ім'я викладача з об'єкта owner."""
         if not owner or not owner.first_name or not owner.last_name:
             return ""
@@ -112,8 +113,8 @@ class CoursesRepository:
             })
         return items
 
+    @staticmethod
     def _apply_student_exam_filters(
-        self,
         results: List,
         min_students: Optional[int] = None,
         max_students: Optional[int] = None,
@@ -142,7 +143,8 @@ class CoursesRepository:
             filtered_results.append(result)
         return filtered_results
 
-    def _apply_name_filter(self, query, name_filter: Optional[str], owner_alias=None):
+    @staticmethod
+    def _apply_name_filter(query, name_filter: Optional[str], owner_alias=None):
         """Застосовує фільтр за назвою/кодом курсу."""
         # owner_alias parameter kept for future use
         if name_filter:

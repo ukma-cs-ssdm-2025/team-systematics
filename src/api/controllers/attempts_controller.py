@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, load_only, joinedload
+from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, AddTimeRequest, ActiveAttemptInfo
@@ -14,7 +14,6 @@ from src.utils.auth import get_current_user_with_role, require_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
-from src.api.dependencies import get_current_user
 from typing import List, Optional
 from src.api.schemas.plagiarism import (
     PlagiarismCheckSummary, 
@@ -33,7 +32,8 @@ class AttemptsController:
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
         self._setup_routes()
 
-    def _calculate_max_points(self, db: Session, attempt_id: UUID, question_id: UUID) -> float:
+    @staticmethod
+    def _calculate_max_points(db: Session, attempt_id: UUID, question_id: UUID) -> float:
         """Calculate max points for a question based on exam weights."""
         attempts_repo = AttemptsRepository(db)
         weights_repo = WeightsRepository(db)
@@ -69,7 +69,8 @@ class AttemptsController:
         # Окремий метод для реєстрації роутів
         self._register_flagged_answers_route()
 
-    def _require_teacher(self, current_user: User) -> None:
+    @staticmethod
+    def _require_teacher(current_user: User) -> None:
         user_role = str(current_user.role).lower().strip() if current_user.role else None
         if user_role != 'teacher':
             raise HTTPException(
@@ -165,7 +166,6 @@ class AttemptsController:
     def _unflag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
         self.service.unflag_answer(db=db, answer_id=answer_id, current_user=current_user)
-        return None
 
     def _compare_answers(self, answer1_id: UUID = Path(..., description="ID першої відповіді"), answer2_id: UUID = Path(..., description="ID другої відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)

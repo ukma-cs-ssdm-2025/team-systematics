@@ -268,24 +268,14 @@ async function handleFlagClick(event) {
     // Отримуємо answer_id з різних джерел
     let currentAnswerId = props.question.answer_id || answerId.value
     
-    console.log('Flag button clicked! Initial state:', {
-        question_answer_id: props.question.answer_id,
-        answerId_value: answerId.value,
-        currentAnswerId: currentAnswerId,
-        attemptId: props.attemptId,
-        question_id: props.question.id,
-        question_type: props.question.question_type
-    })
+    
     
     // Якщо answer_id все ще немає, спробуємо отримати його через API
     if (!currentAnswerId && props.attemptId && props.question.id) {
-        console.log('Fetching answer_id from API...', {
-            attemptId: props.attemptId,
-            questionId: props.question.id
-        })
+        
         try {
             currentAnswerId = await getAnswerId(props.attemptId, props.question.id)
-            console.log('Received answer_id from API:', currentAnswerId)
+            
             if (currentAnswerId) {
                 answerId.value = currentAnswerId
                 // Не змінюємо props напряму, це може викликати проблеми
@@ -318,14 +308,14 @@ async function handleFlagClick(event) {
     }
     
     if (isFlagging.value) {
-        console.log('Already flagging, ignoring click')
+        
         return // Вже виконується запит
     }
     
     isFlagging.value = true
     try {
         if (isFlagged.value) {
-            console.log('Unflagging answer:', currentAnswerId)
+            
             await unflagAnswer(currentAnswerId)
             isFlagged.value = false
         } else {

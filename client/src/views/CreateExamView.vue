@@ -127,7 +127,7 @@ const router = useRouter()
 const route = useRoute()
 const courseId = route.params.courseId
 const examId = route.params.examId
-const isEditMode = ref(!!examId)
+const isEditMode = ref(Boolean(examId))
 
 const loading = ref(false)
 const error = ref(null)

@@ -1,13 +1,10 @@
 from typing import Optional
-import pytest
-from fastapi import FastAPI, status, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, status, HTTPException
 from fastapi.testclient import TestClient
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from src.api.schemas.exams import Exam, ExamCreate
-from src.api.services.exams_service import ExamsService
 from src.api.database import get_db
 from src.api.controllers.versioning import require_api_version
 from src.api.controllers.exams_controller import ExamsController
@@ -25,13 +22,15 @@ class DatabaseConnectionError(Exception):
 
 class ExplodingService:
     """Mock service that simulates database errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         raise DatabaseConnectionError("Database connection failed")
 
 
 class ValidationService:
     """Mock service that simulates validation errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         if not payload.title:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -45,7 +44,8 @@ class ValidationService:
 
 class DummyService:
     """Mock service that returns valid exam objects"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         # Використовуємо now(timezone.utc) замість utcnow() для отримання часу в UTC
         now = datetime.now(timezone.utc)
         exam_dict = {

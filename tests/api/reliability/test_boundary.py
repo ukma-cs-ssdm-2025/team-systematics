@@ -1,5 +1,4 @@
 from typing import Optional
-from fastapi.responses import JSONResponse
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
@@ -7,8 +6,7 @@ from uuid import uuid4
 from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 
-from src.api.schemas.exams import Exam, ExamCreate
-from src.api.services.exams_service import ExamsService
+from src.api.schemas.exams import ExamCreate
 from src.api.controllers.exams_controller import ExamsController
 from src.api.controllers.versioning import require_api_version
 from src.api.database import get_db
@@ -16,7 +14,8 @@ from src.utils.auth import get_current_user_with_role
 
 
 class MockExamService:
-    def create(self, db: pytest.Session, payload: ExamCreate, owner_id=None) -> dict:
+    @staticmethod
+    def create(db: pytest.Session, payload: ExamCreate, owner_id=None) -> dict:
         if payload.end_at <= payload.start_at:
             raise ValueError("end_at must be after start_at")
 
@@ -88,7 +87,8 @@ def test_create_exam_with_minimum_title_length_accepted():
     app.dependency_overrides[require_api_version] = lambda: None
 
     class DummyService:
-        def create(self, db, payload, owner_id=None):
+        @staticmethod
+        def create(db, payload, owner_id=None):
             exam_id = str(uuid4())
             now = datetime.now(timezone.utc)
             return {

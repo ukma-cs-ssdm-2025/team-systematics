@@ -1,5 +1,5 @@
-from sqlalchemy.orm import Session, load_only, joinedload, defer, selectinload
-from sqlalchemy import func, or_
+from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import or_
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
@@ -152,7 +152,8 @@ class AttemptsRepository:
         self.db.refresh(attempt)
         return attempt    
 
-    def _get_question_type(self, q: Question) -> str:
+    @staticmethod
+    def _get_question_type(q: Question) -> str:
         return q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
 
     def _load_options_by_question(self, question_ids: List[UUID]) -> Dict[UUID, List[Dict[str, Any]]]:
