@@ -263,16 +263,6 @@ async function checkFlaggedStatus() {
     }
 }
 
-function logButtonState() {
-    console.log('Button state:', {
-        answer_id: props.question.answer_id,
-        isFlagging: isFlagging.value,
-        isFlagged: isFlagged.value,
-        question_id: props.question.id,
-        question_type: props.question.question_type
-    })
-}
-
 async function handleFlagClick(event) {
     event.stopPropagation()
     
@@ -341,8 +331,8 @@ async function handleFlagClick(event) {
             isFlagged.value = false
         } else {
             console.log('Flagging answer:', currentAnswerId)
-            const result = await flagAnswerForPlagiarism(currentAnswerId)
-            console.log('Flagging successful:', result)
+            await flagAnswerForPlagiarism(currentAnswerId)
+            console.log('Flagging successful')
             isFlagged.value = true
         }
     } catch (error) {
