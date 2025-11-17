@@ -85,7 +85,7 @@ function shuffleArray(array) {
 // Uses rejection sampling to avoid modulo bias. Falls back to Math.random().
 function secureRandomInt(max) {
     // Перевірка на наявність crypto API
-    if (globalThis.crypto && globalThis.crypto.getRandomValues && max > 0) {
+    if (globalThis.crypto?.getRandomValues && max > 0) {
         const uint32Max = 0xFFFFFFFF;
         const range = max;
         const threshold = (uint32Max + 1) - ((uint32Max + 1) % range);
