@@ -26,13 +26,10 @@ enabled = true
 name = "coverage"
 enabled = true
 
-[test_patterns]
-python = [
+test_patterns = [
     "tests/**/*.py",
     "**/test_*.py",
-    "**/*_test.py"
-]
-javascript = [
+    "**/*_test.py",
     "**/*.test.js",
     "**/*.spec.js",
     "**/tests/**/*.js",
