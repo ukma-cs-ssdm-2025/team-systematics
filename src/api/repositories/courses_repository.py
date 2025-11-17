@@ -543,7 +543,7 @@ class CoursesRepository:
         
         # Групуємо за курсом та збираємо викладачів
         courses_dict = {}
-        for course_id, name, code, students_count, teacher_name, teacher_email in all_results:
+        for course_id, name, code, students_count, teacher_name, _teacher_email in all_results:
             if course_id not in courses_dict:
                 courses_dict[course_id] = {
                     "id": course_id,

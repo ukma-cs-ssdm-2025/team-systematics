@@ -231,7 +231,6 @@ const fetchAnswerId = async () => {
             const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id);
             if (fetchedAnswerId) {
                 answerId.value = fetchedAnswerId;
-                props.question.answer_id = fetchedAnswerId;
                 await handleFlaggedStatus();
             }
         } catch (error) {
@@ -261,10 +260,6 @@ async function checkFlaggedStatus() {
     } catch (error) {
         console.error('Failed to check flagged status:', error)
     }
-}
-
-function logButtonState() {
-    
 }
 
 async function handleFlagClick(event) {
@@ -324,9 +319,9 @@ async function handleFlagClick(event) {
             await unflagAnswer(currentAnswerId)
             isFlagged.value = false
         } else {
-            
-            const result = await flagAnswerForPlagiarism(currentAnswerId)
-            
+            console.log('Flagging answer:', currentAnswerId)
+            await flagAnswerForPlagiarism(currentAnswerId)
+            console.log('Flagging successful')
             isFlagged.value = true
         }
     } catch (error) {

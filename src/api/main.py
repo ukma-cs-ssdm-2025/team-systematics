@@ -36,10 +36,13 @@ scheduler = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):  # noqa: PYL-W0613
     """
     Lifespan context manager для FastAPI.
     Запускає scheduler при старті додатку та зупиняє його при завершенні.
+    
+    Args:
+        _app: Екземпляр FastAPI (не використовується, але потрібен для сигнатури lifespan).
     """
     global scheduler
     
@@ -82,7 +85,7 @@ def create_app() -> FastAPI:
     course_supervisors.Base.metadata.create_all(bind=engine)
     exam_participants.Base.metadata.create_all(bind=engine)
 
-    app = FastAPI(
+    fastapi_app = FastAPI(
         title="Online Exams API",
         version="1.0.0",
         description="Code-first FastAPI spec for an online examination platform.",
@@ -102,7 +105,7 @@ def create_app() -> FastAPI:
         "https://ukma-cs-ssdm-2025.github.io",
     ]
 
-    app.add_middleware(
+    fastapi_app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
@@ -110,7 +113,7 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    install_exception_handlers(app)
+    install_exception_handlers(fastapi_app)
 
     # Ініціалізуємо сервіси
     exams_service = ExamsService()
@@ -134,13 +137,13 @@ def create_app() -> FastAPI:
     configure_cloudinary()
 
     # Підключаємо роутери
-    app.include_router(auth_controller.router, prefix="/api")
-    app.include_router(exams_controller.router, prefix="/api")
-    app.include_router(attempts_controller.router, prefix="/api")
-    app.include_router(courses_controller.router, prefix="/api")
-    app.include_router(transcript_controller.router, prefix="/api")
-    app.include_router(users_controller.router, prefix="/api")
-    app.include_router(exam_participants_controller.router, prefix="/api")
+    fastapi_app.include_router(auth_controller.router, prefix="/api")
+    fastapi_app.include_router(exams_controller.router, prefix="/api")
+    fastapi_app.include_router(attempts_controller.router, prefix="/api")
+    fastapi_app.include_router(courses_controller.router, prefix="/api")
+    fastapi_app.include_router(transcript_controller.router, prefix="/api")
+    fastapi_app.include_router(users_controller.router, prefix="/api")
+    fastapi_app.include_router(exam_participants_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
@@ -149,15 +152,15 @@ def create_app() -> FastAPI:
     if os.path.exists(build_dir):
         assets_dir = os.path.join(build_dir, "assets")
         if os.path.exists(assets_dir):
-            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+            fastapi_app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-        @app.get("/{full_path:path}", include_in_schema=False)
+        @fastapi_app.get("/{full_path:path}", include_in_schema=False)
         async def serve_vue_app(request: Request):
             index_path = os.path.join(build_dir, "index.html")
             if os.path.exists(index_path):
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
  
-    return app
+    return fastapi_app
 
 app = create_app()
