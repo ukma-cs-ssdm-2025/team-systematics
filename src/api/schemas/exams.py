@@ -43,9 +43,12 @@ def end_at_must_be_after_start_at(cls, v, values):
     Raises:
         ValueError: Якщо `end_at` є раніше або збігається з `start_at`.
     """
-    if "start_at" in values and values["start_at"] and v:
-        if v <= values["start_at"]:
-            raise ValueError("end_at must be after start_at")
+    if (
+        "start_at" in values and values["start_at"]
+        and v
+        and v <= values["start_at"]
+    ):
+        raise ValueError("end_at must be after start_at")
     return v
 
 class ExamCreate(BaseModel):
