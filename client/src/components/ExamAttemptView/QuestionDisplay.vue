@@ -231,7 +231,6 @@ const fetchAnswerId = async () => {
             const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id);
             if (fetchedAnswerId) {
                 answerId.value = fetchedAnswerId;
-                props.question.answer_id = fetchedAnswerId;
                 await handleFlaggedStatus();
             }
         } catch (error) {
