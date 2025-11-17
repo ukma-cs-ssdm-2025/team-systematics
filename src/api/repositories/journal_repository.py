@@ -1,12 +1,11 @@
 from sqlalchemy.orm import Session, joinedload, contains_eager, selectinload
-from sqlalchemy import func
 from uuid import UUID
 from typing import List, Optional
 
 from src.models.users import User
 from src.models.exams import Exam
 from src.models.attempts import Attempt
-from src.models.courses import Course, CourseEnrollment
+from src.models.courses import CourseEnrollment
 from src.models.user_roles import UserRole
 from src.models.roles import Role
 from src.models.course_exams import CourseExam

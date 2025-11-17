@@ -5,10 +5,8 @@ import uuid as uuid_lib
 from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.courses_repository import CoursesRepository
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamInList, ExamWithQuestions
-from src.api.schemas.questions import QuestionSchema
-from src.models.matching_options import MatchingOption
-from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, CourseExamsPage, ExamInList, ExamWithQuestions
+from src.api.schemas.attempts import Attempt
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository

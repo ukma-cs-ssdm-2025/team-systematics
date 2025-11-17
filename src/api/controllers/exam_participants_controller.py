@@ -1,5 +1,5 @@
 from __future__ import annotations
-from fastapi import APIRouter, Depends, HTTPException, status, Path
+from fastapi import APIRouter, Depends, status, Path
 from sqlalchemy.orm import Session
 from uuid import UUID
 
@@ -10,8 +10,7 @@ from src.api.schemas.exam_participants import (
     ExamParticipantAttendanceUpdate,
 )
 from src.api.services.exam_participants_service import ExamParticipantsService
-from src.utils.auth import get_current_user, require_role
-from src.api.repositories.user_repository import UserRepository
+from src.utils.auth import require_role
 from src.models.users import User
 from .versioning import require_api_version
 

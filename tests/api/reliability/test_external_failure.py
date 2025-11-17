@@ -1,4 +1,3 @@
-import pytest
 from fastapi import FastAPI, HTTPException, status
 from fastapi.testclient import TestClient
 from uuid import uuid4

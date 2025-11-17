@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, load_only, joinedload
+from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
 from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, AddTimeRequest, ActiveAttemptInfo
@@ -14,7 +14,6 @@ from src.utils.auth import get_current_user_with_role, require_role
 from src.models.users import User
 from .versioning import require_api_version
 from src.api.database import get_db
-from src.api.dependencies import get_current_user
 from typing import List, Optional
 from src.api.schemas.plagiarism import (
     PlagiarismCheckSummary, 

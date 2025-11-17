@@ -1,6 +1,5 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
-from uuid import UUID
 from src.api.schemas.transcript import TranscriptResponse
 from src.api.services.transcript_service import TranscriptService
 from src.utils.auth import get_current_user_with_role
