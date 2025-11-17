@@ -39,37 +39,26 @@ javascript = [
     "**/__tests__/**/*.js"
 ]
 
-[exclude_patterns]
-python = [
+exclude_patterns = [
     "__pycache__",
     "venv",
     ".venv",
     ".venv311",
     "htmlcov",
     "node_modules",
+    "**/node_modules/**",
     "*.egg-info",
     "build",
     "dist",
     ".git",
     "client/node_modules",
     "client/dist",
-    "client/build"
-]
-javascript = [
-    "node_modules",
-    "**/node_modules/**",
-    "dist",
-    "build",
-    ".git",
+    "client/build",
     "coverage",
     "*.min.js",
     "*.bundle.js",
     "vendor",
-    "**/vendor/**",
-    "__pycache__",
-    "venv",
-    ".venv",
-    "htmlcov"
+    "**/vendor/**"
 ]
 
 [python]
