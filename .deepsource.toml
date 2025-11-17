@@ -1,19 +1,29 @@
 version = 1
 
 test_patterns = [
-  "\"**/*.test.js\",",
-  "\"**/*.spec.js\",",
-  "\"**/tests/**/*.js\",",
-  "\"**/__tests__/**/*.js\""
+  "tests/**/*.py",
+  "**/test_*.py",
+  "**/*_test.py",
+  "**/*.test.js",
+  "**/*.spec.js",
+  "**/tests/**/*.js",
+  "**/__tests__/**/*.js"
 ]
 
 exclude_patterns = [
-  "\"node_modules\",",
-  "\"**/node_modules/**\",",
-  "\"*.min.js\",",
-  "\"*.bundle.js\",",
-  "\"client/dist\",",
-  "\"client/build\""
+  "__pycache__",
+  "venv",
+  ".venv",
+  "htmlcov",
+  "node_modules",
+  "**/node_modules/**",
+  "*.min.js",
+  "*.bundle.js",
+  "client/dist",
+  "client/build",
+  "*.egg-info",
+  "build",
+  "dist"
 ]
 
 [[analyzers]]
