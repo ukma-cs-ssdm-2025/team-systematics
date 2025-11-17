@@ -17,25 +17,6 @@ export function useAuth() {
   const isTeacher = computed(() => userRole.value === 'teacher')
   const isSupervisor = computed(() => userRole.value === 'supervisor')
 
-  // Зберігає всі дані користувача після успішного входу
-  const login = (data) => {
-    // data = { access_token, token_type, role, full_name, major_name, avatar_url }
-
-    token.value = data.access_token
-    userRole.value = data.role
-    userFullName.value = data.full_name
-    userMajor.value = data.major_name
-    avatarUrl.value = data.avatar_url
-
-    localStorage.setItem('token', data.access_token)
-    localStorage.setItem('userRole', data.role)
-    localStorage.setItem('userFullName', data.full_name)
-    localStorage.setItem('userMajor', data.major_name)
-    localStorage.setItem('avatarUrl', data.avatar_url)
-
-    startInactivityTimer()
-  }
-
   // Завершує сесію користувача
   const logout = () => {
     token.value = null
@@ -86,6 +67,25 @@ export function useAuth() {
         logout()
       }, timeoutDuration)
     }
+  }
+
+  // Зберігає всі дані користувача після успішного входу
+  const login = (data) => {
+    // data = { access_token, token_type, role, full_name, major_name, avatar_url }
+
+    token.value = data.access_token
+    userRole.value = data.role
+    userFullName.value = data.full_name
+    userMajor.value = data.major_name
+    avatarUrl.value = data.avatar_url
+
+    localStorage.setItem('token', data.access_token)
+    localStorage.setItem('userRole', data.role)
+    localStorage.setItem('userFullName', data.full_name)
+    localStorage.setItem('userMajor', data.major_name)
+    localStorage.setItem('avatarUrl', data.avatar_url)
+
+    startInactivityTimer()
   }
 
   const updateAvatarUrl = (newUrl) => {
