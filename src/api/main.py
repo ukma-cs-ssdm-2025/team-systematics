@@ -36,7 +36,7 @@ scheduler = None
 
 
 @asynccontextmanager
-async def lifespan(_app: FastAPI):
+async def lifespan(_app: FastAPI):  # noqa: PYL-W0613
     """
     Lifespan context manager для FastAPI.
     Запускає scheduler при старті додатку та зупиняє його при завершенні.
