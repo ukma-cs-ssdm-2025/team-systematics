@@ -1,5 +1,21 @@
 version = 1
 
+test_patterns = [
+  "\"**/*.test.js\",",
+  "\"**/*.spec.js\",",
+  "\"**/tests/**/*.js\",",
+  "\"**/__tests__/**/*.js\""
+]
+
+exclude_patterns = [
+  "\"node_modules\",",
+  "\"**/node_modules/**\",",
+  "\"*.min.js\",",
+  "\"*.bundle.js\",",
+  "\"client/dist\",",
+  "\"client/build\""
+]
+
 [[analyzers]]
 name = "docker"
 
@@ -8,45 +24,9 @@ name = "python"
 
   [analyzers.meta]
   runtime_version = "3.x.x"
-  test_patterns = [
-      "tests/**/*.py",
-      "**/test_*.py",
-      "**/*_test.py"
-  ]
-
-  exclude_patterns = [
-      "__pycache__",
-      "venv",
-      ".venv",
-      ".venv311",
-      "*.egg-info",
-      "build",
-      "dist"
-  ]
 
 [[analyzers]]
 name = "javascript"
 
   [analyzers.meta]
   plugins = ["vue"]
-  test_patterns = [
-      "**/*.test.js",
-      "**/*.spec.js",
-      "**/tests/**/*.js",
-      "**/__tests__/**/*.js"
-  ]
-
-  exclude_patterns = [
-      "node_modules",
-      "**/node_modules/**",
-      "*.min.js",
-      "*.bundle.js",
-      "client/dist",
-      "client/build"
-  ]
-
-[python]
-requirement_files = ["requirements.txt", "pyproject.toml"]
-
-[javascript]
-package_manager = "npm"
