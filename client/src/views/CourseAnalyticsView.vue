@@ -453,7 +453,7 @@ function formatDate(dateString) {
 }
 
 function getExamNameForStats(index) {
-    if (availableExams.value && availableExams.value[index]) {
+    if (availableExams.value?.[index]) {
         return availableExams.value[index].title
     }
     if (courseAnalytics.value?.exam_statistics && courseAnalytics.value.exam_statistics[index]) {
