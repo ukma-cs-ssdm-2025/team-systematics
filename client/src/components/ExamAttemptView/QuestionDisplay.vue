@@ -319,9 +319,9 @@ async function handleFlagClick(event) {
             await unflagAnswer(currentAnswerId)
             isFlagged.value = false
         } else {
-            console.log('Flagging answer:', currentAnswerId)
+            
             await flagAnswerForPlagiarism(currentAnswerId)
-            console.log('Flagging successful')
+            
             isFlagged.value = true
         }
     } catch (error) {
