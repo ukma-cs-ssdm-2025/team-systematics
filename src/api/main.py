@@ -36,10 +36,13 @@ scheduler = None
 
 
 @asynccontextmanager
-async def lifespan(app: FastAPI):
+async def lifespan(_app: FastAPI):
     """
     Lifespan context manager для FastAPI.
     Запускає scheduler при старті додатку та зупиняє його при завершенні.
+    
+    Args:
+        _app: Екземпляр FastAPI (не використовується, але потрібен для сигнатури lifespan).
     """
     global scheduler
     

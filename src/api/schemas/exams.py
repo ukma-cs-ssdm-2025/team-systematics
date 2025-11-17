@@ -10,10 +10,11 @@ DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретич
 EXAMPLE_TITLE = "Вступ до Docker"
 EXAM_DURATION_DESCRIPTION = "Duration of the exam in minutes"
 
-def datetime_must_not_be_in_past(cls, v):
+def datetime_must_not_be_in_past(_cls, v):
     """Перевіряє, що дата/час не в минулому відносно поточного часу.
 
     Args:
+        _cls: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
         v: Значення поля datetime, яке проходить валідацію.
 
     Returns:
@@ -30,10 +31,11 @@ def datetime_must_not_be_in_past(cls, v):
             raise ValueError("Дата та час не можуть бути в минулому")
     return v
 
-def end_at_must_be_after_start_at(cls, v, values):
+def end_at_must_be_after_start_at(_cls, v, values):
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
 
     Args:
+        _cls: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
         v: Значення поля `end_at`, яке проходить валідацію.
         values: Словник значень інших полів моделі, які вже пройшли валідацію.
 
