@@ -1,11 +1,8 @@
-from datetime import datetime, timezone
+from __future__ import annotations
 from typing import Optional, List
 from uuid import UUID
-
-from pydantic import (
-    BaseModel, Field, conint, constr,
-    field_validator, model_validator, FieldValidationInfo,
-)
+from datetime import datetime, timezone
+from pydantic import BaseModel, Field, conint, constr, validator, model_validator
 from src.models.exams import ExamStatusEnum
 
 DEFAULT_END_AT_EXAMPLE = "2027-10-08T10:00:00Z"
@@ -13,11 +10,11 @@ DEFAULT_INSTRUCTIONS = "Іспит складається з 20 теоретич
 EXAMPLE_TITLE = "Вступ до Docker"
 EXAM_DURATION_DESCRIPTION = "Duration of the exam in minutes"
 
-def datetime_must_not_be_in_past(cls, v):  # noqa: PYL-W0613
+def datetime_must_not_be_in_past(_, v):  # noqa: PYL-W0613
     """Перевіряє, що дата/час не в минулому відносно поточного часу.
 
     Args:
-        cls: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
+        _: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
         v: Значення поля datetime, яке проходить валідацію.
 
     Returns:
@@ -34,11 +31,11 @@ def datetime_must_not_be_in_past(cls, v):  # noqa: PYL-W0613
             raise ValueError("Дата та час не можуть бути в минулому")
     return v
 
-def end_at_must_be_after_start_at(cls, v, values):  # noqa: PYL-W0613
+def end_at_must_be_after_start_at(_, v, values):  # noqa: PYL-W0613
     """Перевіряє, що дата завершення (`end_at`) наступає після дати початку (`start_at`).
 
     Args:
-        cls: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
+        _: Клас моделі (не використовується, але потрібен для сигнатури Pydantic validator).
         v: Значення поля `end_at`, яке проходить валідацію.
         values: Словник значень інших полів моделі, які вже пройшли валідацію.
 
@@ -57,118 +54,93 @@ def end_at_must_be_after_start_at(cls, v, values):  # noqa: PYL-W0613
     return v
 
 class ExamCreate(BaseModel):
-    title: constr(min_length=3, max_length=100) = Field(  # type: ignore
+    title: constr(min_length=3, max_length=100) = Field( # type: ignore
         ...,
         description="Exam title",
         example=EXAMPLE_TITLE,
     )
-    instructions: Optional[constr(max_length=2000)] = Field(  # type: ignore
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
-        example=DEFAULT_INSTRUCTIONS,
+        example=DEFAULT_INSTRUCTIONS
     )
     start_at: datetime = Field(
         ...,
         example="2026-10-08T10:00:00Z",
-        description="Start datetime (UTC)",
+        description="Start datetime (UTC)"
     )
     end_at: datetime = Field(
         ...,
         example=DEFAULT_END_AT_EXAMPLE,
-        description="End datetime (UTC)",
+        description="End datetime (UTC)"
     )
     duration_minutes: int = Field(
         60,
         description=EXAM_DURATION_DESCRIPTION,
-        example=120,
+        example=120
     )
-    max_attempts: conint(ge=1, le=10) = Field(  # type: ignore
+    max_attempts: conint(ge=1, le=10) = Field( # type: ignore
         1,
         description="Max attempts per user",
-        example=3,
+        example=3
     )
-    pass_threshold: conint(ge=0, le=100) = Field(  # type: ignore
+    pass_threshold: conint(ge=0, le=100) = Field( # type: ignore
         60,
         description="Passing threshold in percent",
-        example=75,
+        example=75
     )
     owner_id: Optional[UUID] = Field(
         None,
         description="Instructor user id (automatically set from token if not provided)",
-        example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e",
+        example="c7a1c7e2-4a2c-4b6e-8e7f-9d3c5f2b1a8e"
     )
 
-    @field_validator("start_at", "end_at")
-    @classmethod
-    def datetime_must_not_be_in_past(cls, v: datetime) -> datetime:
-        if v is None:
-            return v
-        now = datetime.now(timezone.utc)
-        v_with_tz = v if v.tzinfo is not None else v.replace(tzinfo=timezone.utc)
-        if v_with_tz < now:
-            raise ValueError("Дата та час не можуть бути в минулому")
-        return v
-
-    @field_validator("end_at")
-    @classmethod
-    def end_at_must_be_after_start_at(
-        cls, v: datetime, info: FieldValidationInfo
-    ) -> datetime:
-        start_at = info.data.get("start_at")
-        if start_at and v and v <= start_at:
-            raise ValueError("end_at must be after start_at")
-        return v
+    _validate_start_at_not_in_past = validator("start_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    _validate_end_at_not_in_past = validator("end_at", allow_reuse=True)(datetime_must_not_be_in_past)
+    _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class ExamUpdate(BaseModel):
-    title: Optional[constr(min_length=3, max_length=100)] = Field(  # type: ignore
+    title: Optional[constr(min_length=3, max_length=100)] = Field( # type: ignore
         None,
         description="Exam title",
-        example="Docker: Просунутий рівень",
+        example="Docker: Просунутий рівень"
     )
-    instructions: Optional[constr(max_length=2000)] = Field(  # type: ignore
+    instructions: Optional[constr(max_length=2000)] = Field( # type: ignore
         None,
         description="Markdown/HTML instructions",
-        example="Оновлені інструкції: додано практичне завдання.",
+        example="Оновлені інструкції: додано практичне завдання."
     )
     start_at: Optional[datetime] = Field(
         None,
         description="Start datetime (UTC)",
-        example="2026-11-15T09:00:00Z",
+        example="2026-11-15T09:00:00Z"
     )
     end_at: Optional[datetime] = Field(
         None,
         description="End datetime (UTC)",
-        example="2028-02-20T18:00:00Z",
+        example="2028-02-20T18:00:00Z"
     )
     duration_minutes: Optional[int] = Field(
         None,
         description=EXAM_DURATION_DESCRIPTION,
-        example=120,
+        example=120
     )
-    max_attempts: Optional[conint(ge=1, le=10)] = Field(  # type: ignore
+    max_attempts: Optional[conint(ge=1, le=10)] = Field( # type: ignore
         None,
         description="Max attempts per user",
-        example=2,
+        example=2
     )
-    pass_threshold: Optional[conint(ge=0, le=100)] = Field(  # type: ignore
+    pass_threshold: Optional[conint(ge=0, le=100)] = Field( # type: ignore
         None,
         description="Passing threshold in percent",
-        example=80,
+        example=80
     )
-    published: Optional[bool] = Field(
-        None,
-        description="Publish exam (true/false)",
-    )
+    published: Optional[bool] = Field(None, description="Publish exam (true/false)")
 
-    @field_validator("end_at")
-    @classmethod
-    def end_at_after_start_at(
-        cls, v: Optional[datetime], info: FieldValidationInfo
-    ) -> Optional[datetime]:
-        start_at = info.data.get("start_at")
-        if start_at and v and v <= start_at:
-            raise ValueError("end_at must be after start_at")
-        return v
+    # Attach validators to this model
+    # Для редагування не перевіряємо, чи дата в минулому, оскільки іспит міг бути створений раніше
+    # Залишаємо тільки перевірку, що end_at після start_at
+    _validate_dates = validator("end_at", allow_reuse=True)(end_at_must_be_after_start_at)
 
 class Exam(BaseModel):
     id: UUID = Field(
