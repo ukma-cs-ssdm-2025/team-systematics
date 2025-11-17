@@ -270,16 +270,12 @@ function hasRoleAccess(requiredRole, auth, to) {
   }
   
   // Одиночна роль
-  if (checkUserRole(requiredRole, auth)) {
-    return true
-  }
+  const hasRequiredRole = checkUserRole(requiredRole, auth)
   
   // Дозволяємо доступ до /exams як для студентів, так і для вчителів
-  if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
-    return true
-  }
+  const isExamsPath = to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)
   
-  return false
+  return hasRequiredRole || isExamsPath
 }
 
 // Перевіряє доступ до маршрутів перед переходом
