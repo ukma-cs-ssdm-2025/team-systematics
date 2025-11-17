@@ -66,7 +66,7 @@ class CoursesRepository:
                 user_enrollment,
                 (user_enrollment.course_id == Course.id) & (user_enrollment.user_id == current_user_id)
             ).add_columns(
-                (user_enrollment.user_id != None).label("is_enrolled")
+                (user_enrollment.user_id is not None).label("is_enrolled")
             )
         else:
             query = query.add_columns(literal(False).label("is_enrolled"))
