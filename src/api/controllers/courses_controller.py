@@ -320,7 +320,6 @@ class CoursesController:
             "Тільки вчителі можуть видаляти курси",
         )
         self.service.delete(db, course_id)
-        return None
 
     def enroll(
         self,
@@ -337,7 +336,6 @@ class CoursesController:
             "Записуватись на курси можуть лише студенти",
         )
         self.service.enroll(db, current_user.id, course_id)
-        return None
 
     def unenroll(
         self,
@@ -354,7 +352,6 @@ class CoursesController:
             "Виписуватись з курсів можуть лише студенти",
         )
         self.service.unenroll(db, current_user.id, course_id)
-        return None
 
     def list_course_exams(
         self,
