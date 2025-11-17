@@ -166,7 +166,6 @@ class AttemptsController:
     def _unflag_answer(self, answer_id: UUID = Path(..., description="ID відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
         self.service.unflag_answer(db=db, answer_id=answer_id, current_user=current_user)
-        return None
 
     def _compare_answers(self, answer1_id: UUID = Path(..., description="ID першої відповіді"), answer2_id: UUID = Path(..., description="ID другої відповіді"), db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         self._require_teacher(current_user)
