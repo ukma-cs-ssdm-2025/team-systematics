@@ -1,31 +1,19 @@
 version = 1
 
-[analysis]
-python_targets = ["3.11"]
+[[analyzers]]
+name = "docker"
 
 [[analyzers]]
 name = "python"
-enabled = true
 
-[analyzers.meta]
-runtime_version = "3.11"
+  [analyzers.meta]
+  runtime_version = "3.x.x"
 
 [[analyzers]]
 name = "javascript"
-enabled = true
 
-[[analyzers]]
-name = "dockerfile"
-enabled = true
-
-[[analyzers]]
-name = "security"
-enabled = true
-
-[[analyzers]]
-name = "coverage"
-enabled = true
-
+  [analyzers.meta]
+  plugins = ["vue"]
 test_patterns = [
     "tests/**/*.py",
     "**/test_*.py",
