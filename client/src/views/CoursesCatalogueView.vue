@@ -221,14 +221,12 @@ const header = computed(() => {
 })
 
 const hasActiveFilters = computed(() => {
-    return !!(
-        filters.value.name?.trim() ||
+    return Boolean(filters.value.name?.trim() ||
         filters.value.teacher_name?.trim() ||
         (filters.value.min_students !== null && filters.value.min_students !== '') ||
         (filters.value.max_students !== null && filters.value.max_students !== '') ||
         (filters.value.min_exams !== null && filters.value.min_exams !== '') ||
-        (filters.value.max_exams !== null && filters.value.max_exams !== '')
-    )
+        (filters.value.max_exams !== null && filters.value.max_exams !== ''))
 })
 
 const displayCourses = computed(() => {
