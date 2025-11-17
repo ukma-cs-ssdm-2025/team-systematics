@@ -33,7 +33,8 @@ class AttemptsController:
         self.router = APIRouter(prefix="/attempts", tags=["Attempts"], dependencies=[Depends(require_api_version)])
         self._setup_routes()
 
-    def _calculate_max_points(self, db: Session, attempt_id: UUID, question_id: UUID) -> float:
+    @staticmethod
+    def _calculate_max_points(db: Session, attempt_id: UUID, question_id: UUID) -> float:
         """Calculate max points for a question based on exam weights."""
         attempts_repo = AttemptsRepository(db)
         weights_repo = WeightsRepository(db)
@@ -69,7 +70,8 @@ class AttemptsController:
         # Окремий метод для реєстрації роутів
         self._register_flagged_answers_route()
 
-    def _require_teacher(self, current_user: User) -> None:
+    @staticmethod
+    def _require_teacher(current_user: User) -> None:
         user_role = str(current_user.role).lower().strip() if current_user.role else None
         if user_role != 'teacher':
             raise HTTPException(

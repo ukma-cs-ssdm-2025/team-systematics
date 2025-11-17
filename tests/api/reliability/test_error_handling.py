@@ -25,13 +25,15 @@ class DatabaseConnectionError(Exception):
 
 class ExplodingService:
     """Mock service that simulates database errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         raise DatabaseConnectionError("Database connection failed")
 
 
 class ValidationService:
     """Mock service that simulates validation errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         if not payload.title:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -45,7 +47,8 @@ class ValidationService:
 
 class DummyService:
     """Mock service that returns valid exam objects"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         # Використовуємо now(timezone.utc) замість utcnow() для отримання часу в UTC
         now = datetime.now(timezone.utc)
         exam_dict = {

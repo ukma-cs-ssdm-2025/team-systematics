@@ -23,7 +23,8 @@ ALREADY_ACTIVE_SESSION = "Студент вже бере участь в інш�
 NOT_A_PARTICIPANT = "Користувача не знайдено серед учасників іспиту"
 
 class ExamParticipantsService:
-    def list(self, db: Session, exam_id: UUID):
+    @staticmethod
+    def list(db: Session, exam_id: UUID):
         repo = ExamParticipantsRepository(db)
         items = repo.list_active(exam_id)
         result = []
@@ -40,7 +41,8 @@ class ExamParticipantsService:
             result.append(ExamParticipantResponse.model_validate(item_dict))
         return result
 
-    def add(self, db: Session, exam_id: UUID, payload: ExamParticipantCreate):
+    @staticmethod
+    def add(db: Session, exam_id: UUID, payload: ExamParticipantCreate):
         exams_repo = ExamsRepository(db)
         exam = exams_repo.get(exam_id)
         if not exam:
@@ -72,7 +74,8 @@ class ExamParticipantsService:
             attendance_status=ep.attendance_status.value if ep.attendance_status else 'unknown'
         )
 
-    def remove(self, db: Session, exam_id: UUID, user_id: UUID):
+    @staticmethod
+    def remove(db: Session, exam_id: UUID, user_id: UUID):
         exams_repo = ExamsRepository(db)
         exam = exams_repo.get(exam_id)
         if not exam:
@@ -93,7 +96,8 @@ class ExamParticipantsService:
             raise NotFoundError(NOT_A_PARTICIPANT)
         return {"message": "Користувача видалено зі списку учасників іспиту"}
 
-    def set_attendance(self, db: Session, exam_id: UUID, user_id: UUID, update: ExamParticipantAttendanceUpdate):
+    @staticmethod
+    def set_attendance(db: Session, exam_id: UUID, user_id: UUID, update: ExamParticipantAttendanceUpdate):
         exams_repo = ExamsRepository(db)
         exam = exams_repo.get(exam_id)
         if not exam:

@@ -11,7 +11,8 @@ from src.models.users import User
 
 
 class FlaggedAnswersRepository:
-    def get_by_answer_id(self, db: Session, answer_id: UUID) -> Optional[FlaggedAnswer]:
+    @staticmethod
+    def get_by_answer_id(db: Session, answer_id: UUID) -> Optional[FlaggedAnswer]:
         """Отримати позначену відповідь за ID відповіді"""
         return (
             db.query(FlaggedAnswer)
@@ -19,7 +20,8 @@ class FlaggedAnswersRepository:
             .one_or_none()
         )
 
-    def create(self, db: Session, answer_id: UUID) -> FlaggedAnswer:
+    @staticmethod
+    def create(db: Session, answer_id: UUID) -> FlaggedAnswer:
         """Створити позначення для відповіді"""
         flagged = FlaggedAnswer(answer_id=answer_id)
         db.add(flagged)
@@ -34,7 +36,8 @@ class FlaggedAnswersRepository:
             return True
         return False
 
-    def list_all(self, db: Session) -> List[FlaggedAnswer]:
+    @staticmethod
+    def list_all(db: Session) -> List[FlaggedAnswer]:
         """Отримати всі позначені відповіді з повною інформацією"""
         return (
             db.query(FlaggedAnswer)

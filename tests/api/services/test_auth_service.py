@@ -29,10 +29,12 @@ def make_fake_repo(*, user_to_return=None, roles_to_return=None):
         def __init__(self, db):
             self._db = db
 
-        def get_user_by_email(self, email):
+        @staticmethod
+        def get_user_by_email(email):
             return user_to_return
 
-        def get_user_roles(self, user_id):
+        @staticmethod
+        def get_user_roles(user_id):
             return roles_to_return or []
 
     return FakeUserRepository

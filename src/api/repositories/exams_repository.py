@@ -138,7 +138,8 @@ class ExamsRepository:
         self.db.refresh(q)
         return q
 
-    def _validate_question_payload(self, exam_id: UUID, payload) -> None:
+    @staticmethod
+    def _validate_question_payload(exam_id: UUID, payload) -> None:
         if not payload:
             raise ValueError("Payload cannot be None or empty")
         if not isinstance(payload, dict):

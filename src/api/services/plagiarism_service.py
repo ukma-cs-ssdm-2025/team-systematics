@@ -165,7 +165,8 @@ class PlagiarismService:
 
     # ---------- ДОПОМІЖНІ МЕТОДИ ДЛЯ TEКСТУ ----------
 
-    def _build_attempt_text(self, db: Session, attempt_id: UUID) -> str:
+    @staticmethod
+    def _build_attempt_text(db: Session, attempt_id: UUID) -> str:
         """
         Формує "текст роботи" зі всіх відповідей типу long_answer цієї спроби.
         """
@@ -213,8 +214,8 @@ class PlagiarismService:
 
     # ---------- РІВЕНЬ 1: TF-IDF + COSINE ----------
 
+    @staticmethod
     def _run_fast_tfidf_filter(
-        self,
         base_text: str,
         candidate_texts: List[str],
         candidate_ids: List[UUID],
@@ -304,7 +305,8 @@ class PlagiarismService:
 
     # ---------- ДОПОМІЖНЕ: статус + конвертація в Pydantic ----------
 
-    def _status_from_similarity(self, similarity: float) -> PlagiarismStatus:
+    @staticmethod
+    def _status_from_similarity(similarity: float) -> PlagiarismStatus:
         """
         Можеш підкрутити пороги як хочеш.
         """
@@ -314,7 +316,8 @@ class PlagiarismService:
             return PlagiarismStatus.suspicious
         return PlagiarismStatus.ok
 
-    def _to_report(self, check) -> PlagiarismReport:
+    @staticmethod
+    def _to_report(check) -> PlagiarismReport:
         matches_raw = (check.details or {}).get("matches", [])
         matches: List[PlagiarismMatch] = [
             PlagiarismMatch(
@@ -420,8 +423,8 @@ class PlagiarismService:
             other_highlight_spans=other_spans,
         )
     
+    @staticmethod
     def _compute_highlight_spans(
-        self,
         base_text: str,
         other_text: str,
         min_match_len: int = 20,
