@@ -170,10 +170,6 @@ def create_app() -> FastAPI:
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
     
-    # === ВИДАЛЯЄМО ЗАТАРІЛИЙ @app.on_event("startup") ===
-    # Тепер запуск run_exam_email_scheduler відбувається у lifespan
-    # ==================================================
- 
     return app
 
 app = create_app()
