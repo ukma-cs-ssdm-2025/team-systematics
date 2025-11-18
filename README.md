@@ -7,10 +7,10 @@
 ## Наші учасники:
 | Прізвище Ім'я        | GitHub                                             | Ролі
 | ---------------------| ---------------------------------------------------|----------------------|
-| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Reliability Explorer |
-| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Risk Documentarian   |
-| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Resilience Engineer  |
-| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Fault Classifier     |
+| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Improvement Designer |
+| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Documentation Lead   |
+| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Data Gatherer        |
+| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Metrics Analyst      |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
