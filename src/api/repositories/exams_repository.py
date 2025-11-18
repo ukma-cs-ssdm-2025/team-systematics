@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, case
+from sqlalchemy import func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
 import logging
@@ -138,7 +138,8 @@ class ExamsRepository:
         self.db.refresh(q)
         return q
 
-    def _validate_question_payload(self, exam_id: UUID, payload) -> None:
+    @staticmethod
+    def _validate_question_payload(exam_id: UUID, payload) -> None:
         if not payload:
             raise ValueError("Payload cannot be None or empty")
         if not isinstance(payload, dict):
@@ -247,7 +248,6 @@ class ExamsRepository:
             if key not in excluded_fields:
                 # Конвертуємо published в status, якщо потрібно
                 if key == 'published':
-                    from src.models.exams import ExamStatusEnum
                     exam.status = ExamStatusEnum.published if value else ExamStatusEnum.draft
                 else:
                     setattr(exam, key, value)
@@ -275,7 +275,7 @@ class ExamsRepository:
         # 1. Спочатку видаляємо plagiarism_checks (вони посилаються на attempts)
         # 2. Потім видаляємо attempts (вони посилаються на exams)
         # 3. Нарешті видаляємо exam
-        from src.models.attempts import Attempt, PlagiarismCheck
+        from src.models.attempts import PlagiarismCheck
         
         # Отримуємо всі attempt_id для цього іспиту
         attempt_ids = [attempt.id for attempt in self.db.query(Attempt.id).filter(Attempt.exam_id == exam_id).all()]
@@ -323,7 +323,7 @@ class ExamsRepository:
         attempt_stats_sq = (
             self.db.query(
                 Attempt.exam_id,
-                func.count(case((Attempt.earned_points != None, Attempt.id))).label("students_completed"),
+                func.count(case((Attempt.earned_points is not None, Attempt.id))).label("students_completed"),
                 func.avg(Attempt.earned_points).label("average_grade"),
                 func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
             )

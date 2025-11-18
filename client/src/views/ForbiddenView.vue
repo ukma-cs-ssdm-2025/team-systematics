@@ -21,7 +21,6 @@ import CButton from '../components/global/CButton.vue'
 import { useAuth } from '../store/loginInfo.js'
 
 const router = useRouter()
-const auth = useAuth()
 
 function goBack() {
     router.go(-1)

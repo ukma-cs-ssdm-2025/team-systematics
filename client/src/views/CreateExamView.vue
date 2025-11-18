@@ -127,7 +127,7 @@ const router = useRouter()
 const route = useRoute()
 const courseId = route.params.courseId
 const examId = route.params.examId
-const isEditMode = ref(!!examId)
+const isEditMode = ref(Boolean(examId))
 
 const loading = ref(false)
 const error = ref(null)
@@ -151,6 +151,22 @@ const formatDateTimeForInput = (date) => {
     const minutes = String(d.getMinutes()).padStart(2, '0')
     return `${year}-${month}-${day}T${hours}:${minutes}`
 }
+
+// Ініціалізація exam - спробуємо завантажити з localStorage, інакше використовуємо значення за замовчуванням
+const defaultExam = {
+    title: '',
+    instructions: '',
+    start_at: formatDateTimeForInput(new Date()),
+    end_at: formatDateTimeForInput(new Date(Date.now() + 60 * 60 * 1000)), // +1 година за замовчуванням
+    duration_minutes: 60,
+    max_attempts: 1,
+    pass_threshold: 60,
+    course_id: courseId,
+    questions: []
+}
+
+const exam = ref(defaultExam)
+const isLoadingFromStorage = ref(false)
 
 // Функція для збереження в localStorage
 function saveToLocalStorage() {
@@ -362,22 +378,6 @@ function validatePositiveNumber(field, value) {
     // Округлюємо до цілого числа
     exam.value[field] = Math.floor(numValue)
 }
-
-// Ініціалізація exam - спробуємо завантажити з localStorage, інакше використовуємо значення за замовчуванням
-const defaultExam = {
-    title: '',
-    instructions: '',
-    start_at: formatDateTimeForInput(new Date()),
-    end_at: formatDateTimeForInput(new Date(Date.now() + 60 * 60 * 1000)), // +1 година за замовчуванням
-    duration_minutes: 60,
-    max_attempts: 1,
-    pass_threshold: 60,
-    course_id: courseId,
-    questions: []
-}
-
-const exam = ref(defaultExam)
-const isLoadingFromStorage = ref(false)
 
 // Завантажуємо дані з localStorage або з бекенду при монтуванні компонента
 onMounted(async () => {

@@ -452,16 +452,6 @@ function formatDate(dateString) {
     })
 }
 
-function getExamNameForStats(index) {
-    if (availableExams.value && availableExams.value[index]) {
-        return availableExams.value[index].title
-    }
-    if (courseAnalytics.value?.exam_statistics && courseAnalytics.value.exam_statistics[index]) {
-        return `Іспит ${index + 1}`
-    }
-    return 'Невідомий іспит'
-}
-
 function destroyCharts() {
     if (scoreDistributionChart) {
         scoreDistributionChart.destroy()

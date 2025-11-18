@@ -2,11 +2,11 @@ from sqlalchemy.orm import Session
 from fastapi import APIRouter, HTTPException, Query, Path, status, Depends
 from uuid import UUID
 from src.api.schemas.analytics import ExamProgress, GroupAnalytics
-from src.api.schemas.exams import Exam, ExamCreate, ExamStatistics, ExamUpdate, ExamsPage, CourseExamsPage, ExamWithQuestions, ExamsResponse
+from src.api.schemas.exams import Exam, ExamCreate, ExamStatistics, ExamUpdate, CourseExamsPage, ExamWithQuestions, ExamsResponse
 from src.api.schemas.journal import ExamJournalResponse
 from src.api.schemas.attempts import Attempt
 from src.models.users import User
-from src.utils.auth import get_current_user_id, get_current_user, get_current_user_with_role 
+from src.utils.auth import get_current_user_id, get_current_user_with_role 
 from src.api.services.exams_service import ExamsService
 from src.api.services.journal_service import JournalService
 from .versioning import require_api_version
@@ -60,7 +60,8 @@ class ExamsController:
         self._register_list_course_exams()
         self._register_get_exam_journal()
 
-    async def _safe_call(self, fn, *args, **kwargs):
+    @staticmethod
+    async def _safe_call(fn, *args, **kwargs):
         """Run a function and convert unexpected exceptions to HTTP 500.
 
         Supports both sync and async callables.
@@ -78,7 +79,8 @@ class ExamsController:
                 detail={"code": "INTERNAL_ERROR", "message": str(e)},
             )
 
-    def _require_teacher(self, user: User):
+    @staticmethod
+    def _require_teacher(user: User):
         if user.role != 'teacher':
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,

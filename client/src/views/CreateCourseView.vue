@@ -130,7 +130,7 @@ async function handleCreateCourse() {
         router.push('/courses/my')
 
     } catch (err) {
-        if (err.response && err.response.data && err.response.data.error && typeof err.response.data.error.message === 'string') {
+        if (err.response?.data && err.response.data.error && typeof err.response.data.error.message === 'string') {
             error.value = err.response.data.error.message;
         } else {
             error.value = 'Не вдалося створити курс. Перевірте з\'єднання з сервером.'

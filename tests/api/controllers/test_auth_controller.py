@@ -22,7 +22,8 @@ def app_with_good_service():
     that succeeds only for the canonical test credentials.
     """
     class GoodAuthService:
-        def login(self, db, request: LoginRequest) -> LoginResponse:
+        @staticmethod
+        def login(db, request: LoginRequest) -> LoginResponse:
             if request.email == TEST_EMAIL and request.password == TEST_PASS:
                 return LoginResponse(
                     access_token="fake-jwt",
@@ -55,7 +56,8 @@ def app_with_failing_service():
     Useful to test how the controller forwards service errors.
     """
     class FailingAuthService:
-        def login(self, db, request: LoginRequest):
+        @staticmethod
+        def login(db, request: LoginRequest):
             raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials")
 
     app = FastAPI()

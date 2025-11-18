@@ -1,4 +1,3 @@
-import pytest
 from fastapi import FastAPI, HTTPException, status
 from fastapi.testclient import TestClient
 from uuid import uuid4
@@ -14,7 +13,8 @@ def test_get_exams_db_failure_returns_500():
     """Simulate a DB failure by making the `get_db` dependency raise an exception."""
 
     class DummyService:
-        def list(self, db, user_id, limit, offset):
+        @staticmethod
+        def list(db, user_id, limit, offset):
             return {"future": [], "completed": []}
 
     app = FastAPI()

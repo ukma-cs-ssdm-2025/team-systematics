@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Union, Dict, Any, Annotated
-from uuid import UUID
 
 # --- Моделі для варіантів відповідей ---
 

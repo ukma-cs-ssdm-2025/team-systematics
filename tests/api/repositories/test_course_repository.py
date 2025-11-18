@@ -21,13 +21,6 @@ def repo(mock_db):
 
 # Test for listing courses
 def test_list_courses(repo, mock_db):
-    # The repository builds a query with:
-    # 1. db.query() called multiple times for subqueries and main query
-    # 2. Main query: db.query(Course, ...).outerjoin().outerjoin().add_columns()
-    # 3. Then in list(): .outerjoin(owner).add_columns(owner).order_by().all()
-    # 4. Then filters in memory and calculates total from filtered results
-    
-    from unittest.mock import MagicMock
     from src.models.users import User
     
     # Mock subqueries - these are created first but we don't need to fully mock them

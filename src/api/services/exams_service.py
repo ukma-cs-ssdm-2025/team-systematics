@@ -5,10 +5,8 @@ import uuid as uuid_lib
 from src.api.repositories.exams_repository import ExamsRepository
 from src.api.repositories.attempts_repository import AttemptsRepository
 from src.api.repositories.courses_repository import CoursesRepository
-from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, ExamsPage, CourseExamsPage, ExamInList, ExamWithQuestions
-from src.api.schemas.questions import QuestionSchema
-from src.models.matching_options import MatchingOption
-from src.api.schemas.attempts import AttemptStartRequest, Attempt
+from src.api.schemas.exams import Exam, ExamCreate, ExamUpdate, CourseExamsPage, ExamInList, ExamWithQuestions
+from src.api.schemas.attempts import Attempt
 from src.api.errors.app_errors import NotFoundError, ConflictError
 from datetime import datetime, timezone
 from src.api.repositories.exam_participants_repository import ExamParticipantsRepository
@@ -18,7 +16,8 @@ from src.models.exams import ExamStatusEnum
 EXAM_NOT_FOUND_MESSAGE = "Exam not found"
 
 class ExamsService:
-    def list(self, db: Session, user_id: UUID, limit: int, offset: int):
+    @staticmethod
+    def list(db: Session, user_id: UUID, limit: int, offset: int):
         """
         Завжди повертає персоналізований список іспитів для користувача.
         """
@@ -58,14 +57,16 @@ class ExamsService:
 
         return {"open": open_exams, "future": future_exams, "completed": completed_by_user}
 
-    def get(self, db: Session, exam_id: UUID) -> Exam:
+    @staticmethod
+    def get(db: Session, exam_id: UUID) -> Exam:
         repo = ExamsRepository(db)
         exam = repo.get(exam_id)
         if not exam:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         return exam
     
-    def get_for_edit(self, db: Session, exam_id: UUID) -> ExamWithQuestions:
+    @staticmethod
+    def get_for_edit(db: Session, exam_id: UUID) -> ExamWithQuestions:
         """Отримує іспит з питаннями, опціями та matching_data для редагування"""
         repo = ExamsRepository(db)
         exam = repo.get_with_questions(exam_id)
@@ -139,7 +140,8 @@ class ExamsService:
         return ExamWithQuestions(**exam_dict)
 
     # --- Question & Option operations for teachers ---
-    def create_question(self, db: Session, exam_id: UUID, payload) -> object:
+    @staticmethod
+    def create_question(db: Session, exam_id: UUID, payload) -> object:
         repo = ExamsRepository(db)
         # verify exam exists
         exam = repo.get(exam_id)
@@ -147,37 +149,43 @@ class ExamsService:
             raise NotFoundError(EXAM_NOT_FOUND_MESSAGE)
         return repo.create_question(exam_id, payload)
 
-    def update_question(self, db: Session, question_id: UUID, patch: dict) -> object:
+    @staticmethod
+    def update_question(db: Session, question_id: UUID, patch: dict) -> object:
         repo = ExamsRepository(db)
         updated = repo.update_question(question_id, patch)
         if not updated:
             raise NotFoundError("Question not found")
         return updated
 
-    def delete_question(self, db: Session, question_id: UUID) -> None:
+    @staticmethod
+    def delete_question(db: Session, question_id: UUID) -> None:
         repo = ExamsRepository(db)
         ok = repo.delete_question(question_id)
         if not ok:
             raise NotFoundError("Question not found")
 
-    def create_option(self, db: Session, question_id: UUID, payload) -> object:
+    @staticmethod
+    def create_option(db: Session, question_id: UUID, payload) -> object:
         repo = ExamsRepository(db)
         return repo.create_option(question_id, payload)
 
-    def update_option(self, db: Session, option_id: UUID, patch: dict) -> object:
+    @staticmethod
+    def update_option(db: Session, option_id: UUID, patch: dict) -> object:
         repo = ExamsRepository(db)
         updated = repo.update_option(option_id, patch)
         if not updated:
             raise NotFoundError("Option not found")
         return updated
 
-    def delete_option(self, db: Session, option_id: UUID) -> None:
+    @staticmethod
+    def delete_option(db: Session, option_id: UUID) -> None:
         repo = ExamsRepository(db)
         ok = repo.delete_option(option_id)
         if not ok:
             raise NotFoundError("Option not found")
 
-    def create(self, db: Session, payload: ExamCreate, owner_id: UUID) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id: UUID) -> Exam:
         repo = ExamsRepository(db)
         # Встановлюємо owner_id з параметра (якщо не встановлено в payload)
         if not payload.owner_id:
@@ -190,19 +198,22 @@ class ExamsService:
             db.refresh(exam_model)
         return exam_model
     
-    def link_to_course(self, db: Session, exam_id: UUID, course_id: UUID) -> None:
+    @staticmethod
+    def link_to_course(db: Session, exam_id: UUID, course_id: UUID) -> None:
         """Зв'язує екзамен з курсом"""
         repo = ExamsRepository(db)
         repo.link_to_course(exam_id, course_id)
 
-    def update(self, db: Session, exam_id: UUID, patch: ExamUpdate) -> Exam:
+    @staticmethod
+    def update(db: Session, exam_id: UUID, patch: ExamUpdate) -> Exam:
         repo = ExamsRepository(db)
         updated = repo.update(exam_id, patch)
         if not updated:
             raise NotFoundError("Exam not found for update")
         return updated
     
-    def publish_exam(self, db: Session, exam_id: UUID) -> Exam:
+    @staticmethod
+    def publish_exam(db: Session, exam_id: UUID) -> Exam:
         """Публікує іспит (змінює статус з draft на published)"""
         repo = ExamsRepository(db)
         updated = repo.publish(exam_id)
@@ -210,13 +221,15 @@ class ExamsService:
             raise NotFoundError("Exam not found for publish")
         return updated
 
-    def delete(self, db: Session, exam_id: UUID) -> None:
+    @staticmethod
+    def delete(db: Session, exam_id: UUID) -> None:
         repo = ExamsRepository(db)
         ok = repo.delete(exam_id)
         if not ok:
             raise NotFoundError("Exam not found for delete")
     
-    def get_group_statistics(self, db: Session, course_id: UUID):
+    @staticmethod
+    def get_group_statistics(db: Session, course_id: UUID):
         exam_repo = ExamsRepository(db)
         attempt_repo = AttemptsRepository(db)
         course_repo = CoursesRepository(db)
@@ -258,7 +271,8 @@ class ExamsService:
         
         return group_stats    
 
-    def start_attempt(self, db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
+    @staticmethod
+    def start_attempt(db: Session, exam_id: UUID, user_id: UUID) -> Attempt:
         exams_repo = ExamsRepository(db)
         exam = exams_repo.get(exam_id)
         attempts_repo = AttemptsRepository(db)
@@ -290,7 +304,8 @@ class ExamsService:
             duration_minutes=exam.duration_minutes
         )
 
-    def get_exams_for_course(self, db: Session, course_id: UUID) -> CourseExamsPage:
+    @staticmethod
+    def get_exams_for_course(db: Session, course_id: UUID) -> CourseExamsPage:
         course_repo = CoursesRepository(db)
         course = course_repo.get(course_id)
         if not course:
@@ -322,7 +337,8 @@ class ExamsService:
             exams=exams_list
         )
 
-    def get_exam_statistics(self, db: Session, exam_id: UUID):
+    @staticmethod
+    def get_exam_statistics(db: Session, exam_id: UUID):
         """Отримує статистику по іспиту"""
         attempt_repo = AttemptsRepository(db)
         attempts = attempt_repo.get_attempts_by_exam(exam_id)
@@ -359,7 +375,8 @@ class ExamsService:
             'total_students': len(attempts)
         }
 
-    def get_exam_progress(self, db: Session, exam_id: UUID):
+    @staticmethod
+    def get_exam_progress(db: Session, exam_id: UUID):
         """Отримує динаміку результатів по іспиту (середній бал по датах)"""
         attempt_repo = AttemptsRepository(db)
         attempts = attempt_repo.get_attempts_by_exam(exam_id)

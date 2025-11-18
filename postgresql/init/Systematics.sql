@@ -2,12 +2,12 @@
 -- PostgreSQL database dump
 --
 
-\restrict 6J1VMpCB2QwGvMQQwiMGmMnfhczTCBDovFmrBaU8AoZIn5EHmDixG5Bc5tzN2Bn
+\restrict pT74CcBWjXQaAc72OXYhlofNcsco0xPCX2nTls2cLZ1gkZ0WIeXUmwX0ceHnSeu
 
 -- Dumped from database version 16.10
 -- Dumped by pg_dump version 16.10
 
--- Started on 2025-11-15 20:54:41
+-- Started on 2025-11-16 21:23:57
 
 SET statement_timeout = 0;
 SET lock_timeout = 0;
@@ -1271,8 +1271,8 @@ ccc38203-c5e2-4924-bb5e-d754f8fc28d1	1
 COPY public.users (id, email, hashed_password, created_at, first_name, last_name, patronymic, notification_settings, avatar_url) FROM stdin;
 2d47491e-d1e2-412d-bb81-3d8ff0174bf1	miroslava.flom@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:27.673607+03	Мирослава	Фломбойм	Олексіївна	{"enabled": true, "remind_before_hours": [8, 24, 1]}	\N
 bed7d3a1-8461-41fa-9610-03db8bc58a85	chulano10@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:14:50.302061+03	Владислава	Колінько	Володимирівна	{"enabled": true, "remind_before_hours": [24, 1, 8]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1762346905/user_avatars/bed7d3a1-8461-41fa-9610-03db8bc58a85.jpg
+a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	minelenova1@gmail.com	$2b$12$JwzWYzHo84SP1PrHAmjql6FlaaSDWnb0Glizmc3JMop90C	2025-10-10 18:01:19.539414+03	Олександра	Малій	Михайлівна	{"enabled": true, "remind_before_hours": [24]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943285/user_avatars/a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5.jpg
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	anastasiabakalyna@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:06.219423+03	Анастасія	Бакалина	Ярославівна	{"enabled": false, "remind_before_hours": []}	\N
-a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	minelenova1@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:01:19.539414+03	Олександра	Малій	Михайлівна	{"enabled": false, "remind_before_hours": []}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943285/user_avatars/a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5.jpg
 \.
 
 
@@ -1869,11 +1869,11 @@ ALTER TABLE ONLY public.user_roles
     ADD CONSTRAINT user_roles_user_id_fkey FOREIGN KEY (user_id) REFERENCES public.users(id) ON DELETE CASCADE;
 
 
--- Completed on 2025-11-15 20:54:41
+-- Completed on 2025-11-16 21:23:57
 
 --
 -- PostgreSQL database dump complete
 --
 
-\unrestrict 6J1VMpCB2QwGvMQQwiMGmMnfhczTCBDovFmrBaU8AoZIn5EHmDixG5Bc5tzN2Bn
+\unrestrict pT74CcBWjXQaAc72OXYhlofNcsco0xPCX2nTls2cLZ1gkZ0WIeXUmwX0ceHnSeu
 

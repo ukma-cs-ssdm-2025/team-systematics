@@ -52,7 +52,8 @@ class GradingService:
                 return False
         return True
 
-    def _ensure_question_points_are_set(self, db: Session, exam: Exam) -> None:
+    @staticmethod
+    def _ensure_question_points_are_set(db: Session, exam: Exam) -> None:
         questions_to_update = [q for q in exam.questions if q.points is None]
         if not questions_to_update:
             return
@@ -83,7 +84,8 @@ class GradingService:
     def _points(q: Question) -> float:
         return float(q.points or 0.0)
 
-    def _grade_long_answer(self, result: GradingResult, *_):
+    @staticmethod
+    def _grade_long_answer(result: GradingResult, *_):
         """
         Довга відповідь оцінюється вручну: відмічаємо як pending.
         """

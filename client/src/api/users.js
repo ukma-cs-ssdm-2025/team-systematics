@@ -48,7 +48,11 @@ export async function updateUserNotificationSettings(settings) {
 // Завантажує новий аватар користувача на сервер
 export async function uploadAvatar(file) {
     if (USE_MOCK_DATA) {
-        return newAvatarMock
+        // Мок-відповідь для завантаження аватара
+        return {
+            avatar_url: URL.createObjectURL(file),
+            message: 'Avatar uploaded successfully'
+        }
     }
 
     // Створюємо об'єкт FormData для відправки файлу

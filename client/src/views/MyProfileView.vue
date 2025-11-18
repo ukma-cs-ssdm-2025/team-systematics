@@ -165,10 +165,6 @@ function handleFileChange(event) {
     reader.readAsDataURL(file)
 }
 
-function toggleNotifications(event) {
-    notificationSettings.value.enabled = !notificationSettings.value.enabled
-}
-
 async function saveSettings() {
     isSaving.value = true
     try {

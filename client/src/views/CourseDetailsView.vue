@@ -101,7 +101,7 @@ onMounted(async () => {
     try {
         loading.value = true
         const details = await getCourseDetailsForSupervisor(courseId)
-        if (details && details.message) {
+        if (details?.message) {
             error.value = details.message
         } else {
             course.value = details
