@@ -17,6 +17,7 @@
 
 **Документація API**
 - [API документація дизайну](/docs/api/api-design.md)
+- [Index.html](/docs/api/index.html)
 - [Автоматично згенерований OpenAPI spec](/docs/api/openapi-generated.yaml)
 - [API атрибути якості](/docs/api/quality-attributes.md)
 
@@ -36,6 +37,7 @@
    - [ADR-003](/docs/architecture/ADR-003.md)
 
  **Якість коду**
+ - [DeepSource Code Quality Report](/docs/code-quality/deepsource-report.md)
  - [Прогрес розробки](/docs/code-quality/progress.md)
  - [Рев'ю коду](/docs/code-quality/review-report.md)
  - [Статичний аналіз бекенду](/docs/code-quality/static-analysis.md)
@@ -44,6 +46,10 @@
  - [Стан коду до](/docs/refactoring/screen_after.jpg)
  - [Стан коду після](/docs/refactoring/screen_before.jpg)
  - [Звіт про рефакторинг](/docs/refactoring/sonarcloud-report.md)
+
+**Надійність**
+ - [Звіт про надійність системи](/docs/reliability/reliability-report.md)
+ - [Проблеми надійності](/docs/reliability/scavenger-hunt.md)
 
  **Вимоги**
  - [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
@@ -54,9 +60,9 @@
 
  **Тестування**
  - [CI Overview](/docs/testing/ci-overview.md)
+ - [Покриття тестами](/docs/testing/coverage.txt)
  - [Журнал дебагінгу](/docs/testing/debugging-log.md)
  - [Стратегія Тестування](/docs/testing/testing-strategy.md)
- - [Покриття тестами](/docs/testing/coverage.txt)
 
  **Валідація**
  - [Тест план](/docs/validation/test-plan.md)
@@ -79,6 +85,7 @@
 ## Інструкції для локального запуску проекту
 ### Передумови
 - Встановити [Docker Desctop](https://www.docker.com/products/docker-desktop/)
+- Завантажити версію пайтону [3.11.0](https://www.python.org/downloads/release/python-3110/)
 
 ### 0. Клонувати репозиторій
 ```bash
@@ -106,25 +113,30 @@ SMTP_PORT=587
 SMTP_USER="t.systematics@gmail.com"
 SMTP_PASSWORD="prib hrjf azlh xkcv"
 SMTP_FROM="t.systematics@gmail.com"
-```
 
-### 2. Активувати  віртуальне середовище Python
+```
+### 2. Створити віртуальне середовище
 ```bash
-source venv/bin/activate  # для Mac/Linux
-venv\Scripts\activate     # для Windows
+py -3.11 -m vent .venv311
 ```
 
-### 2. Запустити докер 
+### 3. Активувати  віртуальне середовище Python
 ```bash
-docker compose up --build
+source venv311/bin/activate  # для Mac/Linux
+.venv311\Scripts\activate     # для Windows
 ```
 
-### 3. Запустити сервер за посиланням
+### 4. Запустити докер 
+```bash
+docker-compose up --build -d
+```
+
+### 5. Запустити сервер за посиланням
 ```bash
 http://localhost:3000/
 ```
 
-### 4. Запустити тести
+### 6. Запустити тести
 ``` bash
 pytest tests
 ```
