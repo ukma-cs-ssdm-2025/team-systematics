@@ -29,23 +29,27 @@ from src.core.cloudinary import configure_cloudinary
 from src.models import exam_participants, course_exams, course_supervisors
 from src.api.services.exam_participants_service import ExamParticipantsService
 from src.api.controllers.exam_participants_controller import ExamParticipantsController
+from src.models import exam_email_notifications 
+import asyncio
+from src.api.background.exam_email_scheduler import run_exam_email_scheduler
 
 
 # Глобальна змінна для scheduler
 scheduler = None
+# Глобальна змінна для асинхронної задачі email-планувальника
+email_scheduler_task = None
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     """
     Lifespan context manager для FastAPI.
-    Запускає scheduler при старті додатку та зупиняє його при завершенні.
+    Запускає обидва планувальники при старті додатку та зупиняє їх при завершенні.
     """
-    global scheduler
+    global scheduler, email_scheduler_task
     
-    # Запускаємо scheduler
+    # 1. Запуск BackgroundScheduler (для статусів іспитів)
     scheduler = BackgroundScheduler()
-    # Запускаємо завдання кожну хвилину для перевірки статусів іспитів
     scheduler.add_job(
         update_exam_statuses,
         trigger=IntervalTrigger(minutes=1),
@@ -54,18 +58,24 @@ async def lifespan(app: FastAPI):
         replace_existing=True
     )
     scheduler.start()
-    print("Scheduler started: exam status updates will run every minute")
-    
-    # Запускаємо перевірку статусів одразу при старті
+    print("BackgroundScheduler started: exam status updates will run every minute")
     update_exam_statuses()
     print("Initial exam status check completed")
     
+    # 2. Запуск асинхронного email-планувальника (для сповіщень)
+    email_scheduler_task = asyncio.create_task(run_exam_email_scheduler())
+    print("Async Email Scheduler task started.")
+    
     yield
     
-    # Зупиняємо scheduler при завершенні
+    # Зупиняємо scheduler та скасовуємо асинхронну задачу при завершенні
     if scheduler:
         scheduler.shutdown()
-        print("Scheduler stopped")
+        print("BackgroundScheduler stopped")
+    
+    if email_scheduler_task:
+        email_scheduler_task.cancel()
+        print("Async Email Scheduler task cancelled.")
 
 
 def create_app() -> FastAPI:
@@ -81,7 +91,9 @@ def create_app() -> FastAPI:
     course_exams.Base.metadata.create_all(bind=engine)
     course_supervisors.Base.metadata.create_all(bind=engine)
     exam_participants.Base.metadata.create_all(bind=engine)
+    exam_email_notifications.Base.metadata.create_all(bind=engine)
 
+    # Використовуємо lifespan для коректного управління фоновими задачами
     app = FastAPI(
         title="Online Exams API",
         version="1.0.0",
@@ -91,7 +103,7 @@ def create_app() -> FastAPI:
         docs_url="/api-docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        lifespan=lifespan,
+        lifespan=lifespan, # Підключаємо контекст-менеджер lifespan
     )
 
     origins = [
@@ -131,7 +143,7 @@ def create_app() -> FastAPI:
     exam_participants_controller = ExamParticipantsController(exam_participants_service)
 
     #Ініціалізуємо конфігурацію cloudinary
-    configure_cloudinary()
+    # configure_cloudinary() # Закоментовано, якщо потрібна конфігурація з config.py
 
     # Підключаємо роутери
     app.include_router(auth_controller.router, prefix="/api")
@@ -157,6 +169,10 @@ def create_app() -> FastAPI:
             if os.path.exists(index_path):
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
+    
+    # === ВИДАЛЯЄМО ЗАТАРІЛИЙ @app.on_event("startup") ===
+    # Тепер запуск run_exam_email_scheduler відбувається у lifespan
+    # ==================================================
  
     return app
 
