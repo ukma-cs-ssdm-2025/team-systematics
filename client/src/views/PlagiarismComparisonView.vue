@@ -17,16 +17,25 @@
                         <div class="answer-header">
                             <h3>{{ comparisonData.student1_name }}</h3>
                         </div>
-                        <CTextarea 
-                            :model-value="comparisonData.answer1_text"
-                            :disabled="true"
-                        />
+                        <div class="answer-display">
+                            <HighlightedText 
+                                v-if="comparisonResult && comparisonResult.answer1_ranges"
+                                :text="comparisonData.answer1_text"
+                                :ranges="comparisonResult.answer1_ranges || []"
+                            />
+                            <CTextarea 
+                                v-else
+                                :model-value="comparisonData.answer1_text"
+                                :disabled="true"
+                            />
+                        </div>
                     </div>
                     
                     <div class="comparison-controls">
                         <CButton 
                             @click="runComparison"
                             :disabled="isComparing"
+                            class="comparison-button"
                         >
                             {{ isComparing ? 'Перевірка...' : 'Перевірити на плагіат' }}
                         </CButton>
@@ -48,10 +57,18 @@
                         <div class="answer-header">
                             <h3>{{ comparisonData.student2_name }}</h3>
                         </div>
-                        <CTextarea 
-                            :model-value="comparisonData.answer2_text"
-                            :disabled="true"
-                        />
+                        <div class="answer-display">
+                            <HighlightedText 
+                                v-if="comparisonResult && comparisonResult.answer2_ranges"
+                                :text="comparisonData.answer2_text"
+                                :ranges="comparisonResult.answer2_ranges || []"
+                            />
+                            <CTextarea 
+                                v-else
+                                :model-value="comparisonData.answer2_text"
+                                :disabled="true"
+                            />
+                        </div>
                     </div>
                 </div>
                 
@@ -69,6 +86,7 @@ import Header from '../components/global/Header.vue'
 import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CTextarea from '../components/global/CTextarea.vue'
 import CButton from '../components/global/CButton.vue'
+import HighlightedText from '../components/ExamAttemptView/HighlightedText.vue'
 import { compareAnswers, getFlaggedAnswers } from '../api/attempts.js'
 
 const route = useRoute()
@@ -164,14 +182,17 @@ function getSimilarityStatus(score) {
 
 .comparison-content {
     display: grid;
-    grid-template-columns: 1fr auto 1fr;
+    grid-template-columns: 1fr 250px 1fr;
     gap: 100px;
     margin-bottom: 24px;
+    align-items: start;
 }
 
 .answer-panel {
     display: flex;
     flex-direction: column;
+    width: 100%;
+    min-width: 0; /* Дозволяє flex-елементам зменшуватися нижче їхнього контенту */
 }
 
 .answer-header {
@@ -185,7 +206,20 @@ function getSimilarityStatus(score) {
 }
 
 .answer-panel :deep(.custom-textarea) {
-    height: 500px;
+    min-height: 500px;
+}
+
+.answer-display {
+    min-height: 500px;
+    padding: 20px;
+    background-color: var(--color-gray);
+    border: 3px solid var(--color-gray);
+    border-radius: 12px;
+    font-family: inherit;
+    font-size: inherit;
+    line-height: 1.5;
+    white-space: pre-wrap;
+    word-wrap: break-word;
 }
 
 .comparison-controls {
@@ -195,6 +229,16 @@ function getSimilarityStatus(score) {
     justify-content: flex-start;
     gap: 16px;
     padding-top: 60px;
+    width: 100%;
+    max-width: 250px;
+}
+
+.comparison-button {
+    width: 100%;
+    min-width: 200px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .comparison-result {
@@ -202,6 +246,7 @@ function getSimilarityStatus(score) {
     padding: 16px;
     background-color: var(--color-gray);
     border-radius: 8px;
+    width: 100%;
     min-width: 200px;
 }
 

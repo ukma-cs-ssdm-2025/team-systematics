@@ -11,7 +11,10 @@
         <div v-else class="review-display">
             <div class="student-answer">
                 <p class="answer-text">
-                    {{ questionData.student_answer_text }}
+                    <HighlightedText 
+                        :text="questionData.student_answer_text || ''"
+                        :ranges="questionData.plagiarism_ranges || []"
+                    />
                 </p>
                 
                 <div v-if="isTeacher" class="teacher-actions">
@@ -57,6 +60,7 @@
 <script setup>
 import { computed, ref, nextTick, watch } from 'vue'
 import { updateAnswerScore } from '../../api/attempts.js'
+import HighlightedText from './HighlightedText.vue'
 
 const props = defineProps({
     modelValue: {

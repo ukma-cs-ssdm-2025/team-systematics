@@ -54,6 +54,7 @@ class LongAnswerQuestionReview(BaseQuestionReview):
     student_answer_text: str
     answer_id: Optional[str] = None  # ID відповіді для позначення на плагіат
     is_flagged: bool = False  # Чи позначена відповідь для перевірки на плагіат
+    plagiarism_ranges: List[Dict[str, int]] = Field(default_factory=list)  # Масив ranges (start, end) для виділення сплагіачених частин
 
 class ShortAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["short_answer"]
