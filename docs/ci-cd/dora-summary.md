@@ -447,5 +447,68 @@
 
 ## Графік
 
+### 1. Lead Time – Run API Tests 
+
+```mermaid
+line
+    title Lead Time (Run API Tests)
+    x-axis Run #
+    y-axis Time (seconds)
+    1:121
+    2:144
+    3:133
+    4:131
+    5:158
+    6:129
+    7:170
+    8:123
+    9:126
+    10:39
+```
+
+### 2. Lead Time – CI Test 
+
+```mermaid
+line
+    title Lead Time (CI Test)
+    x-axis Run #
+    y-axis Time (seconds)
+    1:7
+    2:10
+    3:6
+    4:7
+    5:9
+    6:9
+    7:12
+    8:8
+    9:6
+    10:7
+```
+
+### 3. Deployment Frequency за workflow 
+
+```mermaid
+bar
+    title Deployment Frequency (per week)
+    x-axis Workflow
+    y-axis Deployments per week
+    "Pages Build": 1.2
+    "Run API Tests": 8.2
+    "CI Test": 13.5
+    "Deploy Docs": 1.4
+    "PlantUML": 1.33
+    "Generate API Docs": 3.4
+```
+
+### 4. Change Failure Rate за workflow 
+
+```mermaid
+bar
+    title Change Failure Rate (%)
+    x-axis Workflow
+    y-axis Failure Rate (%)
+    "Pages Build": 0
+    "R
+
 
 ## Презентація
