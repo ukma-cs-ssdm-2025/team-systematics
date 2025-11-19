@@ -447,68 +447,48 @@
 
 ## Графік
 
-### 1. Lead Time – Run API Tests 
+### 1. Lead Time – Run API Tests
 
 ```mermaid
-line
-    title Lead Time (Run API Tests)
-    x-axis Run #
-    y-axis Time (seconds)
-    1:121
-    2:144
-    3:133
-    4:131
-    5:158
-    6:129
-    7:170
-    8:123
-    9:126
-    10:39
+%%{init: {'theme': 'default'}}%%
+xychart-beta
+    title "Lead Time (Run API Tests)"
+    x-axis "Run #" [1,2,3,4,5,6,7,8,9,10]
+    y-axis "Time (seconds)" 0 --> 700
+    line stroke="#FF5733" [121,144,133,131,158,129,170,123,126,639]
 ```
 
-### 2. Lead Time – CI Test 
+### 2. Deployment Frequency – Run API Tests
 
 ```mermaid
-line
-    title Lead Time (CI Test)
-    x-axis Run #
-    y-axis Time (seconds)
-    1:7
-    2:10
-    3:6
-    4:7
-    5:9
-    6:9
-    7:12
-    8:8
-    9:6
-    10:7
+%%{init: {'theme': 'default'}}%%
+xychart-beta
+    title "Deployment Frequency (Run API Tests)"
+    x-axis "Run #" [1,2,3,4,5,6,7,8]
+    y-axis "Deployment batch" 0 --> 6
+    line stroke="#3BBFC4" [1,1,1,2,3,3,4,5]
 ```
 
-### 3. Deployment Frequency за workflow 
+### 3. Change Failure Rate – Run API Tests
 
 ```mermaid
-bar
-    title Deployment Frequency (per week)
-    x-axis Workflow
-    y-axis Deployments per week
-    "Pages Build": 1.2
-    "Run API Tests": 8.2
-    "CI Test": 13.5
-    "Deploy Docs": 1.4
-    "PlantUML": 1.33
-    "Generate API Docs": 3.4
+%%{init: {'theme': 'default'}}%%
+xychart-beta
+    title "Change Failure Rate (Run API Tests)"
+    x-axis "Category" ["Success","Failure"]
+    y-axis "Count" 0 --> 8
+    bar fill="#A855F7" [8,2]
 ```
 
-### 4. Change Failure Rate за workflow 
+### 4. Time to Restore – Failed Runs Only
 
 ```mermaid
-bar
-    title Change Failure Rate (%)
-    x-axis Workflow
-    y-axis Failure Rate (%)
-    "Pages Build": 0
-    "R
+%%{init: {'theme': 'default'}}%%
+xychart-beta
+    title "Time to Restore (Failed Runs)"
+    x-axis "Failure #" [1,2]
+    y-axis "Time (seconds)" 0 --> 70
+    line stroke="#4287f5" [58,63]
 ```
 
 ## Презентація
