@@ -24,6 +24,10 @@
                             <div class="stat-label">Студентів завершило</div>
                             <div class="stat-value">{{ groupAnalytics.students_completed }}</div>
                         </div>
+                        <div v-if="groupAnalytics.total_attempts && groupAnalytics.total_attempts > groupAnalytics.students_completed" class="stat-card">
+                            <div class="stat-label">Всього спроб</div>
+                            <div class="stat-value">{{ groupAnalytics.total_attempts }}</div>
+                        </div>
                         <div class="stat-card">
                             <div class="stat-label">Середній бал</div>
                             <div class="stat-value">{{ formatScore(groupAnalytics.average_score) }}</div>
@@ -46,6 +50,11 @@
                 <!-- Розподіл балів -->
                 <section v-if="groupAnalytics?.scores && groupAnalytics.scores.length > 0" class="analytics-section">
                     <h2>Розподіл балів</h2>
+                    <div v-if="groupAnalytics.total_attempts && groupAnalytics.total_attempts > groupAnalytics.students_completed" class="info-note">
+                        <strong>Примітка:</strong> Гістограма відображає найкращу спробу кожного студента. 
+                        Загальна кількість спроб: <strong>{{ groupAnalytics.total_attempts }}</strong> 
+                        ({{ groupAnalytics.students_completed }} унікальних студентів).
+                    </div>
                     <div class="chart-container">
                         <canvas ref="scoreDistributionChartRef"></canvas>
                     </div>
@@ -596,6 +605,21 @@ function destroyCharts() {
 
 .status-message.error {
     color: var(--color-red, #ff6b6d);
+}
+
+.info-note {
+    background-color: rgba(74, 144, 226, 0.1);
+    border-left: 4px solid var(--color-blue, #4A90E2);
+    padding: 12px 16px;
+    margin-bottom: 20px;
+    border-radius: 4px;
+    color: var(--color-black, #333);
+    font-size: 0.95rem;
+    line-height: 1.5;
+}
+
+.info-note strong {
+    color: var(--color-blue, #4A90E2);
 }
 </style>
 

@@ -319,11 +319,22 @@ class ExamsRepository:
             .subquery()
         )
 
+        # Підзапит для підрахунку унікальних студентів, які завершили іспит
+        # ВАЖЛИВО: рахуємо унікальних студентів (distinct user_id), а не кількість спроб
+        students_completed_sq = (
+            self.db.query(
+                Attempt.exam_id,
+                func.count(func.distinct(Attempt.user_id)).label("students_completed")
+            )
+            .filter(Attempt.earned_points.isnot(None))
+            .group_by(Attempt.exam_id)
+            .subquery()
+        )
+        
         # Підзапит для статистики по спробах (attempts)
         attempt_stats_sq = (
             self.db.query(
                 Attempt.exam_id,
-                func.count(case((Attempt.earned_points is not None, Attempt.id))).label("students_completed"),
                 func.avg(Attempt.earned_points).label("average_grade"),
                 func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
             )
@@ -336,14 +347,16 @@ class ExamsRepository:
             self.db.query(
                 Exam,
                 questions_count_sq.c.questions_count,
-                attempt_stats_sq.c.students_completed,
+                func.coalesce(students_completed_sq.c.students_completed, 0).label("students_completed"),
                 attempt_stats_sq.c.average_grade,
                 attempt_stats_sq.c.pending_reviews
             )
             .join(Exam.courses)
             .filter(Course.id == course_id)
             .outerjoin(questions_count_sq, Exam.id == questions_count_sq.c.exam_id)
+            .outerjoin(students_completed_sq, Exam.id == students_completed_sq.c.exam_id)
             .outerjoin(attempt_stats_sq, Exam.id == attempt_stats_sq.c.exam_id)
+            .group_by(Exam.id, questions_count_sq.c.questions_count, students_completed_sq.c.students_completed, attempt_stats_sq.c.average_grade, attempt_stats_sq.c.pending_reviews)
             .order_by(Exam.start_at.desc())
             .all()
         )

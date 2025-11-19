@@ -243,12 +243,25 @@ class ExamsService:
         group_stats = []
         for exam in exams:
             attempts = attempt_repo.get_attempts_by_exam(exam.id)
-            total_students = len(attempts)
             
-            if total_students == 0:
+            # Фільтруємо тільки завершені спроби з оцінками
+            completed_attempts = [a for a in attempts if a.earned_points is not None]
+            
+            if not completed_attempts:
                 continue
 
-            scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
+            # Для статистики використовуємо найкращу спробу кожного студента
+            # (якщо студент зробив кілька спроб, беремо ту, де найвищий бал)
+            best_attempts_by_student = {}
+            for attempt in completed_attempts:
+                user_id = attempt.user_id
+                if user_id not in best_attempts_by_student:
+                    best_attempts_by_student[user_id] = attempt
+                elif attempt.earned_points > best_attempts_by_student[user_id].earned_points:
+                    best_attempts_by_student[user_id] = attempt
+
+            # Список балів для статистики (тільки найкращі спроби)
+            scores = [a.earned_points for a in best_attempts_by_student.values()]
             if not scores:
                 continue
                 
