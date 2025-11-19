@@ -29,26 +29,27 @@ from src.core.cloudinary import configure_cloudinary
 from src.models import exam_participants, course_exams, course_supervisors
 from src.api.services.exam_participants_service import ExamParticipantsService
 from src.api.controllers.exam_participants_controller import ExamParticipantsController
+from src.models import exam_email_notifications 
+import asyncio
+from src.api.background.exam_email_scheduler import run_exam_email_scheduler
 
 
 # Глобальна змінна для scheduler
 scheduler = None
+# Глобальна змінна для асинхронної задачі email-планувальника
+email_scheduler_task = None
 
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):  # noqa: PYL-W0613
     """
     Lifespan context manager для FastAPI.
-    Запускає scheduler при старті додатку та зупиняє його при завершенні.
-    
-    Args:
-        _app: Екземпляр FastAPI (не використовується, але потрібен для сигнатури lifespan).
+    Запускає обидва планувальники при старті додатку та зупиняє їх при завершенні.
     """
-    global scheduler
+    global scheduler, email_scheduler_task
     
-    # Запускаємо scheduler
+    # 1. Запуск BackgroundScheduler (для статусів іспитів)
     scheduler = BackgroundScheduler()
-    # Запускаємо завдання кожну хвилину для перевірки статусів іспитів
     scheduler.add_job(
         update_exam_statuses,
         trigger=IntervalTrigger(minutes=1),
@@ -57,18 +58,24 @@ async def lifespan(_app: FastAPI):  # noqa: PYL-W0613
         replace_existing=True
     )
     scheduler.start()
-    print("Scheduler started: exam status updates will run every minute")
-    
-    # Запускаємо перевірку статусів одразу при старті
+    print("BackgroundScheduler started: exam status updates will run every minute")
     update_exam_statuses()
     print("Initial exam status check completed")
     
+    # 2. Запуск асинхронного email-планувальника (для сповіщень)
+    email_scheduler_task = asyncio.create_task(run_exam_email_scheduler())
+    print("Async Email Scheduler task started.")
+    
     yield
     
-    # Зупиняємо scheduler при завершенні
+    # Зупиняємо scheduler та скасовуємо асинхронну задачу при завершенні
     if scheduler:
         scheduler.shutdown()
-        print("Scheduler stopped")
+        print("BackgroundScheduler stopped")
+    
+    if email_scheduler_task:
+        email_scheduler_task.cancel()
+        print("Async Email Scheduler task cancelled.")
 
 
 def create_app() -> FastAPI:
@@ -84,8 +91,10 @@ def create_app() -> FastAPI:
     course_exams.Base.metadata.create_all(bind=engine)
     course_supervisors.Base.metadata.create_all(bind=engine)
     exam_participants.Base.metadata.create_all(bind=engine)
+    exam_email_notifications.Base.metadata.create_all(bind=engine)
 
-    fastapi_app = FastAPI(
+    # Використовуємо lifespan для коректного управління фоновими задачами
+    app = FastAPI(
         title="Online Exams API",
         version="1.0.0",
         description="Code-first FastAPI spec for an online examination platform.",
@@ -94,7 +103,7 @@ def create_app() -> FastAPI:
         docs_url="/api-docs",
         redoc_url="/redoc",
         openapi_url="/openapi.json",
-        lifespan=lifespan,
+        lifespan=lifespan, # Підключаємо контекст-менеджер lifespan
     )
 
     origins = [
@@ -105,7 +114,8 @@ def create_app() -> FastAPI:
         "https://ukma-cs-ssdm-2025.github.io",
     ]
 
-    fastapi_app.add_middleware(
+    # ВИПРАВЛЕНО: fastapi_app -> app
+    app.add_middleware(
         CORSMiddleware,
         allow_origins=origins,
         allow_credentials=True,
@@ -113,7 +123,8 @@ def create_app() -> FastAPI:
         allow_headers=["*"],
     )
 
-    install_exception_handlers(fastapi_app)
+    # ВИПРАВЛЕНО: fastapi_app -> app
+    install_exception_handlers(app)
 
     # Ініціалізуємо сервіси
     exams_service = ExamsService()
@@ -134,16 +145,17 @@ def create_app() -> FastAPI:
     exam_participants_controller = ExamParticipantsController(exam_participants_service)
 
     #Ініціалізуємо конфігурацію cloudinary
-    configure_cloudinary()
+    # configure_cloudinary() # Закоментовано, якщо потрібна конфігурація з config.py
 
     # Підключаємо роутери
-    fastapi_app.include_router(auth_controller.router, prefix="/api")
-    fastapi_app.include_router(exams_controller.router, prefix="/api")
-    fastapi_app.include_router(attempts_controller.router, prefix="/api")
-    fastapi_app.include_router(courses_controller.router, prefix="/api")
-    fastapi_app.include_router(transcript_controller.router, prefix="/api")
-    fastapi_app.include_router(users_controller.router, prefix="/api")
-    fastapi_app.include_router(exam_participants_controller.router, prefix="/api")
+    # ВИПРАВЛЕНО: fastapi_app -> app (у всіх рядках нижче)
+    app.include_router(auth_controller.router, prefix="/api")
+    app.include_router(exams_controller.router, prefix="/api")
+    app.include_router(attempts_controller.router, prefix="/api")
+    app.include_router(courses_controller.router, prefix="/api")
+    app.include_router(transcript_controller.router, prefix="/api")
+    app.include_router(users_controller.router, prefix="/api")
+    app.include_router(exam_participants_controller.router, prefix="/api")
     
     # ... (код для роздачі статичних файлів фронтенду залишається без змін) ...
     current_file_path = os.path.dirname(os.path.abspath(__file__))
@@ -152,15 +164,17 @@ def create_app() -> FastAPI:
     if os.path.exists(build_dir):
         assets_dir = os.path.join(build_dir, "assets")
         if os.path.exists(assets_dir):
-            fastapi_app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
+            # ВИПРАВЛЕНО: fastapi_app -> app
+            app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
 
-        @fastapi_app.get("/{full_path:path}", include_in_schema=False)
+        # ВИПРАВЛЕНО: fastapi_app -> app
+        @app.get("/{full_path:path}", include_in_schema=False)
         async def serve_vue_app(request: Request):
             index_path = os.path.join(build_dir, "index.html")
             if os.path.exists(index_path):
                 return FileResponse(index_path)
             return {"error": "index.html not found"}
- 
-    return fastapi_app
+    
+    return app
 
 app = create_app()
