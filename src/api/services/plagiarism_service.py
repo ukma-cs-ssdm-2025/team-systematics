@@ -231,20 +231,42 @@ class PlagiarismService:
             logger.debug("_run_fast_tfidf_filter called with empty candidate_texts")
             return []
         
+        similarities = self._compute_tfidf_similarities(base_text, candidate_texts)
+        if similarities is None:
+            return []
+        
+        matches = self._build_match_data_list(
+            similarities, candidate_ids, candidate_texts, base_text, db
+        )
+        
+        matches.sort(key=lambda m: m["similarity_score"], reverse=True)
+        return matches
+    
+    @staticmethod
+    def _compute_tfidf_similarities(base_text: str, candidate_texts: List[str]) -> List[float] | None:
+        """Обчислює TF-IDF схожість між base_text та candidate_texts."""
         corpus = [base_text] + candidate_texts
         vectorizer = TfidfVectorizer()
         try:
             tfidf_matrix = vectorizer.fit_transform(corpus)
         except ValueError as e:
-            # Наприклад, якщо всі тексти порожні або надто короткі
             logger.warning(f"TF-IDF vectorization failed: {str(e)}")
-            return []
+            return None
 
         base_vec = tfidf_matrix[0:1]
         other_vecs = tfidf_matrix[1:]
-
-        similarities = cosine_similarity(base_vec, other_vecs)[0]  # shape: (n_candidates,)
-
+        similarities = cosine_similarity(base_vec, other_vecs)[0]
+        return similarities.tolist()
+    
+    def _build_match_data_list(
+        self,
+        similarities: List[float],
+        candidate_ids: List[UUID],
+        candidate_texts: List[str],
+        base_text: str,
+        db: Session = None
+    ) -> List[Dict[str, Any]]:
+        """Будує список матчів з даними про схожість та ranges."""
         matches: List[Dict[str, Any]] = []
         for idx, sim in enumerate(similarities):
             match_data = {
@@ -253,23 +275,37 @@ class PlagiarismService:
                 "match_type": "exact" if sim >= 0.98 else "candidate",
             }
             
-            # Для високої схожості генеруємо ranges для виділення
-            if sim >= 0.5 and db:  # Тільки для значущої схожості та якщо є доступ до db
-                try:
-                    other_text = candidate_texts[idx] if idx < len(candidate_texts) else None
-                    if other_text and other_text.strip():
-                        base_spans, _ = self._compute_highlight_spans(base_text, other_text, min_match_len=10)
-                        # Конвертуємо spans (tuple) в ranges (dict)
-                        if base_spans:
-                            match_data["ranges"] = [{"start": span[0], "end": span[1]} for span in base_spans]
-                except Exception as e:
-                    logger.warning(f"Failed to compute highlight spans for match {candidate_ids[idx]}: {e}")
+            if sim >= 0.5 and db:
+                ranges = self._compute_match_ranges(
+                    base_text, candidate_texts, idx, candidate_ids[idx]
+                )
+                if ranges:
+                    match_data["ranges"] = ranges
             
             matches.append(match_data)
-
-        # Сортуємо за спаданням схожості
-        matches.sort(key=lambda m: m["similarity_score"], reverse=True)
+        
         return matches
+    
+    def _compute_match_ranges(
+        self,
+        base_text: str,
+        candidate_texts: List[str],
+        idx: int,
+        candidate_id: UUID
+    ) -> List[Dict[str, int]] | None:
+        """Обчислює ranges для виділення сплагіачених частин."""
+        other_text = candidate_texts[idx] if idx < len(candidate_texts) else None
+        if not other_text or not other_text.strip():
+            return None
+        
+        try:
+            base_spans, _ = self._compute_highlight_spans(base_text, other_text, min_match_len=10)
+            if base_spans:
+                return [{"start": span[0], "end": span[1]} for span in base_spans]
+        except Exception as e:
+            logger.warning(f"Failed to compute highlight spans for match {candidate_id}: {e}")
+        
+        return None
 
     # ---------- РІВЕНЬ 2: ГЛИБОКИЙ АНАЛІЗ (ЗАГЛУШКА) ----------
 

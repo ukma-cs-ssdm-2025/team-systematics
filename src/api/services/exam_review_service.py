@@ -44,56 +44,88 @@ class ExamReviewService:
         if not attempt:
             raise NotFoundError(f"Спроба з ID {attempt_id} не знайдена.")
         
-        # Отримуємо інформацію про плагіат для спроби
-        plagiarism_repo = PlagiarismRepository()
-        plagiarism_check = plagiarism_repo.get_by_attempt_id(db, attempt_id)
-        plagiarism_matches = []
-        if plagiarism_check and plagiarism_check.details:
-            plagiarism_matches = plagiarism_check.details.get("matches", [])
-        
-        # 2. Перевіряємо, чи студент використав всі спроби (для студентів)
-        # Для вчителів завжди показуємо правильні відповіді
-        show_correct_answers = True
-        if current_user and hasattr(current_user, 'role'):
-            # Перевіряємо, чи користувач - студент (не вчитель/наглядач)
-            user_role = str(current_user.role).lower().strip() if current_user.role else None
-            if user_role == 'student' and attempt.user_id == current_user.id:
-                # Перевіряємо, чи студент використав всі спроби
-                user_attempt_count = attempts_repo.get_user_attempt_count(current_user.id, attempt.exam_id)
-                if user_attempt_count < attempt.exam.max_attempts:
-                    show_correct_answers = False
+        plagiarism_matches = self._get_plagiarism_matches(db, attempt_id)
+        show_correct_answers = self._should_show_correct_answers(
+            current_user, attempt, attempts_repo
+        )
         
         weights_map = weights_repo.get_all_weights()
+        final_points_map = self._calculate_final_points_map(attempt, weights_map)
+        student_answers_map = {answer.question_id: answer for answer in attempt.answers}
+        question_text_offsets = self._build_question_text_offsets(
+            attempt.exam.questions, student_answers_map
+        )
+        
+        review_questions = self._build_review_questions(
+            attempt.exam.questions,
+            student_answers_map,
+            final_points_map,
+            db,
+            show_correct_answers,
+            plagiarism_matches,
+            question_text_offsets
+        )
+            
+        return ExamAttemptReviewResponse(
+            exam_id=str(attempt.exam.id),  # Додаємо exam_id для навігації
+            exam_title=attempt.exam.title,
+            show_correct_answers=show_correct_answers,
+            questions=review_questions
+        ).model_dump()
     
+    @staticmethod
+    def _get_plagiarism_matches(db: Session, attempt_id: UUID) -> list:
+        """Отримує інформацію про плагіат для спроби."""
+        plagiarism_repo = PlagiarismRepository()
+        plagiarism_check = plagiarism_repo.get_by_attempt_id(db, attempt_id)
+        if plagiarism_check and plagiarism_check.details:
+            return plagiarism_check.details.get("matches", [])
+        return []
+    
+    @staticmethod
+    def _should_show_correct_answers(
+        current_user: User, attempt, attempts_repo
+    ) -> bool:
+        """Визначає, чи потрібно показувати правильні відповіді."""
+        if not current_user or not hasattr(current_user, 'role'):
+            return True
+        
+        user_role = str(current_user.role).lower().strip() if current_user.role else None
+        if user_role != 'student' or attempt.user_id != current_user.id:
+            return True
+        
+        user_attempt_count = attempts_repo.get_user_attempt_count(
+            current_user.id, attempt.exam_id
+        )
+        return user_attempt_count >= attempt.exam.max_attempts
+    
+    @staticmethod
+    def _calculate_final_points_map(attempt, weights_map: dict) -> dict:
+        """Розраховує фінальні бали для кожного питання."""
         total_exam_weight = sum(
             weights_map.get(q.question_type, 1) for q in attempt.exam.questions
         )
-
+        
         if total_exam_weight == 0:
             points_per_weight_unit = 0.0
         else:
             points_per_weight_unit = 100.0 / total_exam_weight
-
-        # 1. Розраховуємо точні (float) бали для кожного питання
+        
         true_points_map = {
             q.id: weights_map.get(q.question_type, 1) * points_per_weight_unit
             for q in attempt.exam.questions
         }
         
-        # 2. Викликаємо функцію розподілу залишку, щоб отримати гарантовану суму 100
-        final_points_map = distribute_largest_remainder(true_points_map, target_total=100)
-        
-        # 3. Подальша логіка використовує вже скориговані цілі бали
-        student_answers_map = {answer.question_id: answer for answer in attempt.answers}
-        
-        # Будуємо мапу для перерахунку ranges з об'єднаного тексту на окремі питання
-        # Оскільки ranges генеруються для об'єднаного тексту всіх long_answer питань,
-        # потрібно перерахувати їх для кожного питання окремо
+        return distribute_largest_remainder(true_points_map, target_total=100)
+    
+    @staticmethod
+    def _build_question_text_offsets(questions, student_answers_map: dict) -> dict:
+        """Будує мапу для перерахунку ranges з об'єднаного тексту на окремі питання."""
         long_answer_questions = sorted(
-            [q for q in attempt.exam.questions if q.question_type == QuestionType.long_answer],
+            [q for q in questions if q.question_type == QuestionType.long_answer],
             key=lambda q: q.position
         )
-        question_text_offsets = {}  # question_id -> (start_offset, end_offset) в об'єднаному тексті
+        question_text_offsets = {}
         current_offset = 0
         separator = "\n\n"
         separator_len = len(separator)
@@ -106,19 +138,29 @@ class ExamReviewService:
                 question_end = current_offset + len(answer_text)
                 question_text_offsets[q.id] = (question_start, question_end)
                 current_offset = question_end
-                # Додаємо роздільник після тексту (крім останнього питання)
                 if idx < len(long_answer_questions) - 1:
                     current_offset += separator_len
         
+        return question_text_offsets
+    
+    def _build_review_questions(
+        self,
+        questions,
+        student_answers_map: dict,
+        final_points_map: dict,
+        db: Session,
+        show_correct_answers: bool,
+        plagiarism_matches: list,
+        question_text_offsets: dict
+    ) -> list:
+        """Будує список питань для перегляду."""
         review_questions = []
-        for question in sorted(attempt.exam.questions, key=lambda q: q.position):
+        for question in sorted(questions, key=lambda q: q.position):
             student_answer = student_answers_map.get(question.id)
             final_question_points = final_points_map.get(question.id, 0)
             
-            # Для long_answer питань додаємо інформацію про плагіат
             plagiarism_ranges = []
             if question.question_type == QuestionType.long_answer and student_answer:
-                # Перераховуємо ranges з об'єднаного тексту на окреме питання
                 plagiarism_ranges = self._extract_plagiarism_ranges_for_question(
                     student_answer.answer_text or "",
                     plagiarism_matches,
@@ -134,13 +176,8 @@ class ExamReviewService:
                 plagiarism_ranges
             )
             review_questions.append(question_data)
-            
-        return ExamAttemptReviewResponse(
-            exam_id=str(attempt.exam.id),  # Додаємо exam_id для навігації
-            exam_title=attempt.exam.title,
-            show_correct_answers=show_correct_answers,
-            questions=review_questions
-        ).model_dump()
+        
+        return review_questions
 
     def _build_question_review_data(
             self,
@@ -283,52 +320,67 @@ class ExamReviewService:
             matches: Список matches з plagiarism_check.details
             question_offset: Tuple (start_offset, end_offset) позиції питання в об'єднаному тексті
         """
-        ranges = []
         if not matches or not question_text:
-            return ranges
+            return []
         
         import logging
         logger = logging.getLogger(__name__)
         
-        # Витягуємо всі ranges з matches
+        all_ranges = ExamReviewService._extract_ranges_from_matches(matches)
+        if not all_ranges:
+            return []
+        
+        if question_offset is None:
+            logger.warning("No question_offset provided, using ranges as-is (may be incorrect)")
+            return ExamReviewService._filter_ranges_without_offset(all_ranges, question_text)
+        
+        question_ranges = ExamReviewService._map_ranges_with_offset(
+            all_ranges, question_text, question_offset, logger
+        )
+        if not question_ranges:
+            return []
+        
+        return ExamReviewService._merge_overlapping_ranges(question_ranges, question_text)
+    
+    @staticmethod
+    def _extract_ranges_from_matches(matches: list) -> list:
+        """Витягує всі ranges з matches."""
         all_ranges = []
         for match in matches:
-            # Перевіряємо різні можливі формати зберігання ranges
             if "text_ranges" in match and match["text_ranges"]:
                 all_ranges.extend(match["text_ranges"])
             elif "ranges" in match and match["ranges"]:
                 all_ranges.extend(match["ranges"])
             elif "start" in match and "end" in match:
                 all_ranges.append({"start": match["start"], "end": match["end"]})
-        
-        if not all_ranges:
-            return []
-        
-        # Якщо немає offset, використовуємо ranges як є (для сумісності)
-        if question_offset is None:
-            logger.warning("No question_offset provided, using ranges as-is (may be incorrect)")
-            # Фільтруємо ranges, які потрапляють в межі тексту питання
-            filtered_ranges = []
-            for r in all_ranges:
-                start = max(0, min(r.get("start", 0), len(question_text)))
-                end = max(start, min(r.get("end", len(question_text)), len(question_text)))
-                if start < end:
-                    filtered_ranges.append({"start": start, "end": end})
-            return filtered_ranges
-        
+        return all_ranges
+    
+    @staticmethod
+    def _filter_ranges_without_offset(all_ranges: list, question_text: str) -> list:
+        """Фільтрує ranges без offset, які потрапляють в межі тексту питання."""
+        filtered_ranges = []
+        for r in all_ranges:
+            start = max(0, min(r.get("start", 0), len(question_text)))
+            end = max(start, min(r.get("end", len(question_text)), len(question_text)))
+            if start < end:
+                filtered_ranges.append({"start": start, "end": end})
+        return filtered_ranges
+    
+    @staticmethod
+    def _map_ranges_with_offset(
+        all_ranges: list, question_text: str, question_offset: tuple, logger
+    ) -> list:
+        """Перераховує ranges з об'єднаного тексту на окреме питання."""
         question_start, question_end = question_offset
-        
-        # Перераховуємо ranges з об'єднаного тексту на окреме питання
         question_ranges = []
+        
         for range_item in all_ranges:
             combined_start = range_item.get("start", 0)
             combined_end = range_item.get("end", 0)
             
-            # Перевіряємо, чи range перетинається з текстом поточного питання
             if combined_end <= question_start or combined_start >= question_end:
-                continue  # Range не перетинається з цим питанням
+                continue
             
-            # Обчислюємо позиції в тексті питання
             question_range_start = max(0, combined_start - question_start)
             question_range_end = min(len(question_text), combined_end - question_start)
             
@@ -342,27 +394,27 @@ class ExamReviewService:
             logger.debug(f"No ranges mapped to question text (offset: {question_offset})")
             return []
         
-        # Сортуємо ranges за start позицією
         question_ranges.sort(key=lambda r: r.get("start", 0))
-        
-        # Об'єднуємо перекриваючі ranges
+        return question_ranges
+    
+    @staticmethod
+    def _merge_overlapping_ranges(question_ranges: list, question_text: str) -> list:
+        """Об'єднує перекриваючі ranges."""
         merged_ranges = []
         for range_item in question_ranges:
             start = max(0, min(range_item.get("start", 0), len(question_text)))
             end = max(start, min(range_item.get("end", len(question_text)), len(question_text)))
             
             if start >= end:
-                continue  # Пропускаємо невалідні ranges
+                continue
             
             if not merged_ranges:
                 merged_ranges.append({"start": start, "end": end})
             else:
                 last_range = merged_ranges[-1]
                 if start <= last_range["end"]:
-                    # Перекриваються - об'єднуємо
                     last_range["end"] = max(last_range["end"], end)
                 else:
-                    # Не перекриваються - додаємо новий
                     merged_ranges.append({"start": start, "end": end})
         
         return merged_ranges
@@ -374,15 +426,28 @@ class ExamReviewService:
         Очікує, що в matches є інформація про text_ranges або ranges.
         DEPRECATED: Використовуйте _extract_plagiarism_ranges_for_question для окремих питань.
         """
-        ranges = []
         if not matches or not text:
-            return ranges
+            return []
         
         import logging
         logger = logging.getLogger(__name__)
         
+        ranges = ExamReviewService._extract_ranges_from_matches_with_logging(matches, logger)
+        if not ranges:
+            logger.debug(f"No ranges extracted from {len(matches)} matches")
+            return []
+        
+        ranges.sort(key=lambda r: r.get("start", 0))
+        merged_ranges = ExamReviewService._merge_overlapping_ranges(ranges, text)
+        
+        logger.debug(f"Extracted {len(merged_ranges)} merged ranges from {len(ranges)} original ranges")
+        return merged_ranges
+    
+    @staticmethod
+    def _extract_ranges_from_matches_with_logging(matches: list, logger) -> list:
+        """Витягує ranges з matches з логуванням."""
+        ranges = []
         for match in matches:
-            # Перевіряємо різні можливі формати зберігання ranges
             if "text_ranges" in match and match["text_ranges"]:
                 ranges.extend(match["text_ranges"])
                 logger.debug(f"Found text_ranges in match: {match['text_ranges']}")
@@ -394,36 +459,7 @@ class ExamReviewService:
                 logger.debug(f"Found start/end in match: {match['start']}-{match['end']}")
             else:
                 logger.debug(f"No ranges found in match: {match.keys()}")
-        
-        if not ranges:
-            logger.debug(f"No ranges extracted from {len(matches)} matches")
-            return []
-        
-        # Сортуємо ranges за start позицією
-        ranges.sort(key=lambda r: r.get("start", 0))
-        
-        # Об'єднуємо перекриваючі ranges
-        merged_ranges = []
-        for range_item in ranges:
-            start = max(0, min(range_item.get("start", 0), len(text)))
-            end = max(start, min(range_item.get("end", len(text)), len(text)))
-            
-            if start >= end:
-                continue  # Пропускаємо невалідні ranges
-            
-            if not merged_ranges:
-                merged_ranges.append({"start": start, "end": end})
-            else:
-                last_range = merged_ranges[-1]
-                if start <= last_range["end"]:
-                    # Перекриваються - об'єднуємо
-                    last_range["end"] = max(last_range["end"], end)
-                else:
-                    # Не перекриваються - додаємо новий
-                    merged_ranges.append({"start": start, "end": end})
-        
-        logger.debug(f"Extracted {len(merged_ranges)} merged ranges from {len(ranges)} original ranges")
-        return merged_ranges
+        return ranges
         
     @staticmethod
     def _build_short_answer_data(base_data, question, student_answer, show_correct_answers=True):

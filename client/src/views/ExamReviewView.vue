@@ -187,7 +187,7 @@ function validateScoreInput(event) {
     let value = event.target.value
     
     // Видаляємо всі символи, крім цифр та крапки
-    value = value.replace(/[^\d.]/g, '')
+    value = value.replaceAll(/[^\d.]/g, '')
     
     // Перевіряємо, що крапка тільки одна
     const parts = value.split('.')
@@ -197,42 +197,31 @@ function validateScoreInput(event) {
     }
     
     // Перевіряємо діапазон та обмежуємо значення
-    const numValue = parseFloat(value)
-    if (value && !isNaN(numValue)) {
+    const numValue = Number.parseFloat(value)
+    if (value && !Number.isNaN(numValue)) {
         if (numValue < 0) {
             // Якщо менше 0, встановлюємо 0
             value = '0'
-            scoreError.value = null
         } else if (numValue > 100) {
             // Якщо більше 100, обмежуємо до 100
             value = '100'
-            scoreError.value = null
-        } else {
-            scoreError.value = null
         }
-    } else if (value === '.') {
-        // Дозволяємо крапку як початок десяткового числа
-        scoreError.value = null
-    } else if (value && value !== '.') {
-        scoreError.value = null
-    } else {
-        scoreError.value = null
     }
     
     // Додаткова перевірка: якщо вже є "100" без крапки, не дозволяємо додавати цифри
-    if (value === '100' && !value.includes('.')) {
-        // Залишаємо як є
-    } else if (value.startsWith('100') && value.length > 3 && !value.includes('.')) {
+    if (value.startsWith('100') && value.length > 3 && !value.includes('.')) {
         // Якщо намагаються додати цифри після "100", обрізаємо
         value = '100'
     }
+    
+    // Очищаємо помилку валідації
+    scoreError.value = null
     
     // Оновлюємо значення в інпуті (видаляємо некоректні символи)
     editingFinalScore.value = value
     
     // Якщо значення змінилося, оновлюємо позицію курсора
     if (event.target.value !== value) {
-        const cursorPosition = event.target.selectionStart
         event.target.value = value
         // Встановлюємо курсор на кінці, якщо текст був змінений
         nextTick(() => {
@@ -244,10 +233,10 @@ function validateScoreInput(event) {
 async function saveFinalScore() {
     if (!isEditingFinalScore.value) return
     
-    const numValue = parseFloat(editingFinalScore.value)
+    const numValue = Number.parseFloat(editingFinalScore.value)
     
     // Валідація
-    if (editingFinalScore.value === '' || isNaN(numValue)) {
+    if (editingFinalScore.value === '' || Number.isNaN(numValue)) {
         scoreError.value = 'Введіть коректне число'
         return
     }
@@ -283,7 +272,7 @@ function preventInvalidInput(event) {
     }
     
     // Блокуємо всі інші символи, крім цифр та крапки
-    if (!/[0-9.]/.test(char)) {
+    if (!/[\d.]/.test(char)) {
         event.preventDefault()
         return false
     }
@@ -295,9 +284,9 @@ function preventInvalidInput(event) {
     }
     
     // Якщо вже введено 100, блокуємо подальше введення цифр
-    if (/[0-9]/.test(char)) {
-        const numValue = parseFloat(currentValue + char)
-        if (!isNaN(numValue) && numValue > 100) {
+    if (/\d/.test(char)) {
+        const numValue = Number.parseFloat(currentValue + char)
+        if (!Number.isNaN(numValue) && numValue > 100) {
             event.preventDefault()
             return false
         }
