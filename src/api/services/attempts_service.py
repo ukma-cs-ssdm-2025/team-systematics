@@ -12,6 +12,7 @@ from src.api.schemas.attempts import (
     Attempt as AttemptSchema,
     AttemptResultResponse,
     AnswerScoreUpdate,
+    FinalScoreUpdate,
     AddTimeRequest,
     ActiveAttemptInfo
 )
@@ -254,6 +255,41 @@ class AttemptsService:
             text=answer.answer_text,
             selected_option_ids=None,  # Не використовується для long_answer
             saved_at=answer.saved_at
+        )
+    
+    def update_final_score(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        payload: FinalScoreUpdate
+    ) -> AttemptSchema:
+        """
+        Оновлює фінальну оцінку за спробу вручну.
+        Доступно лише для викладачів.
+        """
+        attempt = db.query(Attempt).filter(Attempt.id == attempt_id).first()
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        # Перевіряємо, що спроба завершена (submitted або completed)
+        if attempt.status == AttemptStatus.in_progress:
+            raise ValueError("Неможливо встановити фінальну оцінку для спроби, яка ще не завершена")
+        
+        # Встановлюємо фінальну оцінку
+        attempt.earned_points = min(100.0, max(0.0, payload.final_score))
+        db.commit()
+        db.refresh(attempt)
+        
+        return AttemptSchema(
+            id=attempt.id,
+            exam_id=attempt.exam_id,
+            user_id=attempt.user_id,
+            status=attempt.status.value,
+            started_at=attempt.started_at,
+            due_at=attempt.due_at,
+            submitted_at=attempt.submitted_at,
+            score_percent=attempt.earned_points,
+            time_spent_seconds=attempt.time_spent_seconds
         )
     
     @staticmethod

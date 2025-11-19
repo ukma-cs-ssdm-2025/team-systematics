@@ -1,7 +1,7 @@
 from sqlalchemy.orm import Session, joinedload
 from uuid import UUID
 from fastapi import APIRouter, status, Depends, HTTPException, Path
-from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, AddTimeRequest, ActiveAttemptInfo
+from src.api.schemas.attempts import AnswerUpsert, Answer, Attempt as AttemptSchema, AttemptResultResponse, AnswerScoreUpdate, FinalScoreUpdate, AddTimeRequest, ActiveAttemptInfo
 from src.api.schemas.exam_review import ExamAttemptReviewResponse
 from src.api.services.attempts_service import AttemptsService
 from src.api.services.exam_review_service import ExamReviewService
@@ -12,6 +12,7 @@ from src.models.exams import QuestionType, Question
 from src.utils.largest_remainder import distribute_largest_remainder
 from src.utils.auth import get_current_user_with_role, require_role
 from src.models.users import User
+from src.api.errors.app_errors import NotFoundError
 from .versioning import require_api_version
 from src.api.database import get_db
 from typing import List, Optional
@@ -148,6 +149,20 @@ class AttemptsController:
         except ValueError as e:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
 
+    def _update_final_score(self, attempt_id: UUID = Path(..., description=ATTEMPT_ID_DESCRIPTION),
+                                   payload: FinalScoreUpdate = ...,
+                                   db: Session = Depends(get_db),
+                                   current_user: User = Depends(get_current_user_with_role)):
+        # Перевірка ролі вчителя
+        self._require_teacher(current_user)
+        
+        try:
+            return self.service.update_final_score(db, attempt_id, payload)
+        except ValueError as e:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+        except NotFoundError as e:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail=str(e))
+
     def _list_plagiarism_checks(self, exam_id: UUID, max_uniqueness: Optional[float] = None,
                                       db: Session = Depends(get_db), current_user: User = Depends(get_current_user_with_role)):
         # Перевірка ролі: тільки вчитель може переглядати перевірки на плагіат
@@ -282,6 +297,15 @@ class AttemptsController:
             methods=["PATCH"],
             status_code=status.HTTP_200_OK,
             summary="Оновити оцінку за відповідь на long_answer питання (тільки для вчителя)",
+        )
+
+        self.router.add_api_route(
+            "/{attempt_id}/final-score",
+            endpoint=self._update_final_score,
+            response_model=AttemptSchema,
+            methods=["PATCH"],
+            status_code=status.HTTP_200_OK,
+            summary="Оновити фінальну оцінку за спробу вручну (тільки для викладача)",
         )
 
         self.router.add_api_route(

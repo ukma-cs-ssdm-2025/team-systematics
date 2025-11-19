@@ -35,6 +35,9 @@ class Answer(BaseModel):
 class AnswerScoreUpdate(BaseModel):
     earned_points: float = Field(..., ge=0, description="Оцінка за питання (не може бути від'ємною)")
 
+class FinalScoreUpdate(BaseModel):
+    final_score: float = Field(..., ge=0, le=100, description="Фінальна оцінка за спробу (0-100)")
+
 class AttemptResultResponse(BaseModel):
     exam_title: str
     status: str # in_progress | submitted | completed
