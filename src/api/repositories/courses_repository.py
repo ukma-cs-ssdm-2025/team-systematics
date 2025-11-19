@@ -38,7 +38,7 @@ class CoursesRepository:
         student_count_subquery = (
             self.db.query(
                 CourseEnrollment.course_id,
-                func.count(CourseEnrollment.user_id).label("student_count")
+                func.count(func.distinct(CourseEnrollment.user_id)).label("student_count")
             ).group_by(CourseEnrollment.course_id).subquery()
         )
         
@@ -362,8 +362,8 @@ class CoursesRepository:
         self.db.commit()
 
     def get_student_count(self, course_id: UUID) -> int:
-        """Підраховує кількість студентів, записаних на курс."""
-        return self.db.query(func.count(CourseEnrollment.user_id)).filter(CourseEnrollment.course_id == course_id).scalar() or 0
+        """Підраховує кількість унікальних студентів, записаних на курс."""
+        return self.db.query(func.count(func.distinct(CourseEnrollment.user_id))).filter(CourseEnrollment.course_id == course_id).scalar() or 0
     
     def get_course_statistics(self, course_id: UUID) -> dict:
         """Метод для отримання статистики по курсу."""
@@ -431,12 +431,13 @@ class CoursesRepository:
             Attempt.exam_id.in_(exam_ids),
             Attempt.status == AttemptStatus.completed,
             Attempt.earned_points.isnot(None)
-        ).all()
+        ).order_by(Attempt.user_id, Attempt.earned_points.desc(), Attempt.submitted_at.desc()).all()
 
         if not attempts:
             return {
                 "total_students": total_students,
                 "students_completed": 0,
+                "total_attempts": 0,
                 "average_score": None,
                 "min_score": None,
                 "max_score": None,
@@ -444,8 +445,20 @@ class CoursesRepository:
                 "scores": []
             }
 
-        scores = [a.earned_points for a in attempts]
-        unique_completed_students = len({a.user_id for a in attempts})
+        # Для гістограми використовуємо найкращу спробу кожного студента
+        # (якщо студент зробив кілька спроб, беремо ту, де найвищий бал)
+        best_attempts_by_student = {}
+        for attempt in attempts:
+            user_id = attempt.user_id
+            if user_id not in best_attempts_by_student:
+                best_attempts_by_student[user_id] = attempt
+            elif attempt.earned_points > best_attempts_by_student[user_id].earned_points:
+                best_attempts_by_student[user_id] = attempt
+
+        # Список балів для гістограми (тільки найкращі спроби)
+        scores = [a.earned_points for a in best_attempts_by_student.values()]
+        unique_completed_students = len(best_attempts_by_student)
+        total_attempts = len(attempts)
 
         avg = sum(scores) / len(scores) if scores else None
         mn = min(scores) if scores else None
@@ -462,6 +475,7 @@ class CoursesRepository:
         return {
             "total_students": total_students,
             "students_completed": unique_completed_students,
+            "total_attempts": total_attempts,
             "average_score": round(avg, 2) if avg is not None else None,
             "min_score": round(mn, 2) if mn is not None else None,
             "max_score": round(mx, 2) if mx is not None else None,
@@ -484,11 +498,11 @@ class CoursesRepository:
         Показує тільки курси, до яких прив'язаний даний наглядач.
         Формат: {id, name, code, students_count, teachers: [full_name, ...]}
         """
-        # Підрахунок студентів
+        # Підрахунок унікальних студентів
         student_count_subquery = (
             self.db.query(
                 CourseEnrollment.course_id,
-                func.count(CourseEnrollment.user_id).label("students_count")
+                func.count(func.distinct(CourseEnrollment.user_id)).label("students_count")
             )
             .group_by(CourseEnrollment.course_id)
             .subquery()

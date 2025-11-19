@@ -32,8 +32,9 @@ class CourseAnalyticsResponse(BaseModel):
 class GroupScoreAnalytics(BaseModel):
     total_students: int
     students_completed: int
+    total_attempts: Optional[int] = None  # Загальна кількість спроб (може бути більше за students_completed, якщо дозволено кілька спроб)
     average_score: Optional[float]
     min_score: Optional[float]
     max_score: Optional[float]
     median_score: Optional[float]
-    scores: Optional[List[float]] = None
+    scores: Optional[List[float]] = None  # Бали для гістограми (тільки найкращі спроби кожного студента)
