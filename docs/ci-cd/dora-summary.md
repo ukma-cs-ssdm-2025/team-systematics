@@ -492,3 +492,5 @@ xychart-beta
 ```
 
 ## Презентація
+![Слайд 1](metrics-evidence/slide_metrics.png)
+![Слайд 1](metrics-evidence/slide_charts.png)
