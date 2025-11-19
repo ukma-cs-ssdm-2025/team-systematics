@@ -1312,6 +1312,11 @@ components:
         students_completed:
           title: Students Completed
           type: integer
+        total_attempts:
+          anyOf:
+          - type: integer
+          - type: 'null'
+          title: Total Attempts
         total_students:
           title: Total Students
           type: integer
