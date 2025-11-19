@@ -511,4 +511,4 @@ bar
     "R
 ```
 ## Презентація
-
+![Слайд 1](evidence/slide_metrics.png)
