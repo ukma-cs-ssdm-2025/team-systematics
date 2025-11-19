@@ -1271,7 +1271,7 @@ ccc38203-c5e2-4924-bb5e-d754f8fc28d1	1
 COPY public.users (id, email, hashed_password, created_at, first_name, last_name, patronymic, notification_settings, avatar_url) FROM stdin;
 2d47491e-d1e2-412d-bb81-3d8ff0174bf1	miroslava.flom@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:27.673607+03	Мирослава	Фломбойм	Олексіївна	{"enabled": true, "remind_before_hours": [8, 24, 1]}	\N
 bed7d3a1-8461-41fa-9610-03db8bc58a85	chulano10@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:14:50.302061+03	Владислава	Колінько	Володимирівна	{"enabled": true, "remind_before_hours": [24, 1, 8]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1762346905/user_avatars/bed7d3a1-8461-41fa-9610-03db8bc58a85.jpg
-a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	minelenova1@gmail.com	$2b$12$JwzWYzHo84SP1PrHAmjql6FlaaSDWnb0Glizmc3JMop90C	2025-10-10 18:01:19.539414+03	Олександра	Малій	Михайлівна	{"enabled": true, "remind_before_hours": [24]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943285/user_avatars/a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5.jpg
+a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5	minelenova1@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:01:19.539414+03	Олександра	Малій	Михайлівна	{"enabled": true, "remind_before_hours": [24]}	https://res.cloudinary.com/dsiiuchan/image/upload/v1761943285/user_avatars/a6fc1bbb-1f24-41a1-b3c4-3370b3c5fab5.jpg
 ccc38203-c5e2-4924-bb5e-d754f8fc28d1	anastasiabakalyna@gmail.com	$2b$12$7x2y/2LaaJBSaeAanKdGeuo4XVl3k0qXaVPAdbtVmcPDjkjh79kdy	2025-10-10 18:15:06.219423+03	Анастасія	Бакалина	Ярославівна	{"enabled": false, "remind_before_hours": []}	\N
 \.
 
