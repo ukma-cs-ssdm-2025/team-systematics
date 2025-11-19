@@ -455,7 +455,7 @@ xychart-beta
     title "Lead Time (Run API Tests)"
     x-axis "Run #" [1,2,3,4,5,6,7,8,9,10]
     y-axis "Time (seconds)" 0 --> 700
-    line stroke="#FF5733" [121,144,133,131,158,129,170,123,126,639]
+    line [121,144,133,131,158,129,170,123,126,639]
 ```
 
 ### 2. Deployment Frequency – Run API Tests
@@ -466,7 +466,7 @@ xychart-beta
     title "Deployment Frequency (Run API Tests)"
     x-axis "Run #" [1,2,3,4,5,6,7,8]
     y-axis "Deployment batch" 0 --> 6
-    line stroke="#3BBFC4" [1,1,1,2,3,3,4,5]
+    line [1,1,1,2,3,3,4,5]
 ```
 
 ### 3. Change Failure Rate – Run API Tests
@@ -477,7 +477,7 @@ xychart-beta
     title "Change Failure Rate (Run API Tests)"
     x-axis "Category" ["Success","Failure"]
     y-axis "Count" 0 --> 8
-    bar fill="#A855F7" [8,2]
+    bar [8,2]
 ```
 
 ### 4. Time to Restore – Failed Runs Only
@@ -488,7 +488,7 @@ xychart-beta
     title "Time to Restore (Failed Runs)"
     x-axis "Failure #" [1,2]
     y-axis "Time (seconds)" 0 --> 70
-    line stroke="#4287f5" [58,63]
+    line [58,63]
 ```
 
 ## Презентація
