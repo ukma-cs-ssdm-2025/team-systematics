@@ -1,6 +1,6 @@
 from typing import List, Tuple, Optional
 from sqlalchemy.orm import Session, aliased
-from sqlalchemy import func, or_, literal
+from sqlalchemy import func, or_, literal, case
 from uuid import UUID
 from fastapi import Query
 from src.api.repositories.exams_repository import ExamsRepository
@@ -66,7 +66,7 @@ class CoursesRepository:
                 user_enrollment,
                 (user_enrollment.course_id == Course.id) & (user_enrollment.user_id == current_user_id)
             ).add_columns(
-                (user_enrollment.user_id is not None).label("is_enrolled")
+                case((user_enrollment.user_id.isnot(None), True), else_=False).label("is_enrolled")
             )
         else:
             query = query.add_columns(literal(False).label("is_enrolled"))
