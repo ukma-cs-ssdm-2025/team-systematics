@@ -32,8 +32,8 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 6/5 = 1.2              | Low       |
-| Lead Time for Changes | mean(merge → deploy time)          | 267/6 = 44,5s          | High      |
+| Deployment Frequency  | #successful deployments / week     | 6/5 = 1.2              | Medium    |
+| Lead Time for Changes | mean(merge → deploy time)          | 267/6 = 44,5s          | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 0%                     | Elite     |
 | Time to Restore       | mean(time to fix failed build)     | 0d 0h 0m               | Elite     |
 ---
@@ -54,8 +54,8 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 41/5 = 8.2             | High      |
-| Lead Time for Changes | mean(merge → deploy time)          | 2837/41 = 1m 9s        | Medium    |
+| Deployment Frequency  | #successful deployments / week     | 41/5 = 8.2             | Elite     |
+| Lead Time for Changes | mean(merge → deploy time)          | 2837/41 = 1m 9s        | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 69/110 × 100% = 62.72% | Low       |
 | Time to Restore       | mean(time to fix failed build)     | 7d 5h 51m              | Low       |
 ---
@@ -76,10 +76,10 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 108/8 = 13.5           | High      |
+| Deployment Frequency  | #successful deployments / week     | 108/8 = 13.5           | Elite     |
 | Lead Time for Changes | mean(merge → deploy time)          | 1008/108 = 9,33 s      | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 32/140 × 100% = 22.86% | High      |
-| Time to Restore       | mean(time to fix failed build)     | 8d 12h 16m             | Medium    |
+| Time to Restore       | mean(time to fix failed build)     | 8d 12h 16m             | Low       |
 ---
 
 # Deploy Docs to GitHub Pages:
@@ -98,8 +98,8 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 7/5 = 1.4              | Elite     |
-| Lead Time for Changes | mean(merge → deploy time)          | 122/7 = 17.42 s        | High      |
+| Deployment Frequency  | #successful deployments / week     | 7/5 = 1.4              | Medium    |
+| Lead Time for Changes | mean(merge → deploy time)          | 122/7 = 17.42 s        | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 0%                     | Elite     |
 | Time to Restore       | mean(time to fix failed build)     | 0d 0h 0m               | Elite     |
 ---
@@ -120,7 +120,7 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 8/6 = 1.33             | Elite     |
+| Deployment Frequency  | #successful deployments / week     | 8/6 = 1.33             | Medium    |
 | Lead Time for Changes | mean(merge → deploy time)          | 77/8 = 9.62 s          | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 2/10 × 100% = 20%      | High      |
 | Time to Restore       | mean(time to fix failed build)     | 45d 11h 22m            | Low       |
@@ -142,10 +142,10 @@
 
 | Metric                | Formula                            | Your Result            | Category* |
 |-----------------------|------------------------------------|:----------------------:|-----------|
-| Deployment Frequency  | #successful deployments / week     | 17/5 = 3.4             | Elite     |
-| Lead Time for Changes | mean(merge → deploy time)          | 536/17 = 31.53 s       | High      |
+| Deployment Frequency  | #successful deployments / week     | 17/5 = 3.4             | High      |
+| Lead Time for Changes | mean(merge → deploy time)          | 536/17 = 31.53 s       | Elite     |
 | Change Failure Rate   | failed / total deployments × 100 % | 100/117 × 100% = 85.47%| Low       |
-| Time to Restore       | mean(time to fix failed build)     | 15d 17h 57m            | High      |
+| Time to Restore       | mean(time to fix failed build)     | 15d 17h 57m            | Low       |
 ---
 
 ## Аналіз
