@@ -95,15 +95,6 @@ components:
           format: uuid
           title: Answer1 Id
           type: string
-        answer1_ranges:
-          description: Ranges (start, end) для підсвічування спільних фрагментів у
-            першій відповіді
-          items:
-            additionalProperties:
-              type: integer
-            type: object
-          title: Answer1 Ranges
-          type: array
         answer1_text:
           description: Текст першої відповіді
           title: Answer1 Text
@@ -113,15 +104,6 @@ components:
           format: uuid
           title: Answer2 Id
           type: string
-        answer2_ranges:
-          description: Ranges (start, end) для підсвічування спільних фрагментів у
-            другій відповіді
-          items:
-            additionalProperties:
-              type: integer
-            type: object
-          title: Answer2 Ranges
-          type: array
         answer2_text:
           description: Текст другої відповіді
           title: Answer2 Text
@@ -1201,18 +1183,6 @@ components:
           type: array
       title: ExamsResponse
       type: object
-    FinalScoreUpdate:
-      properties:
-        final_score:
-          description: Фінальна оцінка за спробу (0-100)
-          maximum: 100.0
-          minimum: 0.0
-          title: Final Score
-          type: number
-      required:
-      - final_score
-      title: FinalScoreUpdate
-      type: object
     FlaggedAnswerResponse:
       description: Відповідь з інформацією про позначену відповідь
       properties:
@@ -1419,13 +1389,6 @@ components:
           default: false
           title: Is Flagged
           type: boolean
-        plagiarism_ranges:
-          items:
-            additionalProperties:
-              type: integer
-            type: object
-          title: Plagiarism Ranges
-          type: array
         points:
           title: Points
           type: number
@@ -2590,52 +2553,6 @@ paths:
       security:
       - HTTPBearer: []
       summary: Save or update an answer
-      tags:
-      - Attempts
-  /api/attempts/{attempt_id}/final-score:
-    patch:
-      operationId: _update_final_score_api_attempts__attempt_id__final_score_patch
-      parameters:
-      - description: ID спроби
-        in: path
-        name: attempt_id
-        required: true
-        schema:
-          description: ID спроби
-          format: uuid
-          title: Attempt Id
-          type: string
-      - description: API version (e.g., 1.0)
-        in: query
-        name: api-version
-        required: false
-        schema:
-          default: '1.0'
-          description: API version (e.g., 1.0)
-          title: Api-Version
-          type: string
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FinalScoreUpdate'
-        required: true
-      responses:
-        '200':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Attempt'
-          description: Successful Response
-        '422':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/HTTPValidationError'
-          description: Validation Error
-      security:
-      - HTTPBearer: []
-      summary: Оновити фінальну оцінку за спробу вручну (тільки для викладача)
       tags:
       - Attempts
   /api/attempts/{attempt_id}/plagiarism/compare/{other_attempt_id}:
