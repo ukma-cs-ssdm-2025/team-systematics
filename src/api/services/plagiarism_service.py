@@ -80,7 +80,7 @@ class PlagiarismService:
                 logger.warning(f"Plagiarism check for attempt {attempt.id} exceeded time limit, using fast check only")
                 # Повертаємо результат на основі швидкої перевірки
                 fast_matches = self._run_fast_tfidf_filter(
-                    base_text, candidate_texts, candidate_attempt_ids
+                    base_text, candidate_texts, candidate_attempt_ids, db
                 )
                 max_similarity = max([m["similarity_score"] for m in fast_matches], default=0.0)
                 uniqueness = max(0.0, 100.0 - max_similarity * 100.0)
@@ -97,7 +97,7 @@ class PlagiarismService:
 
             # 3. Рівень 1: TF-IDF + cosine
             fast_matches = self._run_fast_tfidf_filter(
-                base_text, candidate_texts, candidate_attempt_ids
+                base_text, candidate_texts, candidate_attempt_ids, db
             )
 
             # Якщо є явний копіпаст (>0.98) — глибокий аналіз необов'язковий
@@ -214,11 +214,12 @@ class PlagiarismService:
 
     # ---------- РІВЕНЬ 1: TF-IDF + COSINE ----------
 
-    @staticmethod
     def _run_fast_tfidf_filter(
+        self,
         base_text: str,
         candidate_texts: List[str],
         candidate_ids: List[UUID],
+        db: Session = None,
     ) -> List[Dict[str, Any]]:
         """
         Будує TF-IDF матрицю і повертає список матчів за косинусною подібністю.
@@ -230,33 +231,81 @@ class PlagiarismService:
             logger.debug("_run_fast_tfidf_filter called with empty candidate_texts")
             return []
         
+        similarities = self._compute_tfidf_similarities(base_text, candidate_texts)
+        if similarities is None:
+            return []
+        
+        matches = self._build_match_data_list(
+            similarities, candidate_ids, candidate_texts, base_text, db
+        )
+        
+        matches.sort(key=lambda m: m["similarity_score"], reverse=True)
+        return matches
+    
+    @staticmethod
+    def _compute_tfidf_similarities(base_text: str, candidate_texts: List[str]) -> List[float] | None:
+        """Обчислює TF-IDF схожість між base_text та candidate_texts."""
         corpus = [base_text] + candidate_texts
         vectorizer = TfidfVectorizer()
         try:
             tfidf_matrix = vectorizer.fit_transform(corpus)
         except ValueError as e:
-            # Наприклад, якщо всі тексти порожні або надто короткі
             logger.warning(f"TF-IDF vectorization failed: {str(e)}")
-            return []
+            return None
 
         base_vec = tfidf_matrix[0:1]
         other_vecs = tfidf_matrix[1:]
-
-        similarities = cosine_similarity(base_vec, other_vecs)[0]  # shape: (n_candidates,)
-
+        similarities = cosine_similarity(base_vec, other_vecs)[0]
+        return similarities.tolist()
+    
+    def _build_match_data_list(
+        self,
+        similarities: List[float],
+        candidate_ids: List[UUID],
+        candidate_texts: List[str],
+        base_text: str,
+        db: Session = None
+    ) -> List[Dict[str, Any]]:
+        """Будує список матчів з даними про схожість та ranges."""
         matches: List[Dict[str, Any]] = []
         for idx, sim in enumerate(similarities):
-            matches.append(
-                {
-                    "other_attempt_id": str(candidate_ids[idx]),
-                    "similarity_score": float(sim),
-                    "match_type": "exact" if sim >= 0.98 else "candidate",
-                }
-            )
-
-        # Сортуємо за спаданням схожості
-        matches.sort(key=lambda m: m["similarity_score"], reverse=True)
+            match_data = {
+                "other_attempt_id": str(candidate_ids[idx]),
+                "similarity_score": float(sim),
+                "match_type": "exact" if sim >= 0.98 else "candidate",
+            }
+            
+            if sim >= 0.5 and db:
+                ranges = self._compute_match_ranges(
+                    base_text, candidate_texts, idx, candidate_ids[idx]
+                )
+                if ranges:
+                    match_data["ranges"] = ranges
+            
+            matches.append(match_data)
+        
         return matches
+    
+    def _compute_match_ranges(
+        self,
+        base_text: str,
+        candidate_texts: List[str],
+        idx: int,
+        candidate_id: UUID
+    ) -> List[Dict[str, int]] | None:
+        """Обчислює ranges для виділення сплагіачених частин."""
+        other_text = candidate_texts[idx] if idx < len(candidate_texts) else None
+        if not other_text or not other_text.strip():
+            return None
+        
+        try:
+            base_spans, _ = self._compute_highlight_spans(base_text, other_text, min_match_len=10)
+            if base_spans:
+                return [{"start": span[0], "end": span[1]} for span in base_spans]
+        except Exception as e:
+            logger.warning(f"Failed to compute highlight spans for match {candidate_id}: {e}")
+        
+        return None
 
     # ---------- РІВЕНЬ 2: ГЛИБОКИЙ АНАЛІЗ (ЗАГЛУШКА) ----------
 
@@ -296,6 +345,16 @@ class PlagiarismService:
                 "similarity_score": float(semantic_sim),
                 "match_type": "paraphrase" if semantic_sim >= 0.7 else "candidate",
             }
+            
+            # Генеруємо ranges для виділення сплагіачених частин
+            if semantic_sim >= 0.5:  # Тільки для значущої схожості
+                try:
+                    base_spans, _ = self._compute_highlight_spans(base_text, other_text, min_match_len=10)
+                    # Конвертуємо spans (tuple) в ranges (dict)
+                    deep_match["ranges"] = [{"start": span[0], "end": span[1]} for span in base_spans]
+                except Exception as e:
+                    logger.warning(f"Failed to compute highlight spans for deep match {other_attempt_id}: {e}")
+            
             deep_results.append(deep_match)
             max_sim = max(max_sim, semantic_sim)
 

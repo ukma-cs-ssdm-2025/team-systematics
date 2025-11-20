@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import List, Literal
+from typing import List, Literal, Dict
 from uuid import UUID
 from pydantic import BaseModel, Field
 
@@ -115,3 +115,11 @@ class AnswerComparisonResponse(BaseModel):
     student1_name: str = Field(..., description="Ім'я першого студента")
     student2_name: str = Field(..., description="Ім'я другого студента")
     exam_title: str = Field(..., description="Назва іспиту")
+    answer1_ranges: List[Dict[str, int]] = Field(
+        default_factory=list,
+        description="Ranges (start, end) для підсвічування спільних фрагментів у першій відповіді"
+    )
+    answer2_ranges: List[Dict[str, int]] = Field(
+        default_factory=list,
+        description="Ranges (start, end) для підсвічування спільних фрагментів у другій відповіді"
+    )

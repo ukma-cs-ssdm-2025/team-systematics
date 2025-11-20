@@ -12,6 +12,7 @@ from src.api.schemas.attempts import (
     Attempt as AttemptSchema,
     AttemptResultResponse,
     AnswerScoreUpdate,
+    FinalScoreUpdate,
     AddTimeRequest,
     ActiveAttemptInfo
 )
@@ -254,6 +255,41 @@ class AttemptsService:
             text=answer.answer_text,
             selected_option_ids=None,  # Не використовується для long_answer
             saved_at=answer.saved_at
+        )
+    
+    def update_final_score(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        payload: FinalScoreUpdate
+    ) -> AttemptSchema:
+        """
+        Оновлює фінальну оцінку за спробу вручну.
+        Доступно лише для викладачів.
+        """
+        attempt = db.query(Attempt).filter(Attempt.id == attempt_id).first()
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        # Перевіряємо, що спроба завершена (submitted або completed)
+        if attempt.status == AttemptStatus.in_progress:
+            raise ValueError("Неможливо встановити фінальну оцінку для спроби, яка ще не завершена")
+        
+        # Встановлюємо фінальну оцінку
+        attempt.earned_points = min(100.0, max(0.0, payload.final_score))
+        db.commit()
+        db.refresh(attempt)
+        
+        return AttemptSchema(
+            id=attempt.id,
+            exam_id=attempt.exam_id,
+            user_id=attempt.user_id,
+            status=attempt.status.value,
+            started_at=attempt.started_at,
+            due_at=attempt.due_at,
+            submitted_at=attempt.submitted_at,
+            score_percent=attempt.earned_points,
+            time_spent_seconds=attempt.time_spent_seconds
         )
     
     @staticmethod
@@ -580,6 +616,28 @@ class AttemptsService:
         paraphrase_model = ParaphraseModel()
         similarity_score = paraphrase_model.similarity(text1, text2)
         
+        # Генеруємо ranges для підсвічування спільних фрагментів
+        plagiarism_service = PlagiarismService(
+            repo=PlagiarismRepository(),
+            paraphrase_model=paraphrase_model
+        )
+        answer1_ranges = []
+        answer2_ranges = []
+        
+        if text1.strip() and text2.strip():
+            try:
+                base_spans, other_spans = plagiarism_service._compute_highlight_spans(
+                    text1, text2, min_match_len=10
+                )
+                # Конвертуємо spans (tuple) в ranges (dict)
+                answer1_ranges = [{"start": span[0], "end": span[1]} for span in base_spans]
+                answer2_ranges = [{"start": span[0], "end": span[1]} for span in other_spans]
+            except Exception as e:
+                # Якщо не вдалося згенерувати ranges, продовжуємо без них
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to compute highlight spans for answer comparison: {e}")
+        
         student1 = answer1.attempt.user
         student2 = answer2.attempt.user
         exam = answer1.attempt.exam  # Припускаємо, що обидві відповіді з одного іспиту
@@ -593,6 +651,8 @@ class AttemptsService:
             student1_name=f"{student1.first_name} {student1.last_name}".strip(),
             student2_name=f"{student2.first_name} {student2.last_name}".strip(),
             exam_title=exam.title,
+            answer1_ranges=answer1_ranges,
+            answer2_ranges=answer2_ranges,
         )
 
     @staticmethod

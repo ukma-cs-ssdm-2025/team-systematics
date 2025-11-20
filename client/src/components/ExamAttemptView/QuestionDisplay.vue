@@ -181,8 +181,25 @@ function initializeAnswerState() {
 
 // Слідкуємо за зміною самого питання. Коли воно змінюється,
 // ми заново ініціалізуємо `localAnswer` до правильного типу.
-watch(() => props.question, () => {
+watch(() => props.question, async (newQuestion, oldQuestion) => {
     initializeAnswerState()
+    
+    // Оновлюємо прапорці на плагіат при зміні питання (наприклад, при перегляді іншої спроби)
+    if (props.isReviewMode && props.isTeacher && newQuestion?.question_type === 'long_answer') {
+        // Якщо answer_id змінився, оновлюємо прапорці
+        if (newQuestion?.answer_id !== oldQuestion?.answer_id) {
+            if (newQuestion?.answer_id) {
+                answerId.value = newQuestion.answer_id
+                await handleFlaggedStatus()
+            } else {
+                // Якщо answer_id немає, спробуємо отримати його
+                await fetchAnswerId()
+            }
+        } else if (newQuestion?.is_flagged !== oldQuestion?.is_flagged) {
+            // Якщо змінився статус is_flagged, оновлюємо відображення
+            await handleFlaggedStatus()
+        }
+    }
 }, {
     // immediate: true гарантує, що функція виконається і при першому завантаженні
     immediate: true
@@ -240,6 +257,23 @@ const fetchAnswerId = async () => {
     }
 };
 
+// Слідкуємо за зміною attemptId (коли переглядаємо іншу спробу)
+watch(() => props.attemptId, async (newAttemptId, oldAttemptId) => {
+    if (newAttemptId !== oldAttemptId && props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
+        // Скидаємо answerId та прапорці при зміні спроби
+        answerId.value = null
+        isFlagged.value = false
+        
+        // Оновлюємо прапорці для нової спроби
+        if (props.question.answer_id) {
+            answerId.value = props.question.answer_id
+            await handleFlaggedStatus()
+        } else {
+            await fetchAnswerId()
+        }
+    }
+})
+
 onMounted(async () => {
     if (props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
         if (props.question.answer_id) {
@@ -253,12 +287,18 @@ onMounted(async () => {
 
 async function checkFlaggedStatus() {
     const currentAnswerId = props.question.answer_id || answerId.value
-    if (!currentAnswerId) return
+    if (!currentAnswerId) {
+        isFlagged.value = false
+        return
+    }
     try {
         const flaggedAnswers = await getFlaggedAnswers()
-        isFlagged.value = flaggedAnswers.some(fa => fa.answer_id === currentAnswerId)
+        // Порівнюємо як рядки, щоб уникнути проблем з типами
+        const currentIdStr = String(currentAnswerId)
+        isFlagged.value = flaggedAnswers.some(fa => String(fa.answer_id) === currentIdStr)
     } catch (error) {
         console.error('Failed to check flagged status:', error)
+        isFlagged.value = false
     }
 }
 

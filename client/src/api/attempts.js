@@ -282,3 +282,26 @@ export async function addTimeToAttempt(attemptId, additionalMinutes) {
         throw new Error('Не вдалося додати час до спроби.')
     }
 }
+
+export async function updateFinalScore(attemptId, finalScore) {
+    const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+
+    if (USE_MOCK_DATA) {
+        return { score_percent: finalScore }
+    }
+
+    try {
+        const response = await http.patch(`/api/attempts/${attemptId}/final-score`, {
+            final_score: finalScore
+        })
+        return response.data
+    } catch (error) {
+        if (error.response?.status === 403) {
+            throw new Error('Недостатньо прав для редагування оцінки. Переконайтеся, що ви увійшли як вчитель.')
+        }
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося оновити фінальну оцінку. Спробуйте ще раз.')
+    }
+}
