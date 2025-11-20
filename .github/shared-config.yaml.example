@@ -1,0 +1,39 @@
+# Shared Configuration for GitHub Actions Workflows
+# 
+# Цей файл містить спільні налаштування для всіх workflows.
+# Використовується для забезпечення консистентності між різними workflows.
+#
+# Примітка: GitHub Actions не підтримує прямий імпорт YAML файлів,
+# тому цей файл слугує як документація та джерело правди для налаштувань.
+# При зміні значень тут, потрібно оновити їх у всіх workflows.
+
+# Python Configuration
+python_version: '3.11'  # Версія Python для всіх workflows
+
+# Node.js Configuration (для frontend)
+node_version: '20'  # Версія Node.js для frontend збірки
+
+# Environment Variables (спільні для всіх Python workflows)
+common_env:
+  PYTHONPATH: ${{ github.workspace }}
+  DATABASE_URL: "sqlite:///:memory:"  # Для тестів та генерації документації
+  JWT_SECRET: "supersecretkey"  # Дефолтне значення з config.py
+  JWT_ALGORITHM: "HS256"
+  JWT_EXPIRATION_MINUTES: "60"
+
+# Test Environment Variables
+test_env:
+  PYTHONPATH: ${{ github.workspace }}
+  DATABASE_URL: "sqlite:///:memory:"
+  JWT_SECRET: "test-secret"
+
+# Cache Configuration
+cache_dependencies: 'pip'  # Кешування pip залежностей
+
+# Python Setup Action
+python_setup_action: 'actions/setup-python@v5'
+
+# Checkout Action
+checkout_action: 'actions/checkout@v4'
+
+

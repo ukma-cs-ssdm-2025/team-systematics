@@ -10,19 +10,21 @@ def create_access_token(data: dict):
     to_encode.update({"exp": int(expire.timestamp())})
     return jwt.encode(to_encode, JWT_SECRET, algorithm=JWT_ALGORITHM)
 
-ALLOWED_ROLES: set[str] = {"student", "teacher", "proctor"}
+ALLOWED_ROLES: set[str] = {"student", "teacher", "supervisor"}
 ROLE_SYNONYMS: dict[str, str] = {
     "student": "student",
     "teacher": "teacher",
-    "proctor": "proctor",
+    "supervisor": "supervisor",
     "instructor": "teacher",
     "lecturer":  "teacher",
     "professor": "teacher",
-    "invigilator": "proctor",
-    "monitor":  "proctor",
+    "invigilator": "supervisor",
+    "monitor":  "supervisor",
+    "proctor": "supervisor",
     "студент":  "student",
     "викладач": "teacher",
-    "наглядач": "proctor",
+    "наглядач": "supervisor",
+    "наглядач-супервізор": "supervisor",
 }
 
 def _canonical_role(value: Optional[str]) -> Optional[str]:
@@ -46,7 +48,7 @@ def has_roles(
     """
     Determine whether a user's roles satisfy a requirement.
 
-    Canonical roles: {'student','teacher','proctor'}.
+    Canonical roles: {'student','teacher','supervisor'}.
     English and Ukrainian synonyms are mapped. Unknown roles are ignored by
     default, or raise ValueError when strict=True.
     """

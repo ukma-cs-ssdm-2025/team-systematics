@@ -7,7 +7,8 @@ from src.api.schemas.transcript import TranscriptResponse, CourseResult, Statist
 from typing import List, Optional
 
 class TranscriptService:
-    def _convert_rating_to_grades(self, rating: float) -> tuple[str, str]:
+    @staticmethod
+    def _convert_rating_to_grades(rating: float) -> tuple[str, str]:
         if 90 <= rating <= 100:
             return ("A", "Відмінно")
         elif 82 <= rating <= 89:
@@ -23,7 +24,8 @@ class TranscriptService:
         else: # 1-34
             return ("F", "Незадовільно")
 
-    def _sort_results(self, results: List[CourseResult], sort_by: str, order: str) -> List[CourseResult]:
+    @staticmethod
+    def _sort_results(results: List[CourseResult], sort_by: str, order: str) -> List[CourseResult]:
         """
         Сортує список результатів курсів за вказаним полем та напрямком.
         Значення None завжди розміщуються в кінці списку.

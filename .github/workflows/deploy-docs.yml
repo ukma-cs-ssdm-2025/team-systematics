@@ -1,33 +1,51 @@
+# Workflow: Deploy Docs to GitHub Pages
+#
+# Призначення:
+#   Деплоїть API документацію на GitHub Pages для публічного доступу.
+#   Запускається тільки при змінах в директорії docs/api/.
+#
+# Тригери:
+#   - Push до main
+#   - Тільки якщо змінені файли в docs/api/**
+#
+# Що робить:
+#   1. Завантажує вміст директорії docs/api як artifact
+#   2. Деплоїть на GitHub Pages через вбудований deployment action
+#
+# Результат:
+#   Документація доступна на GitHub Pages URL (вказується в environment)
+
 name: Deploy Docs to GitHub Pages
 
 on:
   push:
     branches:
       - main
-      - allyxandraaa/configure-github-pages-workflows
     paths:
-      - 'docs/api/**'
+      - 'docs/api/**'  # Запускається тільки при змінах в API документації
 
 permissions:
   contents: read
-  pages: write
-  id-token: write
+  pages: write  # Дозволяє публікувати на GitHub Pages
+  id-token: write  # Потрібно для GitHub Pages deployment
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
     environment:
       name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
+      url: ${{ steps.deployment.outputs.page_url }}  # URL деплоєної документації
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Upload Pages artifact
+        # Підготовка файлів для деплою
         uses: actions/upload-pages-artifact@v3
         with:
-          path: 'docs/api'
+          path: 'docs/api'  # Директорія з документацією
 
       - name: Deploy to GitHub Pages
+        # Публікація на GitHub Pages
         id: deployment
         uses: actions/deploy-pages@v4

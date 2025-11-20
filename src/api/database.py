@@ -1,5 +1,6 @@
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, JSON
 from sqlalchemy.orm import sessionmaker, declarative_base
+from sqlalchemy.dialects.postgresql import JSONB
 from src.core.config import DATABASE_URL
 import logging
 
@@ -20,6 +21,16 @@ engine = create_engine(
 )
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
 Base = declarative_base()
+
+
+def get_json_type():
+    """
+    Повертає відповідний JSON тип залежно від бази даних.
+    Використовує JSONB для PostgreSQL (краща продуктивність) та JSON для SQLite.
+    """
+    if DATABASE_URL and "postgresql" in DATABASE_URL:
+        return JSONB
+    return JSON
 
 def get_db():
     db = SessionLocal()

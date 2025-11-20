@@ -24,8 +24,8 @@
                 </div>
 
                 <div v-else class="review-item" :class="getReviewClasses(prompt)">
-                    <span class="review-text">{{ prompt.text }}</span>
-                    <span class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
+                    <span class="review-text">{{ prompt.student_match_id || '(не вибрано)' }}</span>
+                    <span v-if="showCorrectAnswers" class="review-points">({{ formattedPointsPerMatch(prompt) }} б)</span>
                 </div>
             </div>
 
@@ -54,6 +54,10 @@ const props = defineProps({
         type: Boolean,
         default: false
     },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
+    }
 })
 
 const emit = defineEmits(['update:modelValue'])
@@ -70,11 +74,32 @@ const selectOptions = computed(() => {
 function shuffleArray(array) {
     let currentIndex = array.length, randomIndex
     while (currentIndex !== 0) {
-        randomIndex = Math.floor(Math.random() * currentIndex)
+        randomIndex = secureRandomInt(currentIndex)
         currentIndex--
         ;[array[currentIndex], array[randomIndex]] = [array[randomIndex], array[currentIndex]]
     }
     return array
+}
+
+// Return integer in range [0, max) using Web Crypto when available.
+// Uses rejection sampling to avoid modulo bias. Falls back to Math.random().
+function secureRandomInt(max) {
+    // Перевірка на наявність crypto API
+    if (globalThis.crypto?.getRandomValues && max > 0) {
+        const uint32Max = 0xFFFFFFFF;
+        const range = max;
+        const threshold = (uint32Max + 1) - ((uint32Max + 1) % range);
+        const arr = new Uint32Array(1);
+        let r;
+        do {
+            globalThis.crypto.getRandomValues(arr);
+            r = arr[0];
+        } while (r >= threshold);
+        return r % range;
+    }
+
+    // Якщо crypto недоступне, то не використовуємо Math.random() в безпечному контексті
+    throw new Error('Secure random number generation is not supported in this environment.');
 }
 
 watch(
@@ -97,6 +122,10 @@ function updateMatch(promptId, selectedMatchId) {
 function getReviewClasses(prompt) {
     if (!props.isReviewMode)
         return {}
+    // Додаємо класи для правильних/неправильних відповідей тільки якщо дозволено показувати правильні відповіді
+    if (!props.showCorrectAnswers) {
+        return {}
+    }
     return {
         correct: prompt.student_match_id === prompt.correct_match_id,
         incorrect: prompt.student_match_id !== prompt.correct_match_id

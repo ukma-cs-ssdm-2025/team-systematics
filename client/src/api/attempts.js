@@ -16,11 +16,15 @@ export async function startExamAttempt(examId) {
         const response = await http.post(`/api/exams/${examId}/attempts`)
         return response.data
     } catch (error) {
-        // Simplify Conditional method
-        const detail = error?.response?.data?.detail;
-        if (detail) throw new Error(detail);
-     throw new Error(error?.message ?? 'Request failed');
-      }
+        // Зберігаємо оригінальну помилку з response для правильної обробки на фронтенді
+        if (error.response) {
+            const detail = error.response?.data?.detail || error.response?.data?.message || error.message
+            const httpError = new Error(detail)
+            httpError.response = error.response // Зберігаємо response для перевірки статусу
+            throw httpError
+        }
+        throw new Error(error?.message ?? 'Request failed')
+    }
 }
 
 /* Завантажуємо деталі спроби іспиту за її ID
@@ -238,5 +242,66 @@ export async function getAnswerId(attemptId, questionId) {
             throw new Error(error.response.data.detail)
         }
         throw new Error('Не вдалося отримати ID відповіді.')
+    }
+}
+
+export async function getActiveAttemptsForExam(examId) {
+    try {
+        const response = await http.get(`/api/attempts/exam/${examId}/active-attempts`)
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити список активних спроб.')
+    }
+}
+
+export async function getCompletedAttemptsForExam(examId) {
+    try {
+        const response = await http.get(`/api/attempts/exam/${examId}/completed-attempts`)
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити список завершених спроб.')
+    }
+}
+
+export async function addTimeToAttempt(attemptId, additionalMinutes) {
+    try {
+        const response = await http.post(`/api/attempts/${attemptId}/add-time`, {
+            additional_minutes: additionalMinutes
+        })
+        return response.data
+    } catch (error) {
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося додати час до спроби.')
+    }
+}
+
+export async function updateFinalScore(attemptId, finalScore) {
+    const USE_MOCK_DATA = import.meta.env.VITE_USE_MOCK_DATA === 'true'
+
+    if (USE_MOCK_DATA) {
+        return { score_percent: finalScore }
+    }
+
+    try {
+        const response = await http.patch(`/api/attempts/${attemptId}/final-score`, {
+            final_score: finalScore
+        })
+        return response.data
+    } catch (error) {
+        if (error.response?.status === 403) {
+            throw new Error('Недостатньо прав для редагування оцінки. Переконайтеся, що ви увійшли як вчитель.')
+        }
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося оновити фінальну оцінку. Спробуйте ще раз.')
     }
 }

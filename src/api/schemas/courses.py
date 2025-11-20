@@ -1,6 +1,7 @@
 from pydantic import BaseModel, Field
 from typing import Optional, List
 from uuid import UUID
+from .exams import ExamInList
 
 class CourseBase(BaseModel):
     name: str = Field(
@@ -37,6 +38,7 @@ class Course(BaseModel):
     student_count: int = Field(..., examples=[35])
     exam_count: int = Field(..., examples=[3])
     is_enrolled: bool = False
+    teachers: List[str] = Field(default_factory=list, examples=[["Іван Петренко"]])
 
     class Config:
         from_attributes = True
@@ -46,3 +48,23 @@ class CoursesPage(BaseModel):
     total: int
     limit: int
     offset: int
+
+class CourseSupervisorListItem(BaseModel):
+    id: UUID
+    name: str
+    code: str
+    students_count: int
+    teachers: list[str]
+
+class CourseSupervisorDetails(BaseModel):
+    id: UUID
+    name: str
+    code: str
+    description: Optional[str]
+    students: list[dict]
+    teachers: list[dict]
+
+class CourseExamsPage(BaseModel):
+    course_id: UUID
+    course_name: str
+    exams: List[ExamInList]

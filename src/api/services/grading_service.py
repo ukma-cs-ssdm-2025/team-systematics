@@ -14,7 +14,46 @@ class GradingResult:
         self.total_answers_given = 0
 
 class GradingService:
-    def _ensure_question_points_are_set(self, db: Session, exam: Exam) -> None:
+    @staticmethod
+    def _normalize_short_answer(text: str, is_numeric: bool = False) -> str:
+        """
+        Нормалізує відповідь на питання типу short_answer:
+        - Зводить до lowercase
+        - Видаляє зайві пробіли на початку та в кінці
+        - Для числових питань: нормалізує кому/крапку (замінює кому на крапку)
+        """
+        if not text:
+            return ""
+        
+        # Зводимо до lowercase та видаляємо зайві пробіли
+        normalized = text.lower().strip()
+        
+        # Для числових питань нормалізуємо кому/крапку
+        if is_numeric:
+            # Замінюємо кому на крапку для десяткових чисел
+            normalized = normalized.replace(',', '.')
+        
+        return normalized
+    
+    @staticmethod
+    def _is_numeric_question(correct_texts: list) -> bool:
+        """
+        Визначає, чи питання числове, перевіряючи чи всі правильні відповіді
+        можна конвертувати в числа після нормалізації.
+        """
+        if not correct_texts:
+            return False
+        
+        for text in correct_texts:
+            normalized = GradingService._normalize_short_answer(text, is_numeric=True)
+            try:
+                float(normalized)
+            except (ValueError, TypeError):
+                return False
+        return True
+
+    @staticmethod
+    def _ensure_question_points_are_set(db: Session, exam: Exam) -> None:
         questions_to_update = [q for q in exam.questions if q.points is None]
         if not questions_to_update:
             return
@@ -30,7 +69,13 @@ class GradingService:
             if qt in (QuestionType.single_choice, QuestionType.multi_choice):
                 data[q.id]["options"] = {opt.id for opt in q.options if getattr(opt, "is_correct", False)}
             elif qt == QuestionType.short_answer:
-                data[q.id]["texts"] = {opt.text.lower() for opt in q.options if getattr(opt, "is_correct", False)}
+                # Отримуємо всі правильні відповіді
+                correct_texts = [opt.text for opt in q.options if getattr(opt, "is_correct", False)]
+                # Визначаємо, чи питання числове
+                is_numeric = self._is_numeric_question(correct_texts)
+                # Нормалізуємо всі правильні відповіді
+                data[q.id]["texts"] = {self._normalize_short_answer(text, is_numeric) for text in correct_texts}
+                data[q.id]["is_numeric"] = is_numeric
             elif qt == QuestionType.matching:
                 data[q.id]["pairs"] = {str(p.id): str(p.id) for p in q.matching_options}
         return data
@@ -39,7 +84,8 @@ class GradingService:
     def _points(q: Question) -> float:
         return float(q.points or 0.0)
 
-    def _grade_long_answer(self, result: GradingResult, *_):
+    @staticmethod
+    def _grade_long_answer(result: GradingResult, *_):
         """
         Довга відповідь оцінюється вручну: відмічаємо як pending.
         """
@@ -51,7 +97,10 @@ class GradingService:
         return (self._points(q), True) if user_ids == correct.get("options", set()) else (0.0, False)
 
     def _grade_short_answer(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:
-        user_text = (a.answer_text or "").lower()
+        # Отримуємо інформацію про те, чи питання числове
+        is_numeric = correct.get("is_numeric", False)
+        # Нормалізуємо відповідь студента
+        user_text = self._normalize_short_answer(a.answer_text or "", is_numeric)
         return (self._points(q), True) if user_text in correct.get("texts", set()) else (0.0, False)
 
     def _grade_multi_choice(self, q: Question, a: Answer, correct: Dict[str, Any]) -> Tuple[float, bool]:

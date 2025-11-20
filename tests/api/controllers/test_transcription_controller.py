@@ -56,7 +56,7 @@ def test_get_transcript_success(client, mock_transcript_service, student_user):
     
     mock_transcript_service.get_transcript_for_user.assert_called_once()
 
-    call_args, call_kwargs = mock_transcript_service.get_transcript_for_user.call_args
+    call_args, _ = mock_transcript_service.get_transcript_for_user.call_args
     assert call_args[0] == student_user.id
     assert isinstance(call_args[1], MagicMock)
 

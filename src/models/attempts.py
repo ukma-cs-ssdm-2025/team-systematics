@@ -1,8 +1,8 @@
 import uuid
 from sqlalchemy import Column, String, DateTime, Integer, Float, ForeignKey, Enum as SQLAlchemyEnum, TIMESTAMP, func
 from sqlalchemy.orm import relationship
-from sqlalchemy.dialects.postgresql import UUID, JSONB
-from src.api.database import Base
+from sqlalchemy.dialects.postgresql import UUID
+from src.api.database import Base, get_json_type
 import enum
 
 class AttemptStatus(str, enum.Enum):
@@ -37,7 +37,7 @@ class Answer(Base):
     attempt_id = Column(UUID(as_uuid=True), ForeignKey("attempts.id"), nullable=False)
     question_id = Column(UUID(as_uuid=True), ForeignKey("questions.id"), nullable=False)
     answer_text = Column(String, nullable=True)
-    answer_json = Column(JSONB, nullable=True)
+    answer_json = Column(get_json_type(), nullable=True)
     saved_at = Column(TIMESTAMP(timezone=True), nullable=False)
     earned_points = Column(Float, nullable=True, comment="Оцінка за це питання (для long_answer встановлюється вручну вчителем)")
     
@@ -66,7 +66,7 @@ class PlagiarismCheck(Base):
     uniqueness_percent = Column(Float, nullable=False)
     max_similarity = Column(Float, nullable=False)
     status = Column(SQLAlchemyEnum(PlagiarismStatus), nullable=False)
-    details = Column(JSONB, nullable=True)
+    details = Column(get_json_type(), nullable=True)
     created_at = Column(TIMESTAMP(timezone=True), nullable=False, server_default=func.now())
 
     attempt = relationship("Attempt", back_populates="plagiarism_check")

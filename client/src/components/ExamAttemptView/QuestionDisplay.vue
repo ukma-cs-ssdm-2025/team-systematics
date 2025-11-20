@@ -51,7 +51,8 @@
                 <SingleChoice
                     :options="question.options" v-model="localAnswer"
                     :is-review-mode="isReviewMode"
-                    :earned-points="question.earned_points" 
+                    :earned-points="question.earned_points"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -62,6 +63,7 @@
                     v-model="localAnswer"
                     :is-review-mode="isReviewMode"
                     :earned-points="question.earned_points"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -71,6 +73,7 @@
                     :placeholder="question.answer_format === 'text' ? 'Введіть вашу відповідь...' : 'Введіть число...'"
                     :is-review-mode="isReviewMode"
                     :question-data="question"
+                    :show-correct-answers="showCorrectAnswers"
                 />
             </div>
 
@@ -94,6 +97,7 @@
                     :matches="question.matching_data.matches"
                     :modelValue="localAnswer"
                     :is-review-mode="isReviewMode"
+                    :show-correct-answers="showCorrectAnswers"
                     @update:modelValue="localAnswer = $event" />
             </div>
         </div>
@@ -138,6 +142,10 @@ const props = defineProps({
     attemptId: {
         type: String,
         default: null
+    },
+    showCorrectAnswers: {
+        type: Boolean,
+        default: true
     }
 })
 
@@ -173,8 +181,25 @@ function initializeAnswerState() {
 
 // Слідкуємо за зміною самого питання. Коли воно змінюється,
 // ми заново ініціалізуємо `localAnswer` до правильного типу.
-watch(() => props.question, () => {
+watch(() => props.question, async (newQuestion, oldQuestion) => {
     initializeAnswerState()
+    
+    // Оновлюємо прапорці на плагіат при зміні питання (наприклад, при перегляді іншої спроби)
+    if (props.isReviewMode && props.isTeacher && newQuestion?.question_type === 'long_answer') {
+        // Якщо answer_id змінився, оновлюємо прапорці
+        if (newQuestion?.answer_id !== oldQuestion?.answer_id) {
+            if (newQuestion?.answer_id) {
+                answerId.value = newQuestion.answer_id
+                await handleFlaggedStatus()
+            } else {
+                // Якщо answer_id немає, спробуємо отримати його
+                await fetchAnswerId()
+            }
+        } else if (newQuestion?.is_flagged !== oldQuestion?.is_flagged) {
+            // Якщо змінився статус is_flagged, оновлюємо відображення
+            await handleFlaggedStatus()
+        }
+    }
 }, {
     // immediate: true гарантує, що функція виконається і при першому завантаженні
     immediate: true
@@ -205,57 +230,76 @@ watch(localAnswer, (newValue) => {
 })
 
 // Зберігаємо answer_id окремо, якщо він не переданий в question
-const answerId = ref(null)
+const answerId = ref(null);
 
-// Перевіряємо, чи позначена відповідь при завантаженні (тільки для long_answer)
-onMounted(async () => {
-    if (props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
-        // Спочатку перевіряємо, чи є answer_id в question
+const handleFlaggedStatus = async () => {
+    // Якщо `is_flagged` визначено (не null і не undefined), використовуємо його значення
+    if (props.question.is_flagged !== null && props.question.is_flagged !== undefined) {
+        isFlagged.value = props.question.is_flagged;
+    } else {
+        // Якщо `is_flagged` не передано, перевіряємо через API
+        await checkFlaggedStatus();
+    }
+};
+
+const fetchAnswerId = async () => {
+    if (props.attemptId && props.question.id) {
+        try {
+            const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id);
+            if (fetchedAnswerId) {
+                answerId.value = fetchedAnswerId;
+                await handleFlaggedStatus();
+            }
+        } catch (error) {
+            // Логування помилки в консоль або виведення повідомлення
+            console.error("Помилка при отриманні ID відповіді:", error);
+        }
+    }
+};
+
+// Слідкуємо за зміною attemptId (коли переглядаємо іншу спробу)
+watch(() => props.attemptId, async (newAttemptId, oldAttemptId) => {
+    if (newAttemptId !== oldAttemptId && props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
+        // Скидаємо answerId та прапорці при зміні спроби
+        answerId.value = null
+        isFlagged.value = false
+        
+        // Оновлюємо прапорці для нової спроби
         if (props.question.answer_id) {
             answerId.value = props.question.answer_id
-            // Використовуємо is_flagged з review даних, якщо воно є
-            if (props.question.is_flagged !== undefined) {
-                isFlagged.value = props.question.is_flagged
-            } else {
-                // Якщо is_flagged не передано, перевіряємо через API
-                await checkFlaggedStatus()
-            }
-        } else if (props.attemptId && props.question.id) {
-            // Якщо answer_id немає, спробуємо отримати його через API
-            try {
-                const fetchedAnswerId = await getAnswerId(props.attemptId, props.question.id)
-                if (fetchedAnswerId) {
-                    answerId.value = fetchedAnswerId
-                    // Оновлюємо question об'єкт
-                    props.question.answer_id = fetchedAnswerId
-                    await checkFlaggedStatus()
-                }
-            } catch (error) {
-                // Мовчазно ігноруємо помилку
-            }
+            await handleFlaggedStatus()
+        } else {
+            await fetchAnswerId()
+        }
+    }
+})
+
+onMounted(async () => {
+    if (props.isReviewMode && props.isTeacher && props.question.question_type === 'long_answer') {
+        if (props.question.answer_id) {
+            answerId.value = props.question.answer_id;
+            await handleFlaggedStatus();
+        } else {
+            await fetchAnswerId();
         }
     }
 })
 
 async function checkFlaggedStatus() {
     const currentAnswerId = props.question.answer_id || answerId.value
-    if (!currentAnswerId) return
+    if (!currentAnswerId) {
+        isFlagged.value = false
+        return
+    }
     try {
         const flaggedAnswers = await getFlaggedAnswers()
-        isFlagged.value = flaggedAnswers.some(fa => fa.answer_id === currentAnswerId)
+        // Порівнюємо як рядки, щоб уникнути проблем з типами
+        const currentIdStr = String(currentAnswerId)
+        isFlagged.value = flaggedAnswers.some(fa => String(fa.answer_id) === currentIdStr)
     } catch (error) {
         console.error('Failed to check flagged status:', error)
+        isFlagged.value = false
     }
-}
-
-function logButtonState() {
-    console.log('Button state:', {
-        answer_id: props.question.answer_id,
-        isFlagging: isFlagging.value,
-        isFlagged: isFlagged.value,
-        question_id: props.question.id,
-        question_type: props.question.question_type
-    })
 }
 
 async function handleFlagClick(event) {
@@ -264,24 +308,14 @@ async function handleFlagClick(event) {
     // Отримуємо answer_id з різних джерел
     let currentAnswerId = props.question.answer_id || answerId.value
     
-    console.log('Flag button clicked! Initial state:', {
-        question_answer_id: props.question.answer_id,
-        answerId_value: answerId.value,
-        currentAnswerId: currentAnswerId,
-        attemptId: props.attemptId,
-        question_id: props.question.id,
-        question_type: props.question.question_type
-    })
+    
     
     // Якщо answer_id все ще немає, спробуємо отримати його через API
     if (!currentAnswerId && props.attemptId && props.question.id) {
-        console.log('Fetching answer_id from API...', {
-            attemptId: props.attemptId,
-            questionId: props.question.id
-        })
+        
         try {
             currentAnswerId = await getAnswerId(props.attemptId, props.question.id)
-            console.log('Received answer_id from API:', currentAnswerId)
+            
             if (currentAnswerId) {
                 answerId.value = currentAnswerId
                 // Не змінюємо props напряму, це може викликати проблеми
@@ -314,20 +348,20 @@ async function handleFlagClick(event) {
     }
     
     if (isFlagging.value) {
-        console.log('Already flagging, ignoring click')
+        
         return // Вже виконується запит
     }
     
     isFlagging.value = true
     try {
         if (isFlagged.value) {
-            console.log('Unflagging answer:', currentAnswerId)
+            
             await unflagAnswer(currentAnswerId)
             isFlagged.value = false
         } else {
-            console.log('Flagging answer:', currentAnswerId)
-            const result = await flagAnswerForPlagiarism(currentAnswerId)
-            console.log('Flagging successful:', result)
+            
+            await flagAnswerForPlagiarism(currentAnswerId)
+            
             isFlagged.value = true
         }
     } catch (error) {

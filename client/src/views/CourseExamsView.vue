@@ -2,16 +2,28 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <div v-if="loading" class="status-message">Завантаження іспитів...</div>
             <div v-else-if="error" class="status-message error">{{ error }}</div>
 
             <div v-else>
-                <section class="exams-section">
+                <div class="exams-section">
                     <div class="page-header">
                         <h2>Іспити курсу {{ courseName }}</h2>
-                        <CButton @click="createNewExam" class="create-exam-btn">
-                            + Створити новий іспит
-                        </CButton>
+                        <div class="header-actions">
+                            <CButton 
+                                v-if="auth.isTeacher.value"
+                                @click="goToAnalytics" 
+                                class="analytics-btn">
+                                📊 Аналітика
+                            </CButton>
+                            <CButton 
+                                v-if="auth.isTeacher.value"
+                                @click="createNewExam" 
+                                class="create-exam-btn">
+                                + Створити новий іспит
+                            </CButton>
+                        </div>
                     </div>
                     <table v-if="exams.length" class="exams-table">
                         <thead>
@@ -55,13 +67,33 @@
                                             class="publish-button">
                                             {{ publishingExamId === exam.id ? '...' : '📢 Опублікувати' }}
                                         </CButton>
-                                        <button @click="goToExamJournal(exam.id)" class="icon-button"
-                                            aria-label="Перейти до журналу і перевірки робот" title="Журнал і перевірка">
+                                        <button 
+                                            v-if="auth.isSupervisor.value"
+                                            @click="goToSessionManagement(exam.id)" 
+                                            class="icon-button session-button"
+                                            aria-label="Управління сесією іспиту" 
+                                            title="Управління сесією іспиту">
+                                            👥
+                                        </button>
+                                        <button 
+                                            v-if="auth.isTeacher.value"
+                                            @click="goToExamJournal(exam.id)" 
+                                            class="icon-button"
+                                            aria-label="Перейти до журналу і перевірки робот" 
+                                            title="Журнал і перевірка">
                                             📖
                                         </button>
-                                        <button @click="editExam(exam.id)" class="icon-button" aria-label="Перейти до редагування питань іспиту"
+                                        <button 
+                                            v-if="auth.isTeacher.value"
+                                            @click="editExam(exam.id)" 
+                                            class="icon-button" 
+                                            aria-label="Перейти до редагування питань іспиту"
                                             title="Редагувати питання">✏️</button>
-                                        <button @click="showDeleteConfirm(exam.id)" class="icon-button" aria-label="Видалити іспит"
+                                        <button 
+                                            v-if="auth.isTeacher.value"
+                                            @click="showDeleteConfirm(exam.id)" 
+                                            class="icon-button" 
+                                            aria-label="Видалити іспит"
                                             title="Видалити іспит">🗑️</button>
                                     </div>
                                 </td>
@@ -69,7 +101,7 @@
                         </tbody>
                     </table>
                     <p v-else class="empty-list-message">Для цього курсу ще не створено жодного іспиту.</p>
-                </section>
+                </div>
             </div>
         </main>
         
@@ -105,15 +137,18 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import CTooltip from '../components/global/CTooltip.vue'
 import CPopup from '../components/global/CPopup.vue'
 import { getCourseExams } from '../api/courses.js'
 import { publishExam as publishExamAPI, deleteExam as deleteExamAPI } from '../api/exams.js'
+import { useAuth } from '../store/loginInfo.js'
 
 const route = useRoute()
 const router = useRouter()
 const courseId = route.params.courseId
+const auth = useAuth()
 
 const exams = ref([])
 const courseName = ref('')
@@ -155,12 +190,20 @@ function goToExamJournal(examId) {
     router.push(`/exams/${examId}/journal`)
 }
 
+function goToSessionManagement(examId) {
+    router.push(`/courses/${courseId}/exams/${examId}/session`)
+}
+
 function createNewExam() {
     router.push(`/courses/${courseId}/exams/create`)
 }
 
 function editExam(examId) {
     router.push(`/courses/${courseId}/exams/${examId}/edit`)
+}
+
+function goToAnalytics() {
+    router.push(`/courses/${courseId}/analytics`)
 }
 
 function showPublishConfirm(examId) {
@@ -263,6 +306,22 @@ const publishConfirmMessage = computed(() => {
     display: flex;
     justify-content: space-between;
     align-items: center;
+    margin-bottom: 20px;
+}
+
+.header-actions {
+    display: flex;
+    gap: 12px;
+}
+
+.analytics-btn {
+    background-color: var(--color-lavender, #e1c9e8);
+    color: var(--color-black, #333);
+    transition: background-color 0.2s ease;
+}
+
+.analytics-btn:hover {
+    background-color: var(--color-dark-lavender, #d1bbd8);
 }
 
 .title-container {

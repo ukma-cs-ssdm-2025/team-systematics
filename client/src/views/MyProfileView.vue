@@ -2,6 +2,7 @@
     <div>
         <Header />
         <main class="container">
+            <Breadcrumbs />
             <!-- 1. Стан завантаження -->
             <div v-if="loading" class="status-message">
                 Завантаження профілю...
@@ -14,11 +15,11 @@
 
             <!-- 3. Основний контент -->
             <div v-else class="profile-layout">
-                <section class="profile-section">
+                <div class="profile-section">
                     <h2 class="section-title">Мій профіль</h2>
                     <div class="profile-details">
                         <div class="avatar-container">
-                            <img :src="avatarPreview || userProfile.avatar_url || defaultAvatar" alt="Аватар профілю"
+                            <img :src="avatarSrc" @error="handleAvatarError" alt="Аватар профілю"
                                 class="profile-avatar">
 
                             <!-- 2. Клік на кнопці викликає клік на прихованому input -->
@@ -41,9 +42,9 @@
                             <div class="info-value">{{ userProfile.major_name }}</div>
                         </div>
                     </div>
-                </section>
+                </div>
 
-                <section class="notification-section">
+                <div class="notification-section">
                     <h2 class="section-title">Сповіщення</h2>
                     <div class="notification-toggle-row">
                         <p>Я хочу отримувати сповіщення на свою електронну пошту з нагадуванням про майбутні іспити.</p>
@@ -80,7 +81,7 @@
                             </label>
                         </div>
                     </transition>
-                </section>
+                </div>
 
                 <div class="actions">
                     <CButton @click="saveSettings" :disabled="isSaving" class="save-button">
@@ -93,8 +94,9 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import Header from '../components/global/Header.vue'
+import Breadcrumbs from '../components/global/Breadcrumbs.vue'
 import CButton from '../components/global/CButton.vue'
 import * as userModule from '../api/users'
 import defaultAvatar from '../assets/icons/user-avatar-default.svg'
@@ -118,8 +120,30 @@ const reminderOptions = ref([
 const fileInput = ref(null)
 const avatarPreview = ref(null) // URL для миттєвого прев'ю
 const selectedFile = ref(null) // Сам обраний файл
+const avatarError = ref(false)
 
 const auth = useAuth()
+
+const avatarSrc = computed(() => {
+    if (avatarPreview.value) {
+        return avatarPreview.value
+    }
+    const url = userProfile.value?.avatar_url
+    // Якщо є помилка або URL порожній/null, використовуємо дефолтну аватарку
+    if (avatarError.value || !url || (typeof url === 'string' && url.trim() === '')) {
+        return defaultAvatar
+    }
+    return url
+})
+
+function handleAvatarError(event) {
+    // Якщо зображення не завантажилося, встановлюємо помилку
+    avatarError.value = true
+    // Встановлюємо src на дефолтну аватарку
+    if (event.target) {
+        event.target.src = defaultAvatar
+    }
+}
 
 function triggerFileInput() {
     fileInput.value.click()
@@ -131,6 +155,7 @@ function handleFileChange(event) {
 
     // Зберігаємо файл для подальшого завантаження
     selectedFile.value = file
+    avatarError.value = false // Скидаємо помилку при виборі нового файлу
 
     // Створюємо тимчасовий URL для миттєвого попереднього перегляду
     const reader = new FileReader()
@@ -138,10 +163,6 @@ function handleFileChange(event) {
         avatarPreview.value = e.target.result
     }
     reader.readAsDataURL(file)
-}
-
-function toggleNotifications(event) {
-    notificationSettings.value.enabled = !notificationSettings.value.enabled
 }
 
 async function saveSettings() {
@@ -192,6 +213,7 @@ onMounted(async () => {
         ])
         userProfile.value = profileData
         notificationSettings.value = notificationsData
+        avatarError.value = false // Скидаємо помилку при завантаженні профілю
     } catch (err) {
         error.value = err.message || "Не вдалося завантажити дані."
     } finally {

@@ -1,8 +1,8 @@
 <template>
     <select
         class="custom-select"
-        :value="modelValue"
-        @change="$emit('update:modelValue', $event.target.value)"
+        :value="modelValue || ''"
+        @change="handleChange"
         :disabled="disabled"
     >
         <option disabled value="">{{ placeholder }}</option>
@@ -33,7 +33,15 @@ defineProps({
     }
 });
 
-defineEmits(['update:modelValue']);
+const emit = defineEmits(['update:modelValue']);
+
+function handleChange(event) {
+    const value = event.target.value;
+    // Не дозволяємо вибрати порожнє значення (плейсхолдер)
+    if (value !== '') {
+        emit('update:modelValue', value);
+    }
+}
 </script>
 
 <style scoped>
@@ -49,7 +57,7 @@ defineEmits(['update:modelValue']);
     background-color: white;
     font-family: inherit;
     font-size: inherit;
-    transition: all 150ms ease;
+    transition: border-color 0.2s, outline 0.2s;
 
     cursor: pointer;
     appearance: none;
@@ -60,7 +68,7 @@ defineEmits(['update:modelValue']);
 }
 
 .custom-select:hover {
-    border-color: var(--color-dark-gray);
+    border-color: var(--color-dark-lavender, #d1bbd8);
 }
 
 .custom-select:focus-visible {

@@ -1,4 +1,4 @@
-from sqlalchemy.orm import Session, joinedload, selectinload, load_only
+from sqlalchemy.orm import Session, joinedload, selectinload
 from typing import Optional, List
 from sqlalchemy import func
 from uuid import UUID
@@ -11,11 +11,13 @@ from src.api.schemas.attempts import (
     Answer as AnswerSchema,
     Attempt as AttemptSchema,
     AttemptResultResponse,
-    AnswerScoreUpdate
+    AnswerScoreUpdate,
+    FinalScoreUpdate,
+    AddTimeRequest,
+    ActiveAttemptInfo
 )
 
 from src.api.schemas.plagiarism import (
-    PlagiarismReport,
     PlagiarismCheckSummary,
     PlagiarismComparisonResponse,
 )
@@ -47,8 +49,9 @@ class AttemptsService:
                 paraphrase_model=ParaphraseModel(),
             )
 
+    @staticmethod
     def add_answer(
-        self, db: Session, attempt_id: UUID, payload: AnswerUpsert
+        db: Session, attempt_id: UUID, payload: AnswerUpsert
     ) -> AnswerSchema:
         repo = AttemptsRepository(db)
         att = repo.get_attempt(attempt_id)
@@ -127,15 +130,16 @@ class AttemptsService:
 
         return attempt    
 
-    def get_attempt_details(self, db: Session, attempt_id: UUID):
+    @staticmethod
+    def get_attempt_details(db: Session, attempt_id: UUID):
         repo = AttemptsRepository(db)
         att = repo.get_attempt_with_details(attempt_id)
         if not att:
             raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
         return att
 
+    @staticmethod
     def get_attempt_result(
-        self,
         db: Session,
         attempt_id: UUID,
     ) -> AttemptResultResponse:
@@ -253,7 +257,43 @@ class AttemptsService:
             saved_at=answer.saved_at
         )
     
-    def _calculate_final_points_map(self, db: Session, attempt: Attempt) -> dict:
+    def update_final_score(
+        self,
+        db: Session,
+        attempt_id: UUID,
+        payload: FinalScoreUpdate
+    ) -> AttemptSchema:
+        """
+        Оновлює фінальну оцінку за спробу вручну.
+        Доступно лише для викладачів.
+        """
+        attempt = db.query(Attempt).filter(Attempt.id == attempt_id).first()
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        # Перевіряємо, що спроба завершена (submitted або completed)
+        if attempt.status == AttemptStatus.in_progress:
+            raise ValueError("Неможливо встановити фінальну оцінку для спроби, яка ще не завершена")
+        
+        # Встановлюємо фінальну оцінку
+        attempt.earned_points = min(100.0, max(0.0, payload.final_score))
+        db.commit()
+        db.refresh(attempt)
+        
+        return AttemptSchema(
+            id=attempt.id,
+            exam_id=attempt.exam_id,
+            user_id=attempt.user_id,
+            status=attempt.status.value,
+            started_at=attempt.started_at,
+            due_at=attempt.due_at,
+            submitted_at=attempt.submitted_at,
+            score_percent=attempt.earned_points,
+            time_spent_seconds=attempt.time_spent_seconds
+        )
+    
+    @staticmethod
+    def _calculate_final_points_map(db: Session, attempt: Attempt) -> dict:
         """Розраховує фінальну мапу балів для питань (масштабовані до 100 балів)."""
         weights_repo = WeightsRepository(db)
         weights_map = weights_repo.get_all_weights()
@@ -274,14 +314,15 @@ class AttemptsService:
         
         return distribute_largest_remainder(true_points_map, target_total=100)
     
-    def _calculate_long_answer_score(self, answer: Answer) -> float:
+    @staticmethod
+    def _calculate_long_answer_score(answer: Answer) -> float:
         """Розраховує бали для long_answer питання."""
         if answer and answer.earned_points is not None:
             return answer.earned_points
         return 0.0
     
+    @staticmethod
     def _calculate_auto_graded_score(
-        self, 
         question: Question, 
         answer: Answer, 
         question_points: float,
@@ -339,7 +380,8 @@ class AttemptsService:
         attempt.earned_points = min(100.0, max(0.0, total_earned))
         db.commit()
     
-    def _check_and_update_attempt_status(self, db: Session, attempt: Attempt) -> None:
+    @staticmethod
+    def _check_and_update_attempt_status(db: Session, attempt: Attempt) -> None:
         """
         Перевіряє, чи всі long_answer питання оцінені.
         Якщо так, і статус submitted, змінює статус на completed.
@@ -366,7 +408,8 @@ class AttemptsService:
             attempt.pending_count = 0
             db.commit()
 
-    def _is_teacher(self, db: Session, user: User) -> bool:
+    @staticmethod
+    def _is_teacher(db: Session, user: User) -> bool:
         """
         Перевіряємо, чи має користувач роль викладача через таблицю user_roles.
         TEACHER_ROLE_ID = 2.
@@ -573,6 +616,28 @@ class AttemptsService:
         paraphrase_model = ParaphraseModel()
         similarity_score = paraphrase_model.similarity(text1, text2)
         
+        # Генеруємо ranges для підсвічування спільних фрагментів
+        plagiarism_service = PlagiarismService(
+            repo=PlagiarismRepository(),
+            paraphrase_model=paraphrase_model
+        )
+        answer1_ranges = []
+        answer2_ranges = []
+        
+        if text1.strip() and text2.strip():
+            try:
+                base_spans, other_spans = plagiarism_service._compute_highlight_spans(
+                    text1, text2, min_match_len=10
+                )
+                # Конвертуємо spans (tuple) в ranges (dict)
+                answer1_ranges = [{"start": span[0], "end": span[1]} for span in base_spans]
+                answer2_ranges = [{"start": span[0], "end": span[1]} for span in other_spans]
+            except Exception as e:
+                # Якщо не вдалося згенерувати ranges, продовжуємо без них
+                import logging
+                logger = logging.getLogger(__name__)
+                logger.warning(f"Failed to compute highlight spans for answer comparison: {e}")
+        
         student1 = answer1.attempt.user
         student2 = answer2.attempt.user
         exam = answer1.attempt.exam  # Припускаємо, що обидві відповіді з одного іспиту
@@ -586,5 +651,94 @@ class AttemptsService:
             student1_name=f"{student1.first_name} {student1.last_name}".strip(),
             student2_name=f"{student2.first_name} {student2.last_name}".strip(),
             exam_title=exam.title,
+            answer1_ranges=answer1_ranges,
+            answer2_ranges=answer2_ranges,
         )
+
+    @staticmethod
+    def add_time_to_attempt(
+        db: Session,
+        attempt_id: UUID,
+        payload: AddTimeRequest,
+    ) -> AttemptSchema:
+        """
+        Додає додатковий час до спроби студента (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempt = repo.add_time_to_attempt(attempt_id, payload.additional_minutes)
+        
+        if not attempt:
+            raise NotFoundError(ATTEMPT_NOT_FOUND_MSG)
+        
+        return AttemptSchema(
+            id=attempt.id,
+            exam_id=attempt.exam_id,
+            user_id=attempt.user_id,
+            status=attempt.status.value,
+            started_at=attempt.started_at,
+            due_at=attempt.due_at,
+            submitted_at=attempt.submitted_at,
+            score_percent=attempt.earned_points,
+            time_spent_seconds=attempt.time_spent_seconds,
+        )
+
+    @staticmethod
+    def get_active_attempts_for_exam(
+        db: Session,
+        exam_id: UUID,
+    ) -> List[ActiveAttemptInfo]:
+        """
+        Отримує список активних спроб для іспиту (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempts = repo.get_active_attempts_for_exam(exam_id)
+        
+        from datetime import datetime, timezone
+        now = datetime.now(timezone.utc)
+        
+        result = []
+        for attempt in attempts:
+            remaining_seconds = max(0, int((attempt.due_at - now).total_seconds()))
+            remaining_minutes = remaining_seconds // 60
+            
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
+            
+            result.append(ActiveAttemptInfo(
+                attempt_id=attempt.id,
+                user_id=attempt.user_id,
+                user_full_name=user_full_name,
+                started_at=attempt.started_at,
+                due_at=attempt.due_at,
+                remaining_minutes=remaining_minutes,
+                status=attempt.status.value,
+            ))
+        
+        return result
+    
+    @staticmethod
+    def get_completed_attempts_for_exam(
+        db: Session,
+        exam_id: UUID,
+    ) -> List[dict]:
+        """
+        Отримує список завершених спроб для іспиту (тільки для наглядача).
+        Перевірка ролі виконується в контролері через require_role('supervisor').
+        """
+        repo = AttemptsRepository(db)
+        attempts = repo.get_completed_attempts_for_exam(exam_id)
+        
+        result = []
+        for attempt in attempts:
+            user_full_name = f"{attempt.user.last_name} {attempt.user.first_name} {attempt.user.patronymic or ''}".strip()
+            
+            result.append({
+                'user_id': attempt.user_id,
+                'user_full_name': user_full_name,
+                'status': attempt.status.value,
+                'submitted_at': attempt.submitted_at,
+            })
+        
+        return result
     

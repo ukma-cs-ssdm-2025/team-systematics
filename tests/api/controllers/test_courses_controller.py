@@ -1,14 +1,11 @@
-from unittest.mock import MagicMock
 import pytest
-from fastapi import FastAPI, HTTPException, status
+from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from uuid import uuid4
 
 from src.api.controllers.courses_controller import CoursesController
 from src.api.database import get_db
-from src.api.schemas.courses import CourseCreate, Course, CoursesPage
-from src.api.services.courses_service import CoursesService
-from src.api.controllers.versioning import require_api_version
+from src.api.schemas.courses import CourseCreate, Course
 from src.api.schemas.auth import UserResponse
 from src.utils.auth import get_current_user
 
@@ -17,7 +14,8 @@ def client():
     app = FastAPI()
 
     class MockCoursesService:
-        def list(self, db, user_id, limit, offset):
+        @staticmethod
+        def list(db, user_id, limit, offset):
             return [
                 Course(
                     id=1,
@@ -27,7 +25,8 @@ def client():
                 )
             ], 1
 
-        def create(self, db, payload: CourseCreate):
+        @staticmethod
+        def create(db, payload: CourseCreate):
             return Course(
                 id=uuid4(),
                 name=payload.name,
@@ -35,7 +34,8 @@ def client():
                 title=payload.name
             )
 
-        def get(self, db, course_id: int):
+        @staticmethod
+        def get(db, course_id: int):
             # Повернення конкретного курсу за id
             return Course(
                 id=course_id,

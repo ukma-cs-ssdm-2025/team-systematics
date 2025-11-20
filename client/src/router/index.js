@@ -12,10 +12,14 @@ import CoursesCatalogueView from '../views/CoursesCatalogueView.vue'
 import ExamJournalView from '../views/ExamJournalView.vue'
 import CourseExamsView from '../views/CourseExamsView.vue'
 import MyProfileView from '../views/MyProfileView.vue'
+import ExamSessionManagementView from '../views/ExamSessionManagementView.vue'
+import CourseDetailsView from '../views/CourseDetailsView.vue'
 import PlagiarismCheckView from '../views/PlagiarismCheckView.vue'
 import PlagiarismComparisonView from '../views/PlagiarismComparisonView.vue'
 import CreateCourseView from '../views/CreateCourseView.vue'
 import CreateExamView from '../views/CreateExamView.vue'
+import CourseAnalyticsView from '../views/CourseAnalyticsView.vue'
+import RegisterView from '../views/RegisterView.vue'
 
 const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
@@ -31,6 +35,14 @@ const router = createRouter({
       component: LoginView,
       meta: {
         title: 'Увійти'
+      }
+    },
+    {
+      path: '/register',
+      name: 'Register',
+      component: RegisterView,
+      meta: {
+        title: 'Реєстрація'
       }
     },
     {
@@ -156,8 +168,18 @@ const router = createRouter({
       component: CourseExamsView,
       meta: {
         requiresAuth: true,
-        requiresRole: 'teacher',
+        requiresRole: ['teacher', 'supervisor'],
         title: 'Іспити курсу'
+      }
+    },
+    {
+      path: '/courses/:courseId/analytics',
+      name: 'CourseAnalytics',
+      component: CourseAnalyticsView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'teacher',
+        title: 'Аналітика курсу'
       }
     },
     {
@@ -168,6 +190,16 @@ const router = createRouter({
         requiresAuth: true,
         requiresRole: 'teacher',
         title: 'Журнал іспиту'
+      },
+    },
+    {
+      path: '/courses/:courseId/exams/:examId/session',
+      name: 'ExamSessionManagement',
+      component: ExamSessionManagementView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'supervisor',
+        title: 'Управління сесією іспиту'
       },
     },
     {
@@ -199,8 +231,52 @@ const router = createRouter({
         title: 'Порівняння робіт'
       }
     },
+    {
+      path: '/courses/supervisor',
+      name: 'CoursesSupervisor',
+      component: CoursesCatalogueView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'supervisor',
+        title: 'Курси'
+      }
+    },
+    {
+      path: '/courses/:courseId/details',
+      name: 'CourseDetails',
+      component: CourseDetailsView,
+      meta: {
+        requiresAuth: true,
+        requiresRole: 'supervisor',
+        title: 'Деталі курсу'
+      }
+    },
   ]
 })
+
+// Допоміжна функція для перевірки ролі користувача
+function checkUserRole(role, auth) {
+  if (role === 'teacher') return auth.isTeacher.value
+  if (role === 'student') return auth.isStudent.value
+  if (role === 'supervisor') return auth.isSupervisor.value
+  return false
+}
+
+// Допоміжна функція для перевірки доступу за роллю
+function hasRoleAccess(requiredRole, auth, to) {
+  // Підтримка масиву ролей
+  if (Array.isArray(requiredRole)) {
+    return requiredRole.some(role => checkUserRole(role, auth))
+  }
+  
+  // Одиночна роль
+  const hasRequiredRole = checkUserRole(requiredRole, auth)
+  
+  // Дозволяємо доступ до /exams як для студентів, так і для вчителів
+  const isExamsPath = to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)
+  
+  return hasRequiredRole || isExamsPath
+}
 
 // Перевіряє доступ до маршрутів перед переходом
 router.beforeEach((to, from, next) => {
@@ -212,19 +288,7 @@ router.beforeEach((to, from, next) => {
   }
 
   if (to.meta.requiresRole) {
-    let hasAccess = false
-    if (to.meta.requiresRole === 'teacher' && auth.isTeacher.value) {
-      hasAccess = true
-    }
-    if (to.meta.requiresRole === 'student' && auth.isStudent.value) {
-      hasAccess = true
-    }
-    // Дозволяємо доступ до /exams як для студентів, так і для вчителів
-    // Вчителі можуть переглядати список іспитів
-    if (to.path === '/exams' && (auth.isTeacher.value || auth.isStudent.value)) {
-      hasAccess = true
-    }
-
+    const hasAccess = hasRoleAccess(to.meta.requiresRole, auth, to)
     if (!hasAccess) {
       next({ path: '/forbidden' })
       return

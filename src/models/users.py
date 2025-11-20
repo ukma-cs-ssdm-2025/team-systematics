@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, TIMESTAMP, text
-from sqlalchemy.dialects.postgresql import UUID, JSONB
+from sqlalchemy.dialects.postgresql import UUID
 import uuid
-from src.api.database import Base
+from src.api.database import Base, get_json_type
 from sqlalchemy.orm import relationship
 
 class User(Base):
@@ -15,7 +15,7 @@ class User(Base):
     last_name = Column(String, nullable=False)
     patronymic = Column(String)
     notification_settings = Column(
-        JSONB, 
+        get_json_type(), 
         nullable=False, 
         server_default=text("'{\"enabled\": false, \"remind_before_hours\": []}'")
     )

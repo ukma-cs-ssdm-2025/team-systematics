@@ -1,6 +1,5 @@
 from pydantic import BaseModel, Field
 from typing import List, Optional, Literal, Union, Dict, Any, Annotated
-from uuid import UUID
 
 # --- Моделі для варіантів відповідей ---
 
@@ -55,6 +54,7 @@ class LongAnswerQuestionReview(BaseQuestionReview):
     student_answer_text: str
     answer_id: Optional[str] = None  # ID відповіді для позначення на плагіат
     is_flagged: bool = False  # Чи позначена відповідь для перевірки на плагіат
+    plagiarism_ranges: List[Dict[str, int]] = Field(default_factory=list)  # Масив ranges (start, end) для виділення сплагіачених частин
 
 class ShortAnswerQuestionReview(BaseQuestionReview):
     question_type: Literal["short_answer"]
@@ -80,6 +80,7 @@ QuestionReview = Union[
 class ExamAttemptReviewResponse(BaseModel):
     exam_id: str  # Додаємо exam_id для навігації до журналу
     exam_title: str
+    show_correct_answers: bool = True  # Чи показувати правильні відповіді (False, якщо є ще доступні спроби)
     questions: List[
         Annotated[QuestionReview, Field(discriminator="question_type")]
     ]

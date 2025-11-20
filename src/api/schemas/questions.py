@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field
+from pydantic import BaseModel
 from typing import List, Optional
 from uuid import UUID
 from src.models.exams import QuestionType  # import enum from models
@@ -17,7 +17,7 @@ class OptionSchema(OptionBase):
     question_id: UUID
 
     class Config:
-        orm_mode = True
+        from_attributes = True
 
 # --- Схеми для Питань ---
 
@@ -37,4 +37,4 @@ class QuestionSchema(QuestionBase):
     options: List[OptionSchema] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True

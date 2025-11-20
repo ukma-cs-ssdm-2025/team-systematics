@@ -1,8 +1,9 @@
 from sqlalchemy.orm import Session
-from sqlalchemy import and_, func, case
+from sqlalchemy import func, case
 from uuid import UUID
 from typing import List, Tuple, Optional
 import logging
+from src.api.services.statistics_service import StatisticsService
 from src.models.exams import Exam, ExamStatusEnum
 from src.models.exams import Question, Option
 from src.models.attempts import Attempt, AttemptStatus
@@ -62,18 +63,41 @@ class ExamsRepository:
     
     def get_with_questions(self, exam_id: UUID) -> Optional[Exam]:
         """Отримує іспит разом з питаннями, опціями та matching_data"""
-        from sqlalchemy.orm import joinedload
+        from sqlalchemy.orm import selectinload
         exam = self.db.query(Exam).options(
-            joinedload(Exam.questions).joinedload(Question.options),
-            joinedload(Exam.questions).joinedload(Question.matching_options)
+            selectinload(Exam.questions).selectinload(Question.options),
+            selectinload(Exam.questions).selectinload(Question.matching_options)
         ).filter(Exam.id == exam_id).first()
+        
+        # Сортуємо питання за position після завантаження та видаляємо дублікати
+        if exam and exam.questions:
+            # Видаляємо дублікати за id (на випадок, якщо вони з'явилися)
+            seen_ids = set()
+            unique_questions = []
+            for q in exam.questions:
+                if q.id not in seen_ids:
+                    seen_ids.add(q.id)
+                    unique_questions.append(q)
+            exam.questions = unique_questions
+            # Сортуємо за position
+            exam.questions.sort(key=lambda q: q.position or 0)
+        
         return exam
 
     def create(self, payload: ExamCreate) -> Exam:
-        new_exam = Exam(**payload.model_dump())
+        exam_data = payload.model_dump()
+        # Виключаємо status з exam_data, якщо він там є (не повинен бути)
+        exam_data.pop('status', None)
+        # Створюємо об'єкт іспиту
+        new_exam = Exam(**exam_data)
+        # Явно встановлюємо статус як "draft" при створенні іспиту
+        # (встановлюємо після створення об'єкта, щоб гарантувати правильне значення)
+        new_exam.status = ExamStatusEnum.draft
+        logger.debug(f"Creating exam with status: {new_exam.status}, status value: {new_exam.status.value}")
         self.db.add(new_exam)
         self.db.commit()
         self.db.refresh(new_exam)
+        logger.debug(f"Exam created with status: {new_exam.status}, status value: {new_exam.status.value}")
         return new_exam
     
     def link_to_course(self, exam_id: UUID, course_id: UUID) -> None:
@@ -92,60 +116,67 @@ class ExamsRepository:
 
     # --- Question & Option management ---
     def create_question(self, exam_id: UUID, payload) -> Question:
-        # Валідація вхідних даних
+        # validate and prepare
+        self._validate_question_payload(exam_id, payload)
+        question_data = {k: v for k, v in payload.items() if k not in ('options', 'matching_data')}
+
+        # create question and ensure id is available
+        q = Question(**question_data)
+        q.exam_id = exam_id
+        self.db.add(q)
+        self.db.flush()
+
+        # add options and matching data
+        options = payload.get('options') or []
+        self._add_options(q.id, options)
+
+        matching_data = payload.get('matching_data')
+        if matching_data:
+            self._add_matching_options(q.id, matching_data)
+
+        self.db.commit()
+        self.db.refresh(q)
+        return q
+
+    @staticmethod
+    def _validate_question_payload(exam_id: UUID, payload) -> None:
         if not payload:
             raise ValueError("Payload cannot be None or empty")
         if not isinstance(payload, dict):
             raise TypeError(f"Payload must be a dict, got {type(payload).__name__}")
         if not exam_id:
             raise ValueError("exam_id cannot be None or empty")
-        
-        # Перевірка обов'язкових полів
-        if 'title' not in payload or not payload.get('title'):
+        if not payload.get('title'):
             raise ValueError("Question title is required")
         if 'question_type' not in payload:
             raise ValueError("Question type is required")
-        
-        # Видаляємо options та matching_data з payload перед створенням питання
-        question_data = {k: v for k, v in payload.items() if k not in ('options', 'matching_data')}
-        q = Question(**question_data)
-        q.exam_id = exam_id
-        self.db.add(q)
-        # ensure q.id is populated before creating options/matching
-        self.db.flush()
-        
-        # add options if provided (for single_choice, multi_choice, short_answer)
-        options = payload.get('options') or []
+
+    def _add_options(self, question_id: UUID, options) -> None:
+        if not options:
+            return
         if not isinstance(options, list):
             raise TypeError(f"Options must be a list, got {type(options).__name__}")
         for opt in options:
             if not isinstance(opt, dict):
                 raise TypeError(f"Each option must be a dict, got {type(opt).__name__}")
-            o = Option(question_id=q.id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
+            o = Option(question_id=question_id, text=opt.get('text'), is_correct=opt.get('is_correct', False))
             self.db.add(o)
-        
-        # add matching options if provided (for matching questions)
-        matching_data = payload.get('matching_data')
-        if matching_data:
-            if not isinstance(matching_data, dict):
-                raise TypeError(f"Matching data must be a dict, got {type(matching_data).__name__}")
-            prompts = matching_data.get('prompts', [])
-            if not isinstance(prompts, list):
-                raise TypeError(f"Prompts must be a list, got {type(prompts).__name__}")
-            for prompt_data in prompts:
-                if not isinstance(prompt_data, dict):
-                    raise TypeError(f"Each prompt must be a dict, got {type(prompt_data).__name__}")
-                matching_option = MatchingOption(
-                    question_id=q.id,
-                    prompt=prompt_data.get('text', ''),
-                    correct_match=prompt_data.get('correct_match', '')
-                )
-                self.db.add(matching_option)
 
-        self.db.commit()
-        # refresh q and return
-        self.db.refresh(q)
-        return q
+    def _add_matching_options(self, question_id: UUID, matching_data) -> None:
+        if not isinstance(matching_data, dict):
+            raise TypeError(f"Matching data must be a dict, got {type(matching_data).__name__}")
+        prompts = matching_data.get('prompts', [])
+        if not isinstance(prompts, list):
+            raise TypeError(f"Prompts must be a list, got {type(prompts).__name__}")
+        for prompt_data in prompts:
+            if not isinstance(prompt_data, dict):
+                raise TypeError(f"Each prompt must be a dict, got {type(prompt_data).__name__}")
+            matching_option = MatchingOption(
+                question_id=question_id,
+                prompt=prompt_data.get('text', ''),
+                correct_match=prompt_data.get('correct_match', ''),
+            )
+            self.db.add(matching_option)
 
     def update_question(self, question_id: UUID, patch: dict) -> Optional[Question]:
         if not question_id:
@@ -217,7 +248,6 @@ class ExamsRepository:
             if key not in excluded_fields:
                 # Конвертуємо published в status, якщо потрібно
                 if key == 'published':
-                    from src.models.exams import ExamStatusEnum
                     exam.status = ExamStatusEnum.published if value else ExamStatusEnum.draft
                 else:
                     setattr(exam, key, value)
@@ -245,7 +275,7 @@ class ExamsRepository:
         # 1. Спочатку видаляємо plagiarism_checks (вони посилаються на attempts)
         # 2. Потім видаляємо attempts (вони посилаються на exams)
         # 3. Нарешті видаляємо exam
-        from src.models.attempts import Attempt, PlagiarismCheck
+        from src.models.attempts import PlagiarismCheck
         
         # Отримуємо всі attempt_id для цього іспиту
         attempt_ids = [attempt.id for attempt in self.db.query(Attempt.id).filter(Attempt.exam_id == exam_id).all()]
@@ -261,6 +291,15 @@ class ExamsRepository:
         self.db.delete(exam)
         self.db.commit()
         return True
+
+    def get_by_course(self, course_id: UUID) -> List[Exam]:
+        """Отримує список іспитів для курсу"""
+        return (
+            self.db.query(Exam)
+            .join(CourseExam, Exam.id == CourseExam.exam_id)
+            .filter(CourseExam.course_id == course_id)
+            .all()
+        )
 
     def get_exams_stats_for_course(self, course_id: UUID) -> List[Tuple]:
         """
@@ -280,11 +319,22 @@ class ExamsRepository:
             .subquery()
         )
 
+        # Підзапит для підрахунку унікальних студентів, які завершили іспит
+        # ВАЖЛИВО: рахуємо унікальних студентів (distinct user_id), а не кількість спроб
+        students_completed_sq = (
+            self.db.query(
+                Attempt.exam_id,
+                func.count(func.distinct(Attempt.user_id)).label("students_completed")
+            )
+            .filter(Attempt.earned_points.isnot(None))
+            .group_by(Attempt.exam_id)
+            .subquery()
+        )
+        
         # Підзапит для статистики по спробах (attempts)
         attempt_stats_sq = (
             self.db.query(
                 Attempt.exam_id,
-                func.count(case((Attempt.earned_points != None, Attempt.id))).label("students_completed"),
                 func.avg(Attempt.earned_points).label("average_grade"),
                 func.count(case((Attempt.status == AttemptStatus.submitted, Attempt.id))).label("pending_reviews")
             )
@@ -297,15 +347,25 @@ class ExamsRepository:
             self.db.query(
                 Exam,
                 questions_count_sq.c.questions_count,
-                attempt_stats_sq.c.students_completed,
+                func.coalesce(students_completed_sq.c.students_completed, 0).label("students_completed"),
                 attempt_stats_sq.c.average_grade,
                 attempt_stats_sq.c.pending_reviews
             )
             .join(Exam.courses)
             .filter(Course.id == course_id)
             .outerjoin(questions_count_sq, Exam.id == questions_count_sq.c.exam_id)
+            .outerjoin(students_completed_sq, Exam.id == students_completed_sq.c.exam_id)
             .outerjoin(attempt_stats_sq, Exam.id == attempt_stats_sq.c.exam_id)
+            .group_by(Exam.id, questions_count_sq.c.questions_count, students_completed_sq.c.students_completed, attempt_stats_sq.c.average_grade, attempt_stats_sq.c.pending_reviews)
             .order_by(Exam.start_at.desc())
             .all()
         )
         return results
+
+    def get_exam_statistics(self, exam_id: UUID) -> dict:
+        """Метод для отримання статистики по іспиту"""
+        attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+        
+        scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
+        
+        return StatisticsService.calculate_statistics(scores)

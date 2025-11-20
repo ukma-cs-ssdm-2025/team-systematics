@@ -1,17 +1,15 @@
 from typing import Optional
-import pytest
-from fastapi import FastAPI, status, APIRouter, Depends, HTTPException
+from fastapi import FastAPI, status, HTTPException
 from fastapi.testclient import TestClient
 from uuid import uuid4
 from datetime import datetime, timedelta, timezone
-from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from src.api.schemas.exams import Exam, ExamCreate
-from src.api.services.exams_service import ExamsService
 from src.api.database import get_db
 from src.api.controllers.versioning import require_api_version
 from src.api.controllers.exams_controller import ExamsController
-from src.utils.auth import get_current_user
+from src.utils.auth import get_current_user_with_role
+from types import SimpleNamespace
 
 
 class DatabaseConnectionError(Exception):
@@ -24,13 +22,15 @@ class DatabaseConnectionError(Exception):
 
 class ExplodingService:
     """Mock service that simulates database errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         raise DatabaseConnectionError("Database connection failed")
 
 
 class ValidationService:
     """Mock service that simulates validation errors"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         if not payload.title:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -44,7 +44,8 @@ class ValidationService:
 
 class DummyService:
     """Mock service that returns valid exam objects"""
-    def create(self, db: Session, payload: ExamCreate, owner_id=None) -> Exam:
+    @staticmethod
+    def create(db: Session, payload: ExamCreate, owner_id=None) -> Exam:
         # Використовуємо now(timezone.utc) замість utcnow() для отримання часу в UTC
         now = datetime.now(timezone.utc)
         exam_dict = {
@@ -56,7 +57,9 @@ class DummyService:
             "duration_minutes": payload.duration_minutes,
             "max_attempts": payload.max_attempts,
             "pass_threshold": payload.pass_threshold,
-            "owner_id": payload.owner_id,
+            "owner_id": payload.owner_id or owner_id,
+            "status": "draft",
+            "question_count": 0,
             "created_at": now,
             "updated_at": now
         }
@@ -90,10 +93,8 @@ def test_create_exam_database_error_returns_500():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
-    dummy_user = type("User", (), {"id": uuid4()})
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
-    dummy_user = type("User", (), {"id": uuid4()})
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
+    dummy_user = SimpleNamespace(id=uuid4(), role='teacher')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
     client = TestClient(app)
     
     payload = _valid_exam_payload()
@@ -119,8 +120,8 @@ def test_create_exam_validation_error_returns_422():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
-    dummy_user = type("User", (), {"id": uuid4()})
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
+    dummy_user = SimpleNamespace(id=uuid4(), role='teacher')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
     client = TestClient(app)
     
     payload = _valid_exam_payload()
@@ -146,8 +147,8 @@ def test_create_exam_empty_title_validation():
         yield None
 
     app.dependency_overrides[get_db] = _fake_db
-    dummy_user = type("User", (), {"id": uuid4()})
-    app.dependency_overrides[get_current_user] = lambda: dummy_user
+    dummy_user = SimpleNamespace(id=uuid4(), role='teacher')
+    app.dependency_overrides[get_current_user_with_role] = lambda: dummy_user
     client = TestClient(app)
     
     payload = _valid_exam_payload()

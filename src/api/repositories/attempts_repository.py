@@ -1,8 +1,9 @@
-from sqlalchemy.orm import Session, load_only, joinedload, defer, selectinload
-from sqlalchemy import func
+from sqlalchemy.orm import Session, joinedload, selectinload
+from sqlalchemy import or_
 from uuid import UUID
 import json
 from datetime import datetime, timedelta, timezone
+from src.api.services.statistics_service import StatisticsService
 from src.utils.datetime_utils import to_utc_iso
 from typing import Optional, Dict, Any, List
 
@@ -25,9 +26,9 @@ class AttemptsRepository:
             exam_id=exam_id,
             user_id=user_id,
             status="in_progress",
-            started_at=to_utc_iso(started_at),
-            due_at=to_utc_iso(due_at),
-        )
+            started_at=started_at,
+            due_at=due_at,
+        ) 
         self.db.add(new_attempt)
         self.db.commit()
         self.db.refresh(new_attempt)
@@ -121,6 +122,78 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(attempt)
         return attempt
+    
+    def extend_attempt_time(self, attempt_id: UUID, extra_minutes: int) -> Optional[Attempt]:
+        """
+        Подовжує дедлайн (due_at) для спроби іспиту на вказану кількість хвилин.
+
+        Args:
+            attempt_id: ID спроби, яку потрібно подовжити.
+            extra_minutes: Кількість додаткових хвилин (> 0).
+
+        Returns:
+            Оновлений об'єкт Attempt або None, якщо спробу не знайдено.
+        """
+        if extra_minutes <= 0:
+            raise ValueError("extra_minutes must be positive")
+
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+
+        if not attempt.due_at:
+            # Якщо з якоїсь причини due_at немає, просто не змінюємо нічого
+            return attempt
+
+        # Подовжуємо дедлайн
+        attempt.due_at = attempt.due_at + timedelta(minutes=extra_minutes)
+
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt    
+
+    @staticmethod
+    def _get_question_type(q: Question) -> str:
+        return q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
+
+    def _load_options_by_question(self, question_ids: List[UUID]) -> Dict[UUID, List[Dict[str, Any]]]:
+        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
+        if not question_ids:
+            return opts_by_q
+        options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
+        for o in options:
+            opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
+        return opts_by_q
+
+    def _load_matching_by_question(self, question_ids: List[UUID]) -> Dict[UUID, Dict[str, List[Dict[str, Any]]]]:
+        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
+        if not question_ids:
+            return match_by_q
+        matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
+        for m in matching_rows:
+            q_id = m.question_id
+            if q_id not in match_by_q:
+                match_by_q[q_id] = {'prompts': [], 'matches': []}
+            match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
+            match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+        return match_by_q
+
+    def _format_question(self, q: Question, opts_by_q: Dict[UUID, List[Dict[str, Any]]], match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]]) -> Dict[str, Any]:
+        q_type = self._get_question_type(q)
+        q_out: Dict[str, Any] = {
+            'id': str(q.id),
+            'position': q.position,
+            'question_type': q_type,
+            'title': q.title,
+            'points': q.points,
+        }
+        if q_type in ('single_choice', 'multi_choice'):
+            q_out['options'] = opts_by_q.get(q.id, [])
+        elif q_type == 'short_answer':
+            q_out['input_type'] = 'text'
+        elif q_type == 'matching':
+            q_out['matching_data'] = match_by_q.get(q.id, {'prompts': [], 'matches': []})
+        return q_out
 
     def get_attempt_with_details(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         """Збирає та форматує всю інформацію для сторінки складання іспиту.
@@ -128,12 +201,6 @@ class AttemptsRepository:
         Цей метод агрегує дані про спробу, іспит, відсортовані питання,
         варіанти відповідей, дані для питань на відповідність та збережені
         відповіді користувача в один зручний для фронтенду об'єкт.
-
-        Args:
-            attempt_id: ID спроби для якої потрібно отримати деталі.
-
-        Returns:
-            Словник з повною інформацією або `None`, якщо спробу не знайдено.
         """
         attempt = self.get_attempt(attempt_id)
         if not attempt or not attempt.exam:
@@ -141,48 +208,20 @@ class AttemptsRepository:
         exam = attempt.exam
 
         # 1. Завантажуємо питання, впорядковані за позицією
-        questions: List[Question] = self.db.query(Question).filter(
-            Question.exam_id == exam.id
-        ).order_by(Question.position).all()
+        questions: List[Question] = (
+            self.db.query(Question)
+            .filter(Question.exam_id == exam.id)
+            .order_by(Question.position)
+            .all()
+        )
         question_ids = [q.id for q in questions]
 
         # 2. Оптимізація: завантажуємо всі опції та дані для 'matching' одним запитом
-        opts_by_q: Dict[UUID, List[Dict[str, Any]]] = {}
-        if question_ids:
-            options = self.db.query(Option).filter(Option.question_id.in_(question_ids)).all()
-            for o in options:
-                opts_by_q.setdefault(o.question_id, []).append({'id': str(o.id), 'text': o.text})
-
-        match_by_q: Dict[UUID, Dict[str, List[Dict[str, Any]]]] = {}
-        if question_ids:
-            matching_rows = self.db.query(MatchingOption).filter(MatchingOption.question_id.in_(question_ids)).all()
-            for m in matching_rows:
-                q_id = m.question_id
-                if q_id not in match_by_q:
-                    match_by_q[q_id] = {'prompts': [], 'matches': []}
-                match_by_q[q_id]['prompts'].append({'id': str(m.id), 'text': m.prompt})
-                match_by_q[q_id]['matches'].append({'id': str(m.id), 'text': m.correct_match})
+        opts_by_q = self._load_options_by_question(question_ids)
+        match_by_q = self._load_matching_by_question(question_ids)
 
         # 3. Формуємо фінальний список питань для фронтенду
-        questions_out: List[Dict[str, Any]] = []
-        for q in questions:
-            q_type = q.question_type.value if hasattr(q.question_type, 'value') else str(q.question_type)
-            q_out: Dict[str, Any] = {
-                'id': str(q.id),
-                'position': q.position,
-                'question_type': q_type,
-                'title': q.title,
-                'points': q.points,
-            }
-
-            if q_type in ('single_choice', 'multi_choice'):
-                q_out['options'] = opts_by_q.get(q.id, [])
-            elif q_type == 'short_answer':
-                q_out['input_type'] = 'text' # Або інша логіка, якщо потрібно
-            elif q_type == 'matching':
-                q_out['matching_data'] = match_by_q.get(q.id, {'prompts': [], 'matches': []})
-
-            questions_out.append(q_out)
+        questions_out = [self._format_question(q, opts_by_q, match_by_q) for q in questions]
 
         # 4. Збираємо все в один об'єкт-результат
         result: Dict[str, Any] = {
@@ -196,6 +235,8 @@ class AttemptsRepository:
             'questions': questions_out,
         }
         return result
+
+    # Note: previous implementation was refactored above; duplicate removed.
 
     def get_attempt_result_raw(self, attempt_id: UUID) -> Optional[Dict[str, Any]]:
         attempt = self.db.query(Attempt).options(
@@ -231,6 +272,15 @@ class AttemptsRepository:
         ).count()
         return count
 
+    def get_last_attempt_for_user_and_exam(self, user_id: UUID, exam_id: UUID) -> Optional[Attempt]:
+        """
+        Отримує останню спробу користувача для конкретного іспиту.
+        """
+        return self.db.query(Attempt).filter(
+            Attempt.exam_id == exam_id,
+            Attempt.user_id == user_id
+        ).order_by(Attempt.started_at.desc()).first()
+
     def get_attempt_for_review(self, attempt_id: UUID) -> Optional[Attempt]:
         """
         Завантажує спробу з усіма необхідними пов'язаними даними для
@@ -261,3 +311,56 @@ class AttemptsRepository:
         self.db.commit()
         self.db.refresh(answer)
         return answer
+
+    def get_attempts_statistics_for_exam(self, exam_id: UUID) -> dict:
+        """Отримує статистику для спроб на іспиті"""
+        attempts = self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+        
+        scores = [attempt.earned_points for attempt in attempts if attempt.earned_points is not None]
+        
+        return StatisticsService.calculate_statistics(scores)
+
+    def add_time_to_attempt(self, attempt_id: UUID, additional_minutes: int) -> Optional[Attempt]:
+        """
+        Додає додатковий час до спроби, оновлюючи due_at.
+        """
+        attempt = self.get_attempt(attempt_id)
+        if not attempt:
+            return None
+        
+        if attempt.status != AttemptStatus.in_progress:
+            raise ValueError("Можна додавати час тільки до активних спроб")
+        
+        attempt.due_at = attempt.due_at + timedelta(minutes=additional_minutes)
+        self.db.commit()
+        self.db.refresh(attempt)
+        return attempt
+
+    def get_attempts_by_exam(self, exam_id: UUID) -> List[Attempt]:
+        """Отримує всі спроби для конкретного іспиту"""
+        return self.db.query(Attempt).filter(Attempt.exam_id == exam_id).all()
+
+    def get_active_attempts_for_exam(self, exam_id: UUID) -> List[Attempt]:
+        """
+        Отримує список активних спроб для конкретного іспиту.
+        """
+        return self.db.query(Attempt).options(
+            joinedload(Attempt.user)
+        ).filter(
+            Attempt.exam_id == exam_id,
+            Attempt.status == AttemptStatus.in_progress
+        ).all()
+    
+    def get_completed_attempts_for_exam(self, exam_id: UUID) -> List[Attempt]:
+        """
+        Отримує список завершених спроб (completed або submitted) для конкретного іспиту.
+        """
+        return self.db.query(Attempt).options(
+            joinedload(Attempt.user)
+        ).filter(
+            Attempt.exam_id == exam_id,
+            or_(
+                Attempt.status == AttemptStatus.completed,
+                Attempt.status == AttemptStatus.submitted
+            )
+        ).all()

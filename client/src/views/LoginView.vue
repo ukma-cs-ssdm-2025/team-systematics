@@ -22,19 +22,17 @@
                         placeholder="password123" autocomplete="current-password" />
                 </div>
 
-                <div class="forgot-password-link-container">
-                    <a href="#" class="forgot-password-link" aria-label="Забули пароль? Натисніть тут для відновлення.">
-                        Забули пароль?
-                    </a>
+                <div v-if="errorMessage" class="error-message">
+                    {{ errorMessage }}
                 </div>
 
-                <CButton type="submit" id="submitButton" class="submit-button">
-                    Увійти
+                <CButton type="submit" id="submitButton" class="submit-button" :disabled="loading">
+                    {{ loading ? 'Вхід...' : 'Увійти' }}
                 </CButton>
 
                 <div class="register-link-container">
-                    <div class="register-text">Ще не маєте акаунту? <a href="#" class="register-link"
-                            aria-label="Зареєструватися">Зареєструватися</a></div>
+                    <div class="register-text">Ще не маєте акаунту? <router-link to="/register" class="register-link"
+                            aria-label="Зареєструватися">Зареєструватися</router-link></div>
                 </div>
             </form>
         </div>
@@ -45,16 +43,18 @@
 .container {
     display: flex;
     flex-direction: column;
-    justify-content: center;
+    justify-content: flex-start;
     align-items: center;
     min-height: 100vh;
     width: 100%;
-    gap: 40px;
     margin: 0;
+    padding-top: calc(50vh - 300px);
+    padding-bottom: 120px;
 }
 
 h1 {
     text-align: center;
+    margin: 0;
 }
 
 .login-card {
@@ -63,6 +63,7 @@ h1 {
     color: var(--color-white);
     min-width: 450px;
     padding: 40px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .login-card-header {
@@ -70,6 +71,8 @@ h1 {
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    height: 180px;
+    margin-bottom: 40px;
 }
 
 #loginForm {
@@ -88,9 +91,10 @@ h1 {
     font-weight: bold;
 }
 
-.forgot-password-link,
+
 .register-link {
     text-decoration: underline;
+    color: var(--color-white);
 }
 
 .register-link-container {
@@ -101,10 +105,27 @@ h1 {
 #submitButton {
     background-color: var(--color-lavender);
     color: var(--color-black);
+    margin-top: 36px;
 }
 
 #submitButton:hover {
     background-color: var(--color-dark-lavender);
+}
+
+#submitButton:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.error-message {
+    color: var(--color-red, #ff6b6d);
+    background-color: rgba(255, 107, 109, 0.1);
+    border: 1px solid var(--color-red, #ff6b6d);
+    border-radius: 8px;
+    padding: 12px;
+    text-align: center;
+    font-size: 0.9rem;
+    margin-top: 12px;
 }
 
 </style>
@@ -118,12 +139,16 @@ import CButton from '../components/global/CButton.vue'
 
 const email = ref('')
 const password = ref('')
+const errorMessage = ref('')
+const loading = ref(false)
 const auth = useAuth()
 const router = useRouter()
     
 // Відправляє дані на бекенд і зберігає токен
 const handleLogin = async (e) => {
   e.preventDefault()
+  errorMessage.value = ''
+  loading.value = true
 
   try {
     const data = await loginUser(email.value, password.value)
@@ -142,6 +167,8 @@ const handleLogin = async (e) => {
         router.push('/exams')
     } else if (auth.role.value === 'teacher') {
         router.push('/courses/my')
+    } else if (auth.role.value === 'supervisor') {
+        router.push('/courses/supervisor')
     } else {
         // Якщо роль невідома або відсутня
         router.push('/forbidden')
@@ -149,7 +176,9 @@ const handleLogin = async (e) => {
 
   } catch (err) {
     console.error(err)
-    alert(err.message)
+    errorMessage.value = err.message || 'Помилка входу. Спробуйте ще раз.'
+  } finally {
+    loading.value = false
   }
 }
 </script>

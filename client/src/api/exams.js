@@ -44,6 +44,24 @@ export async function getAllExams() {
     }
 }
 
+// Отримує інформацію про іспит за ID
+export async function getExam(examId) {
+    if (USE_MOCK_DATA) {
+        // Повертаємо мокові дані, якщо потрібно
+        return mockExams.future_exams?.[0] || mockExams.completed_exams?.[0] || {}
+    }
+    try {
+        const response = await http.get(`/api/exams/${examId}`)
+        return response.data
+    } catch (error) {
+        console.error(`API Error fetching exam ${examId}:`, error)
+        if (error.response?.data?.detail) {
+            throw new Error(error.response.data.detail)
+        }
+        throw new Error('Не вдалося завантажити інформацію про іспит.')
+    }
+}
+
 // Отримує дані для журналу конкретного іспиту
 export async function getExamJournal(examId) {
     if (USE_MOCK_DATA) {
@@ -76,7 +94,7 @@ async function createQuestion(examId, questionData) {
         const response = await http.post(`/api/exams/${examId}/questions`, questionData)
         return response.data
     } catch (error) {
-        console.error(`API Error creating question:`, error)
+        console.error("API Error creating question:", error)
         throw error
     }
 }
@@ -84,7 +102,7 @@ async function createQuestion(examId, questionData) {
 export async function createExam(examData) {
     try {
         // Створюємо екзамен
-        const examResponse = await http.post(`/api/exams`, {
+        const examResponse = await http.post("/api/exams", {
             title: examData.title,
             instructions: examData.instructions || null,
             start_at: examData.start_at,
@@ -115,7 +133,7 @@ export async function createExam(examData) {
         
         return exam
     } catch (error) {
-        console.error(`API Error creating a new exam`, error)
+        console.error("API Error creating a new exam", error)
         if (error.response?.data?.detail) {
             throw error
         }
@@ -129,7 +147,7 @@ export async function getExamForEdit(examId) {
         const response = await http.get(`/api/exams/${examId}/edit`)
         return response.data
     } catch (error) {
-        console.error(`API Error fetching exam for edit:`, error)
+        console.error("API Error fetching exam for edit:", error)
         if (error.response?.data?.detail) {
             throw error
         }
@@ -143,7 +161,7 @@ export async function publishExam(examId) {
         const response = await http.post(`/api/exams/${examId}/publish`)
         return response.data
     } catch (error) {
-        console.error(`API Error publishing exam:`, error)
+        console.error("API Error publishing exam:", error)
         if (error.response?.data?.detail) {
             throw error
         }
@@ -156,7 +174,7 @@ export async function deleteExam(examId) {
     try {
         await http.delete(`/api/exams/${examId}`)
     } catch (error) {
-        console.error(`API Error deleting exam:`, error)
+        console.error("API Error deleting exam:", error)
         if (error.response?.data?.detail) {
             throw error
         }
@@ -202,7 +220,7 @@ export async function updateExam(examId, examData) {
         
         return exam
     } catch (error) {
-        console.error(`API Error updating exam:`, error)
+        console.error("API Error updating exam:", error)
         if (error.response?.data?.detail) {
             throw error
         }
