@@ -260,7 +260,7 @@ class TestAttemptModel:
             earned_points=85.5
         )
         
-        assert attempt.earned_points == 85.5
+        assert attempt.earned_points == pytest.approx(85.5)
 
 
 class TestExamRelationships:
