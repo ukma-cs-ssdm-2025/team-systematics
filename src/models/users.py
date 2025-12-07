@@ -35,3 +35,11 @@ class User(Base):
     )
 
     attempts = relationship("Attempt", back_populates="user")
+
+
+# Import at the end to avoid circular imports but ensure table is registered
+try:
+    from src.models.user_majors import UserMajor
+    from src.models.courses import CourseEnrollment
+except ImportError:
+    pass
