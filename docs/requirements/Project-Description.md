@@ -12,10 +12,10 @@
 
 ## Команда(ролі)
 
-- **Debugger** – Малій Олександра  
-- **QA Planner** – Фломбойм Мирослава  
-- **Test Lead** – Колінько Владислава  
-- **Integration Lead** – Бакалина Анастасія  
+- **Improvement Designer** – Малій Олександра  
+- **Documentation Lead** – Фломбойм Мирослава  
+- **Data Gatherer** – Колінько Владислава  
+- **Metrics Analyst** – Бакалина Анастасія  
 
 ---
 
