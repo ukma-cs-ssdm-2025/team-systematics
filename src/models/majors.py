@@ -12,3 +12,10 @@ class Major(Base):
         secondary="user_majors",
         back_populates="major"
     )
+
+
+# Import at the end to avoid circular imports but ensure table is registered
+try:
+    from src.models.user_majors import UserMajor
+except ImportError:
+    pass

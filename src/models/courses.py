@@ -32,3 +32,10 @@ class CourseEnrollment(Base):
 
     course_id = Column(UUID(as_uuid=True), ForeignKey("courses.id", ondelete="CASCADE"), primary_key=True)
     user_id = Column(UUID(as_uuid=True), ForeignKey("users.id", ondelete="CASCADE"), primary_key=True)
+
+
+# Import at the end to avoid circular imports but ensure table is registered
+try:
+    from src.models.course_exams import CourseExam
+except ImportError:
+    pass

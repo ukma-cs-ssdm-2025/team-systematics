@@ -80,3 +80,10 @@ class Option(Base):
     is_correct = Column(Boolean, default=False)
     
     question = relationship("Question", back_populates="options")
+
+
+# Import at the end to avoid circular imports but ensure table is registered
+try:
+    from src.models.course_exams import CourseExam
+except ImportError:
+    pass
