@@ -30,7 +30,7 @@
 - **SonarCloud Analysis** (`sonarcloud.yml`) — статичний аналіз коду;
 - **Generate PlantUML Diagrams** (`uml-render.yml`) — створення UML-діаграм з .puml файлів.
 
-**Детальна інформація:** Див. [CI/CD Runbook](/docs/ci-cd/ci-cd-runbook.md) для повного опису всіх workflows.
+**Детальна інформація:** Див. [CI/CD Runbook](/docs/ci-cd/dora-summary.md) для повного опису всіх workflows.
 
 
 ## Quality Gate
