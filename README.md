@@ -7,16 +7,17 @@
 ## Наші учасники:
 | Прізвище Ім'я        | GitHub                                             | Ролі
 | ---------------------| ---------------------------------------------------|----------------------|
-| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Reliability Explorer |
-| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Risk Documentarian   |
-| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Resilience Engineer  |
-| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Fault Classifier     |
+| Малій Олександра     | [@allyxandraaa](https://github.com/allyxandraaa)   | Improvement Designer |
+| Фломбойм Мирослава   | [@MyroslavaFlom](https://github.com/MyroslavaFlom) | Documentation Lead   |
+| Колінько Владислава  | [@SlavaKolinko](https://github.com/SlavaKolinko)   | Data Gatherer        |
+| Бакалина Анастасія   | [@bakalynaa](https://github.com/bakalynaa)         | Metrics Analyst      |
 
 ## Артефакти вимог:
 - [Командний статут](/TeamCharter.md)
 
 **Документація API**
 - [API документація дизайну](/docs/api/api-design.md)
+- [Індекс](/docs/api/index.html)
 - [Автоматично згенерований OpenAPI spec](/docs/api/openapi-generated.yaml)
 - [API атрибути якості](/docs/api/quality-attributes.md)
 
@@ -35,36 +36,47 @@
    - [ADR-002](/docs/architecture/ADR-002.md)
    - [ADR-003](/docs/architecture/ADR-003.md)
 
- **Якість коду**
- - [Прогрес розробки](/docs/code-quality/progress.md)
- - [Рев'ю коду](/docs/code-quality/review-report.md)
- - [Статичний аналіз бекенду](/docs/code-quality/static-analysis.md)
+**CI-CD**
+- [Dora звіт](/docs/ci-cd/dora-summary.md)
+- [Метрики](/docs/ci-cd/metrics-raw.md) 
+- [Скріншоти з гілки мейн](/docs/ci-cd/evidence) 
+- [Скріншоти з метриками](/docs/ci-cd/metrics-evidence)
 
- **Рефакторинг**
- - [Стан коду до](/docs/refactoring/screen_after.jpg)
- - [Стан коду після](/docs/refactoring/screen_before.jpg)
- - [Звіт про рефакторинг](/docs/refactoring/sonarcloud-report.md)
+**Якість коду**
+- [DeepSource звіт](/docs/code-quality/deepsource-report.md)
+- [Прогрес розробки](/docs/code-quality/progress.md)
+- [Рев'ю коду](/docs/code-quality/review-report.md)
+- [Статичний аналіз бекенду](/docs/code-quality/static-analysis.md)
 
- **Вимоги**
- - [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
- - [Опис проєкту](/docs/requirements/Project-Description.md)
- - [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
- - [Матриця простежуваності (RTM)](/docs/requirements/rtm.md)
- - [Користувацькі історії](/docs/requirements/user-stories.md)
+**Рефакторинг**
+- [Стан коду до](/docs/refactoring/screen_after.jpg)
+- [Стан коду після](/docs/refactoring/screen_before.jpg)
+- [Звіт про рефакторинг](/docs/refactoring/sonarcloud-report.md)
 
- **Тестування**
- - [CI Overview](/docs/testing/ci-overview.md)
- - [Журнал дебагінгу](/docs/testing/debugging-log.md)
- - [Стратегія Тестування](/docs/testing/testing-strategy.md)
- - [Покриття тестами](/docs/testing/coverage.txt)
+**Надійність**
+- [Звіт про надійність системи](/docs/reliability/reliability-report.md)
+- [Проблеми надійності](/docs/reliability/scavenger-hunt.md)
 
- **Валідація**
- - [Тест план](/docs/validation/test-plan.md)
- - [Рев'ю іншої команди](/docs/validation/review-log.md)
+**Вимоги**
+- [Порядок постановки та вирішування завдань](/docs/requirements/ISSUE_WORKFLOW.md)
+- [Опис проєкту](/docs/requirements/Project-Description.md)
+- [Функціональні і нефункціональні вимоги](/docs/requirements/requirements.md)
+- [Матриця простежуваності (RTM)](/docs/requirements/rtm.md)
+- [Користувацькі історії](/docs/requirements/user-stories.md)
+
+**Тестування**
+- [CI Overview](/docs/testing/ci-overview.md)
+- [Журнал дебагінгу](/docs/testing/debugging-log.md)
+- [Стратегія Тестування](/docs/testing/testing-strategy.md)
+- [Покриття тестами](/docs/testing/coverage.txt)
+
+**Валідація**
+- [Тест план](/docs/validation/test-plan.md)
+- [Рев'ю іншої команди](/docs/validation/review-log.md)
 
 
- **Відео-звіти у Loom**
- - [Loom](/Loom)
+**Відео-звіти у Loom**
+- [Loom](/Loom)
 
 
 ## Розгорнутий у мережі проєкт:
