@@ -126,10 +126,8 @@ class TestErrorRecovery:
         """Test handling specific status codes."""
         exc = HTTPException(status_code=404, detail="Not found")
         
-        if exc.status_code == 404:
-            assert True
-        else:
-            assert False
+        assert exc.status_code == 404
+        assert exc.detail == "Not found"
     
     def test_exception_detail_extraction(self):
         """Test extracting exception details."""
