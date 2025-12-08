@@ -11,10 +11,10 @@ Systematics
 - Колінько Владислава Володимирівна (v.kolinko@ukma.edu.ua, GitHub: @SlavaKolinko)
 
 ### 2) Ролі та відповідальності:
-- Reliability Explorer - Малій Олександра
-- Risk Documentarian - Фломбойм Мирослава
-- Resilience Engineer - Колінько Владислава
-- Fault Classifier  - Бакалина Анастасія
+- Improvement Designer - Малій Олександра
+- Documentation Lead - Фломбойм Мирослава
+- Data Gatherer - Колінько Владислава
+- Metrics Analyst  - Бакалина Анастасія
 
 ### 3) План комунікації:
 - Основний канал комунікації - Discord
